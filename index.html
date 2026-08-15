@@ -332,6 +332,10 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .test-out{font-family:var(--font-mono);font-size:11px;line-height:1.55;white-space:pre-wrap;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;padding:11px;max-height:300px;overflow-y:auto;color:var(--text-secondary)}
 .test-out .p{color:var(--success)}.test-out .f{color:var(--danger);font-weight:700}
 
+.btn.zone-start{margin-top:7px;position:relative}
+.btn.zone-start::after{content:'';position:absolute;left:-3px;right:-3px;top:-5px;height:1px;background:var(--border)}
+.btn.zone-start.clear::after,.btn.zone-start.equals::after{background:var(--border)}
+
 /* ---------- Key help sheet ---------- */
 .key-hero{display:flex;gap:13px;align-items:flex-start;margin-bottom:11px}
 .key-glyph{flex-shrink:0;min-width:52px;height:52px;padding:0 10px;border-radius:15px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:800;font-family:var(--font-sans)}
@@ -680,7 +684,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.2.0';
+const VERSION='5.3.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -1371,26 +1375,28 @@ const LAYOUTS={
   {t:'⌫',a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'}
  ],
  professional:[
-  {t:'AC',a:'clear',c:'clear'},{t:'⌫',a:'back',c:'func'},{t:'(',a:'char',v:'(',c:'func'},{t:')',a:'char',v:')',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},
-  {t:'sin',a:'func',v:'sin',c:'func'},{t:'cos',a:'func',v:'cos',c:'func'},{t:'tan',a:'func',v:'tan',c:'func'},{t:'DEG',a:'trig',c:'func accentish'},{t:'×',a:'op',v:'×',c:'op'},
-  {t:'sin⁻¹',a:'func',v:'asin',c:'func'},{t:'cos⁻¹',a:'func',v:'acos',c:'func'},{t:'tan⁻¹',a:'func',v:'atan',c:'func'},{t:'π',a:'char',v:'π',c:'func'},{t:'−',a:'op',v:'-',c:'op'},
-  {t:'x²',a:'char',v:'²',c:'func'},{t:'xʸ',a:'op',v:'^',c:'func'},{t:'√',a:'func',v:'sqrt',c:'func'},{t:'∛',a:'func',v:'cbrt',c:'func'},{t:'+',a:'op',v:'+',c:'op'},
-  {t:'ln',a:'func',v:'ln',c:'func'},{t:'log',a:'func',v:'log',c:'func'},{t:'eˣ',a:'func',v:'exp',c:'func'},{t:'x!',a:'char',v:'!',c:'func'},{t:'=',a:'equals',c:'equals'},
-  {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'sinh',a:'func',v:'sinh',c:'func'},{t:'mod',a:'op',v:'mod',c:'func'},
-  {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'cosh',a:'func',v:'cosh',c:'func'},{t:'|x|',a:'func',v:'abs',c:'func'},
-  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'tanh',a:'func',v:'tanh',c:'func'},{t:'1/x',a:'recip',c:'func'},
-  {t:'±',a:'sign',c:'func'},{t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:'e',a:'char',v:'e',c:'func'},{t:'%',a:'char',v:'%',c:'func'},
-  {t:'MC',a:'mClear',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'M−',a:'mSub',c:'func'},{t:'ANS',a:'ans',c:'func'},
-  {t:'STO',a:'sto',c:'func accentish'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'}
+  /* Rows 1-5: the scientific block. Rows 6-11 repeat the Standard keypad
+     column for column, so the digits, operators and = never move between modes. */
+  {t:'sin',a:'func',v:'sin',c:'func'},{t:'cos',a:'func',v:'cos',c:'func'},{t:'tan',a:'func',v:'tan',c:'func'},{t:'x²',a:'char',v:'²',c:'func'},{t:'√',a:'func',v:'sqrt',c:'func'},
+  {t:'sin⁻¹',a:'func',v:'asin',c:'func'},{t:'cos⁻¹',a:'func',v:'acos',c:'func'},{t:'tan⁻¹',a:'func',v:'atan',c:'func'},{t:'xʸ',a:'op',v:'^',c:'func'},{t:'∛',a:'func',v:'cbrt',c:'func'},
+  {t:'sinh',a:'func',v:'sinh',c:'func'},{t:'cosh',a:'func',v:'cosh',c:'func'},{t:'tanh',a:'func',v:'tanh',c:'func'},{t:'x!',a:'char',v:'!',c:'func'},{t:'π',a:'char',v:'π',c:'func'},
+  {t:'ln',a:'func',v:'ln',c:'func'},{t:'log',a:'func',v:'log',c:'func'},{t:'log₂',a:'func',v:'log2',c:'func'},{t:'eˣ',a:'func',v:'exp',c:'func'},{t:'e',a:'char',v:'e',c:'func'},
+  {t:'STO',a:'sto',c:'func accentish'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'},
+  {t:'AC',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'mod',a:'op',v:'mod',c:'func'},
+  {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},{t:'|x|',a:'func',v:'abs',c:'func'},
+  {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},{t:'1/x',a:'recip',c:'func'},
+  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},{t:'MC',a:'mClear',c:'func'},
+  {t:'±',a:'sign',c:'func'},{t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:'=',a:'equals',c:'equals'},{t:'M−',a:'mSub',c:'func'},
+  {t:'⌫',a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'DEG',a:'trig',c:'func accentish'}
  ],
  rpn:[
-  {t:'AC',a:'rpnClear',c:'clear'},{t:'⌫',a:'rpnBack',c:'func'},{t:'x↔y',a:'rpnSwap',c:'func'},{t:'DROP',a:'rpnDrop',c:'func'},
-  {t:'√',a:'rpnFunc',v:'sqrt',c:'func'},{t:'x²',a:'rpnFunc',v:'sq',c:'func'},{t:'1/x',a:'rpnFunc',v:'inv',c:'func'},{t:'÷',a:'rpnOp',v:'÷',c:'op'},
+  {t:'x↔y',a:'rpnSwap',c:'func'},{t:'DROP',a:'rpnDrop',c:'func'},{t:'ROLL',a:'rpnRoll',c:'func'},{t:'LAST x',a:'rpnLast',c:'func'},
+  {t:'AC',a:'rpnClear',c:'clear'},{t:'x²',a:'rpnFunc',v:'sq',c:'func'},{t:'√',a:'rpnFunc',v:'sqrt',c:'func'},{t:'÷',a:'rpnOp',v:'÷',c:'op'},
   {t:'7',a:'rpnNum',v:'7'},{t:'8',a:'rpnNum',v:'8'},{t:'9',a:'rpnNum',v:'9'},{t:'×',a:'rpnOp',v:'×',c:'op'},
   {t:'4',a:'rpnNum',v:'4'},{t:'5',a:'rpnNum',v:'5'},{t:'6',a:'rpnNum',v:'6'},{t:'−',a:'rpnOp',v:'-',c:'op'},
   {t:'1',a:'rpnNum',v:'1'},{t:'2',a:'rpnNum',v:'2'},{t:'3',a:'rpnNum',v:'3'},{t:'+',a:'rpnOp',v:'+',c:'op'},
   {t:'±',a:'rpnSign',c:'func'},{t:'0',a:'rpnNum',v:'0'},{t:',',a:'rpnDot'},{t:'ENTER',a:'rpnEnter',c:'equals'},
-  {t:'xʸ',a:'rpnOp',v:'^',c:'func'},{t:'π',a:'rpnConst',v:'pi',c:'func'},{t:'LAST x',a:'rpnLast',c:'func'},{t:'ROLL',a:'rpnRoll',c:'func'}
+  {t:'⌫',a:'rpnBack',c:'func'},{t:'1/x',a:'rpnFunc',v:'inv',c:'func'},{t:'π',a:'rpnConst',v:'pi',c:'func'},{t:'xʸ',a:'rpnOp',v:'^',c:'func'}
  ]
 };
 /* ============ haptics + toast ============ */
@@ -2044,7 +2050,7 @@ const TAPE_LAYOUT=[
  {t:'4',a:'tapeNum',v:'4'},{t:'5',a:'tapeNum',v:'5'},{t:'6',a:'tapeNum',v:'6'},{t:'−',a:'tapeOp',v:'-',c:'op'},
  {t:'1',a:'tapeNum',v:'1'},{t:'2',a:'tapeNum',v:'2'},{t:'3',a:'tapeNum',v:'3'},{t:'+',a:'tapeOp',v:'+',c:'op'},
  {t:'±',a:'tapeSign',c:'func'},{t:'0',a:'tapeNum',v:'0'},{t:',',a:'tapeDot'},{t:'+ LINJE',a:'tapeCommit',c:'equals'},
- {t:'⌫',a:'tapeBack',c:'func'},{t:'SUM',a:'tapeUseSum',c:'func'},{t:'−LINJE',a:'tapeCommitMinus',c:'func'},{t:'ANS',a:'tapeAns',c:'func'}
+ {t:'⌫',a:'tapeBack',c:'func'},{t:'ANS',a:'tapeAns',c:'func'},{t:'SUM',a:'tapeUseSum',c:'func'},{t:'−LINJE',a:'tapeCommitMinus',c:'func'}
 ];
 LAYOUTS.tape=TAPE_LAYOUT;
 
@@ -2762,13 +2768,17 @@ function renderButtons(){
   if(!layout){ el.buttonsContainer.innerHTML=''; return; }
   const grid=document.createElement('div');
   grid.className='calc-buttons '+state.mode+'-mode';
-  layout.forEach(k=>{
+  /* Every keypad ends with the same six-row skeleton; mark where it starts. */
+  const cols=state.mode==='professional'?5:4;
+  const zoneStart=layout.length-cols*6;
+  layout.forEach((k,idx)=>{
     const b=document.createElement('button');
     b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'');
     b.type='button';
     b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
     b.textContent=k.a==='trig'?state.trig.toUpperCase():k.t;
     if(k.a==='trig')b.dataset.trigBtn='1';
+    if(zoneStart>0&&idx>=zoneStart&&idx<zoneStart+cols)b.classList.add('zone-start');
     const hk=keyHelpFor(k.a,k.v);
     if(hk){
       b.setAttribute('aria-label',k.t+' — hold inne for forklaring');
@@ -3317,6 +3327,35 @@ function runTests(){
   ok('x² er merket med ekstra valg',keyIsMarked('²'));
   ok('mod er ikke merket',!keyIsMarked('mod'));
   ok('fakultet er ikke merket',!keyIsMarked('!'));
+
+
+  /* Layout consistency: the calculator skeleton must sit in the same place,
+     measured from the bottom, in every keypad. Muscle memory depends on it. */
+  const GRID_COLS={standard:4,professional:5,rpn:4,tape:4};
+  const COMMIT={standard:'=',professional:'=',rpn:'ENTER',tape:'+ LINJE'};
+  const SKELETON=[['AC',6,1],['7',5,1],['8',5,2],['9',5,3],['4',4,1],['5',4,2],['6',4,3],
+    ['1',3,1],['2',3,2],['3',3,3],['±',2,1],['0',2,2],[',',2,3],['⌫',1,1],
+    ['÷',6,4],['×',5,4],['−',4,4],['+',3,4]];
+  Object.keys(GRID_COLS).forEach(mode=>{
+    const cols=GRID_COLS[mode], arr=LAYOUTS[mode], rows=arr.length/cols;
+    ok('rutenettet går opp: '+mode,Number.isInteger(rows),arr.length+'/'+cols);
+    const pos={};
+    arr.forEach((k,i)=>{ pos[k.t]={b:rows-Math.floor(i/cols),c:i%cols+1}; });
+    SKELETON.forEach(([label,b,c])=>{
+      const p=pos[label];
+      ok('plassering '+mode+'/'+label,!!p&&p.b===b&&p.c===c,p?('b'+p.b+'c'+p.c+' skulle vært b'+b+'c'+c):'mangler');
+    });
+    const cm=pos[COMMIT[mode]];
+    ok('svartast '+mode,!!cm&&cm.b===2&&cm.c===4,cm?('b'+cm.b+'c'+cm.c):'mangler');
+    /* no key may appear twice in the same keypad */
+    const seen={};
+    arr.forEach(k=>{ ok('ingen dublett '+mode+'/'+k.t,!seen[k.t],k.t); seen[k.t]=1; });
+  });
+  ok('vitenskapelig mistet ingen taster',LAYOUTS.professional.length===55,LAYOUTS.professional.length);
+  /* everything reachable in Standard must also be reachable in Vitenskapelig */
+  const stdActs=LAYOUTS.standard.map(k=>k.a+':'+k.v);
+  const proActs=LAYOUTS.professional.map(k=>k.a+':'+k.v);
+  stdActs.forEach(a=>ok('vitenskapelig dekker standard: '+a,proActs.indexOf(a)>-1));
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
