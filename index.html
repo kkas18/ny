@@ -326,11 +326,31 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 .modal h3{font-size:17px;font-weight:800;margin-bottom:9px}
 .modal p{font-size:13px;color:var(--text-secondary);line-height:1.6}
-.modal .ex{margin-top:11px;padding:11px;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.55}
+.ex{margin-top:11px;padding:11px 13px;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6}
 .toast{position:fixed;bottom:calc(var(--nav-height) + 18px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(14px);background:var(--surface-lighter);color:var(--text);padding:11px 19px;border-radius:22px;font-size:13px;font-weight:600;z-index:200;opacity:0;pointer-events:none;transition:all var(--transition);border:1px solid var(--border);box-shadow:var(--shadow);max-width:88%;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .test-out{font-family:var(--font-mono);font-size:11px;line-height:1.55;white-space:pre-wrap;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;padding:11px;max-height:300px;overflow-y:auto;color:var(--text-secondary)}
 .test-out .p{color:var(--success)}.test-out .f{color:var(--danger);font-weight:700}
+
+/* ---------- Key help sheet ---------- */
+.key-hero{display:flex;gap:13px;align-items:flex-start;margin-bottom:11px}
+.key-glyph{flex-shrink:0;min-width:52px;height:52px;padding:0 10px;border-radius:15px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:800;font-family:var(--font-sans)}
+.key-glyph sup{font-size:.62em;vertical-align:super;line-height:0}
+.key-name{font-size:17px;font-weight:800;color:var(--text);line-height:1.25}
+.key-desc{font-size:13px;color:var(--text-secondary);line-height:1.55;margin-top:4px}
+.var-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.var-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:11px 13px;border-radius:14px;border:1px solid var(--border);background:var(--surface-light);cursor:pointer;text-align:left;transition:all var(--transition-fast)}
+.var-btn:active{transform:scale(.97);background:var(--surface-lighter)}
+.var-btn .vl{font-size:14px;font-weight:700;color:var(--text);font-family:var(--font-mono)}
+.var-btn .vd{font-size:11px;color:var(--text-dim);line-height:1.35}
+.var-btn.wide{grid-column:span 2}
+.custom-row{display:flex;gap:7px;align-items:center;margin-top:6px}
+.custom-row input{flex:1;min-width:0;background:var(--surface-lighter);border:1px solid var(--border);border-radius:12px;padding:11px 13px;color:var(--text);font-size:16px;font-family:var(--font-mono);outline:none}
+.custom-row input:focus{border-color:var(--accent-line)}
+.custom-row button{flex-shrink:0;border:1px solid var(--accent-line);background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:11px 15px;font-size:13px;font-weight:700;cursor:pointer}
+/* Corner wedge marks the keys that hide extra actions behind a long press. */
+.btn.has-more::before{content:'';position:absolute;top:4px;right:4px;width:0;height:0;border-top:5px solid currentColor;border-left:5px solid transparent;opacity:.42;border-radius:1px}
+.btn.equals.has-more::before,.btn.clear.has-more::before{opacity:.6}
 
 /* ---------- Update bar ---------- */
 .update-bar{position:fixed;left:10px;right:10px;bottom:calc(var(--nav-height) + 10px + var(--safe-bottom));background:var(--accent);color:var(--accent-text);border-radius:16px;padding:11px 14px;display:none;align-items:center;gap:10px;z-index:150;box-shadow:var(--shadow);font-size:13px;font-weight:700}
@@ -632,9 +652,27 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 </div>
 
 <div class="overlay" id="modalOverlay"></div>
-<div class="modal" id="infoModal" role="dialog" aria-modal="true">
-  <h3 id="infoTitle"></h3><p id="infoDesc"></p><div class="ex" id="infoExample" style="display:none"></div>
-  <button class="action-btn" id="closeInfoBtn">Lukk</button>
+<div class="sheet" id="keySheet" role="dialog" aria-modal="true" aria-label="Om tasten">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span>Om tasten</span><button class="text-btn" id="keyCloseBtn">Lukk</button></div>
+  <div class="sheet-body">
+    <div class="key-hero">
+      <span class="key-glyph" id="keyGlyph"></span>
+      <div><div class="key-name" id="keyName"></div><div class="key-desc" id="keyDesc"></div></div>
+    </div>
+    <div class="ex" id="keyExample" style="display:none"></div>
+    <div id="keyVarWrap" style="display:none">
+      <div class="settings-label" style="margin-top:16px" id="keyVarLabel">Flere valg</div>
+      <div class="var-grid" id="keyVariants"></div>
+    </div>
+    <div id="keyCustomWrap" style="display:none">
+      <div class="settings-label" style="margin-top:16px" id="keyCustomLabel"></div>
+      <div class="custom-row">
+        <input type="text" id="keyCustomInput" inputmode="decimal" autocomplete="off">
+        <button id="keyCustomBtn">Sett inn</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="update-bar" id="updateBar" role="status"><span>Ny versjon er klar</span><button id="updateBtn">Last inn</button></div>
@@ -642,7 +680,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.1.0';
+const VERSION='5.2.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -653,7 +691,7 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
 const MODES=['standard','professional','rpn','tape','percent','converter'];
 const MODE_LABEL={standard:'Standard',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
@@ -689,7 +727,8 @@ const el={};
  'sparkFrom','sparkTo','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
- 'testSummary','testOut','modalOverlay','infoModal','infoTitle','infoDesc','infoExample','closeInfoBtn',
+ 'testSummary','testOut','modalOverlay','keySheet','keyGlyph','keyName','keyDesc','keyExample',
+ 'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
  'toast','appVersion','hapticSwitch','liveSwitch','kbdSwitch',
  'tapePanel','tapeList','tapeSum','tapeSumLabel','tapeSplit','tapeCur','tapePrev','tapeVatBtn','tapeVatLabel',
  'tapeNoteBtn','tapeCopyBtn','tapeClearBtn','convStandard','convDates','dateChips','dateFields','dateResult',
@@ -1354,47 +1393,6 @@ const LAYOUTS={
   {t:'xʸ',a:'rpnOp',v:'^',c:'func'},{t:'π',a:'rpnConst',v:'pi',c:'func'},{t:'LAST x',a:'rpnLast',c:'func'},{t:'ROLL',a:'rpnRoll',c:'func'}
  ]
 };
-const KEY_INFO={
- sin:['Sinus','Sinus til en vinkel. Bruker den vinkelmåten du har valgt: grader eller radianer.','sin(30) = 0,5 i grader'],
- cos:['Cosinus','Cosinus til en vinkel.','cos(60) = 0,5 i grader'],
- tan:['Tangens','Tangens til en vinkel. Udefinert ved 90° og 270°.','tan(45) = 1 i grader'],
- asin:['Invers sinus','Finner vinkelen som har denne sinusverdien. Krever en verdi mellom −1 og 1.','sin⁻¹(0,5) = 30° i grader'],
- acos:['Invers cosinus','Finner vinkelen som har denne cosinusverdien.','cos⁻¹(0,5) = 60° i grader'],
- atan:['Invers tangens','Finner vinkelen som har denne tangensverdien.','tan⁻¹(1) = 45° i grader'],
- sinh:['Hyperbolsk sinus','Hyperbolsk sinus. Regner alltid i radianer.','sinh(1) ≈ 1,1752'],
- cosh:['Hyperbolsk cosinus','Hyperbolsk cosinus.','cosh(0) = 1'],
- tanh:['Hyperbolsk tangens','Hyperbolsk tangens. Nærmer seg ±1.','tanh(1) ≈ 0,7616'],
- log:['Titallslogaritme','Finner eksponenten 10 må opphøyes i for å gi tallet.','log(100) = 2, fordi 10² = 100'],
- ln:['Naturlig logaritme','Logaritmen med grunntall e ≈ 2,71828.','ln(e) = 1'],
- exp:['Eksponentialfunksjon','Opphøyer e i det tallet du oppgir.','eˣ der x = 1 gir 2,71828'],
- sqrt:['Kvadratrot','Tallet som ganget med seg selv gir verdien.','√9 = 3'],
- cbrt:['Kubikkrot','Tallet som ganget med seg selv tre ganger gir verdien.','∛27 = 3'],
- abs:['Absoluttverdi','Avstanden fra null, alltid positiv.','|−7| = 7'],
- mod:['Modulo','Resten etter en heltallsdivisjon.','17 mod 5 = 2'],
- '^':['Potens','Opphøyer det første tallet i det andre.','2 xʸ 10 = 1024'],
- '²':['Kvadrat','Opphøyer tallet i andre potens.','5² = 25'],
- '!':['Fakultet','Produktet av alle heltall opp til tallet.','5! = 120'],
- '%':['Prosent','Deler tallet på 100. For MVA og rabatt: bruk Prosent-fanen.','200 × 15% = 30'],
- 'π':['Pi','Forholdet mellom omkrets og diameter, ca. 3,14159.','2 × π × r gir omkretsen'],
- e:['Eulers tall','Grunntallet for naturlige logaritmer, ca. 2,71828.','ln(e) = 1'],
- clear:['Nullstill','Tømmer uttrykket og resultatet. Historikken beholdes.',''],
- trig:['Grader eller radianer','Bytter vinkelmåte for alle trigonometriske funksjoner.','sin(30) = 0,5 i grader, sin(π/6) = 0,5 i radianer'],
- ans:['Forrige svar','Setter inn resultatet fra forrige utregning.','Etter 2 + 3 = 5 gir ANS deg 5'],
- mAdd:['Legg til i minnet','Legger resultatet til verdien du har lagret.','Minne 10, resultat 5, M+ gir 15'],
- mSub:['Trekk fra minnet','Trekker resultatet fra verdien du har lagret.','Minne 10, resultat 5, M− gir 5'],
- mRecall:['Hent fra minnet','Setter inn den lagrede verdien i uttrykket.',''],
- mClear:['Tøm minnet','Setter minnet tilbake til null.',''],
- recip:['Én delt på x','Setter inn 1÷ foran verdien.','1/4 = 0,25'],
- paren:['Parenteser','Setter inn den parentesen som mangler.','(2 + 3) × 4 = 20'],
- rpnEnter:['ENTER','Dytter tallet du har skrevet opp på stakken.','5 ENTER 3 + gir 8'],
- rpnSwap:['Bytt x og y','Bytter om de to øverste tallene på stakken.',''],
- rpnDrop:['DROP','Fjerner det øverste tallet fra stakken.',''],
- rpnRoll:['ROLL','Roterer stakken ett hakk nedover.',''],
- rpnLast:['LAST x','Henter tilbake tallet den forrige operasjonen brukte.',''],
- sto:['Lagre i variabel','Trykk STO og deretter A, B, C eller D for å lagre resultatet der.','STO så B lagrer verdien i B'],
- var:['Variabler','A til D holder på hver sin verdi. Trykk for å sette den inn i uttrykket, eller STO først for å lagre i den.','Med A = 230: A×2 gir 460']
-};
-
 /* ============ haptics + toast ============ */
 function buzz(ms){ if(!state.haptic)return; try{ if(navigator.vibrate)navigator.vibrate(ms||9); }catch(e){} }
 let toastTimer, silentToasts=false;
@@ -2425,6 +2423,339 @@ function importSettings(text){
   setTimeout(()=>location.reload(),900);
 }
 
+/* ============ key help: explanation + extra actions on long press ============ */
+
+/* Inserting has to respect which surface is active: the tape has its own buffer. */
+function insertRaw(t){
+  if(state.mode==='tape'){ tapeAppend(t); return; }
+  startFresh(); append(t);
+}
+function insertFunc(f){ insertRaw(f+'('); }
+function insertOpVal(op,val){
+  if(state.mode==='tape'){ tapeOp(op); tapeAppend(String(val)); return; }
+  handleOp(op); append(String(val));
+}
+function V(l,d,run){ return {l,d,run}; }
+
+const KEY_HELP={
+ /* --- powers and roots --- */
+ '²':{g:'x<sup>2</sup>',mark:1,n:'Kvadrat',
+   d:'Opphøyer tallet i andre potens, altså ganger det med seg selv. Merk at dette ikke er det samme som å gange med 2: 5² er 25, mens 5×2 er 10.',
+   ex:'5² = 25\n12² = 144',
+   vl:'Andre eksponenter',
+   variants:()=>[
+     V('x³','Tredje potens',()=>insertRaw('³')),
+     V('x⁻¹','Én delt på tallet',()=>insertRaw('^(-1)')),
+     V('√','Kvadratrot i stedet',()=>insertFunc('sqrt')),
+     V('xʸ','Fri eksponent',()=>insertRaw('^'))],
+   custom:{label:'Opphøy i et valgfritt tall',ph:'2,5',run:n=>insertRaw('^('+n+')')}},
+
+ '^':{g:'x<sup>y</sup>',mark:1,n:'Potens',
+   d:'Opphøyer tallet foran i tallet du skriver etter. Regnes fra høyre, så 2^3^2 blir 2^(3^2) = 512.',
+   ex:'2 xʸ 10 = 1024',
+   vl:'Vanlige eksponenter',
+   variants:()=>[
+     V('x²','I andre',()=>insertRaw('²')),
+     V('x³','I tredje',()=>insertRaw('³')),
+     V('x⁻¹','Omvendt verdi',()=>insertRaw('^(-1)')),
+     V('x^½','Kvadratrot',()=>insertRaw('^(0.5)'))],
+   custom:{label:'Opphøy i',ph:'4',run:n=>insertRaw('^('+n+')')}},
+
+ sqrt:{g:'√',mark:1,n:'Kvadratrot',
+   d:'Finner tallet som ganget med seg selv gir verdien. Krever et positivt tall.',
+   ex:'√9 = 3\n√2 ≈ 1,4142',
+   vl:'Andre røtter',
+   variants:()=>[
+     V('∛','Kubikkrot',()=>insertFunc('cbrt')),
+     V('x^½','Samme som √, skrevet som potens',()=>insertRaw('^(0.5)'))],
+   custom:{label:'n-te rot: skriv n',ph:'5',run:n=>insertRaw('^(1÷'+n+')')}},
+
+ cbrt:{g:'∛',mark:1,n:'Kubikkrot',
+   d:'Finner tallet som ganget med seg selv tre ganger gir verdien. Tåler negative tall, i motsetning til kvadratroten.',
+   ex:'∛27 = 3\n∛−8 = −2',
+   variants:()=>[V('√','Kvadratrot',()=>insertFunc('sqrt'))],
+   custom:{label:'n-te rot: skriv n',ph:'5',run:n=>insertRaw('^(1÷'+n+')')}},
+
+ /* --- logarithms --- */
+ log:{g:'log',mark:1,n:'Titallslogaritme',
+   d:'Svarer på hvor mange ganger 10 må ganges med seg selv for å gi tallet.',
+   ex:'log(100) = 2, fordi 10² = 100\nGrunntall 5: ln(x)÷ln(5)',
+   vl:'Andre grunntall',
+   variants:()=>[
+     V('ln','Naturlig, grunntall e',()=>insertFunc('ln')),
+     V('log₂','Grunntall 2',()=>insertFunc('log2'))],
+   custom:{label:'Fritt grunntall: skriv grunntallet',ph:'5',run:n=>insertRaw('ln()÷ln('+n+')')}},
+
+ ln:{g:'ln',n:'Naturlig logaritme',
+   d:'Logaritmen med grunntall e ≈ 2,71828. Brukes i alt som vokser eller avtar jevnt over tid.',
+   ex:'ln(e) = 1\nln(1) = 0',
+   variants:()=>[V('log','Grunntall 10',()=>insertFunc('log')),V('log₂','Grunntall 2',()=>insertFunc('log2')),V('eˣ','Motsatt regning',()=>insertFunc('exp'))]},
+
+ log2:{g:'log₂',n:'Toerlogaritme',
+   d:'Svarer på hvor mange ganger 2 må dobles for å nå tallet. Nyttig for datamengder og bitbredder.',
+   ex:'log₂(1024) = 10',
+   variants:()=>[V('log','Grunntall 10',()=>insertFunc('log')),V('ln','Grunntall e',()=>insertFunc('ln'))]},
+
+ exp:{g:'e<sup>x</sup>',n:'Eksponentialfunksjon',
+   d:'Opphøyer e ≈ 2,71828 i tallet du skriver. Den motsatte regningen av ln.',
+   ex:'eˣ der x = 1 gir 2,71828',
+   variants:()=>[V('ln','Motsatt regning',()=>insertFunc('ln')),V('10ˣ','Ti opphøyd i x',()=>insertRaw('10^'))]},
+
+ /* --- trigonometry --- */
+ sin:{g:'sin',n:'Sinus',d:'Sinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'sin(30) = 0,5 i grader',
+   vl:'Beslektede funksjoner',
+   variants:()=>[V('sin⁻¹','Finn vinkelen tilbake',()=>insertFunc('asin')),V('cos','Cosinus',()=>insertFunc('cos')),V('tan','Tangens',()=>insertFunc('tan')),
+     V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
+ cos:{g:'cos',n:'Cosinus',d:'Cosinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'cos(60) = 0,5 i grader',
+   variants:()=>[V('cos⁻¹','Finn vinkelen tilbake',()=>insertFunc('acos')),V('sin','Sinus',()=>insertFunc('sin')),V('tan','Tangens',()=>insertFunc('tan')),
+     V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
+ tan:{g:'tan',n:'Tangens',d:'Tangens til en vinkel, altså sinus delt på cosinus. Udefinert ved 90° og 270°.',ex:'tan(45) = 1 i grader',
+   variants:()=>[V('tan⁻¹','Finn vinkelen tilbake',()=>insertFunc('atan')),V('sin','Sinus',()=>insertFunc('sin')),V('cos','Cosinus',()=>insertFunc('cos')),
+     V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
+ asin:{g:'sin⁻¹',n:'Invers sinus',d:'Finner vinkelen som har denne sinusverdien. Verdien må ligge mellom −1 og 1.',ex:'sin⁻¹(0,5) = 30° i grader',
+   variants:()=>[V('cos⁻¹','Invers cosinus',()=>insertFunc('acos')),V('tan⁻¹','Invers tangens',()=>insertFunc('atan')),V('sin','Vanlig sinus',()=>insertFunc('sin'))]},
+ acos:{g:'cos⁻¹',n:'Invers cosinus',d:'Finner vinkelen som har denne cosinusverdien. Verdien må ligge mellom −1 og 1.',ex:'cos⁻¹(0,5) = 60° i grader',
+   variants:()=>[V('sin⁻¹','Invers sinus',()=>insertFunc('asin')),V('tan⁻¹','Invers tangens',()=>insertFunc('atan')),V('cos','Vanlig cosinus',()=>insertFunc('cos'))]},
+ atan:{g:'tan⁻¹',n:'Invers tangens',d:'Finner vinkelen som har denne tangensverdien. Tåler alle tall.',ex:'tan⁻¹(1) = 45° i grader',
+   variants:()=>[V('sin⁻¹','Invers sinus',()=>insertFunc('asin')),V('cos⁻¹','Invers cosinus',()=>insertFunc('acos')),V('tan','Vanlig tangens',()=>insertFunc('tan'))]},
+ sinh:{g:'sinh',n:'Hyperbolsk sinus',d:'Hyperbolsk sinus. Beskriver blant annet formen på en hengende kjede. Regner alltid i radianer.',ex:'sinh(1) ≈ 1,1752',
+   variants:()=>[V('cosh','Hyperbolsk cosinus',()=>insertFunc('cosh')),V('tanh','Hyperbolsk tangens',()=>insertFunc('tanh')),V('sinh⁻¹','Motsatt regning',()=>insertFunc('asinh'))]},
+ cosh:{g:'cosh',n:'Hyperbolsk cosinus',d:'Hyperbolsk cosinus. Alltid 1 eller større. Regner alltid i radianer.',ex:'cosh(0) = 1',
+   variants:()=>[V('sinh','Hyperbolsk sinus',()=>insertFunc('sinh')),V('tanh','Hyperbolsk tangens',()=>insertFunc('tanh')),V('cosh⁻¹','Motsatt regning',()=>insertFunc('acosh'))]},
+ tanh:{g:'tanh',n:'Hyperbolsk tangens',d:'Hyperbolsk tangens. Nærmer seg −1 og 1 uten å nå dem. Regner alltid i radianer.',ex:'tanh(1) ≈ 0,7616',
+   variants:()=>[V('sinh','Hyperbolsk sinus',()=>insertFunc('sinh')),V('cosh','Hyperbolsk cosinus',()=>insertFunc('cosh')),V('tanh⁻¹','Motsatt regning',()=>insertFunc('atanh'))]},
+
+ trig:{g:'DEG',mark:1,n:'Vinkelmåte',
+   d:'Bestemmer om vinkler regnes i grader eller radianer. En hel sirkel er 360 grader eller 2π radianer.',
+   ex:'sin(30) = 0,5 i grader\nsin(π÷6) = 0,5 i radianer',
+   vl:'Velg måte',
+   variants:()=>[
+     V('Grader','360° i en sirkel',()=>{ if(state.trig!=='deg')toggleTrig(); }),
+     V('Radianer','2π i en sirkel',()=>{ if(state.trig!=='rad')toggleTrig(); })]},
+
+ /* --- constants --- */
+ 'π':{g:'π',mark:1,n:'Pi',
+   d:'Forholdet mellom omkretsen og diameteren i en sirkel, ca. 3,14159.',
+   ex:'2×π×r gir omkretsen\nπ×r² gir arealet',
+   vl:'Sett inn',
+   variants:()=>[
+     V('2π','Hel omdreining i radianer',()=>insertRaw('2π')),
+     V('π÷2','Rett vinkel i radianer',()=>insertRaw('π÷2')),
+     V('e','Eulers tall',()=>insertRaw('e')),
+     V('φ','Det gylne snitt, 1,618',()=>insertRaw('φ'))]},
+ e:{g:'e',n:'Eulers tall',
+   d:'Grunntallet for naturlige logaritmer, ca. 2,71828. Dukker opp overalt der noe vokser jevnt.',
+   ex:'ln(e) = 1',
+   variants:()=>[V('π','Pi',()=>insertRaw('π')),V('φ','Det gylne snitt',()=>insertRaw('φ')),V('eˣ','Opphøy e i noe',()=>insertFunc('exp'))]},
+
+ /* --- operators --- */
+ '×':{g:'×',mark:1,n:'Multiplikasjon',
+   d:'Ganger tallene. Du kan også bare sette parenteser inntil hverandre: 3(4) blir 12.',
+   ex:'7×8 = 56',
+   vl:'Gang med et fast tall',
+   variants:()=>[
+     V('×2','Doble',()=>insertOpVal('×',2)),
+     V('×10','Ett siffer opp',()=>insertOpVal('×',10)),
+     V('×100','To siffer opp',()=>insertOpVal('×',100)),
+     V('×1000','Tre siffer opp',()=>insertOpVal('×',1000))],
+   custom:{label:'Gang med',ph:'1,25',run:n=>insertOpVal('×',n)}},
+ '÷':{g:'÷',mark:1,n:'Divisjon',
+   d:'Deler det første tallet på det andre. Deling på null går ikke.',
+   ex:'10÷4 = 2,5',
+   vl:'Del på et fast tall',
+   variants:()=>[
+     V('÷2','Halvere',()=>insertOpVal('÷',2)),
+     V('÷10','Ett siffer ned',()=>insertOpVal('÷',10)),
+     V('÷100','To siffer ned',()=>insertOpVal('÷',100)),
+     V('mod','Resten etter deling',()=>insertOpVal('mod',''))],
+   custom:{label:'Del på',ph:'1,25',run:n=>insertOpVal('÷',n)}},
+ '+':{g:'+',mark:1,n:'Addisjon',d:'Legger sammen. Regnes etter gange og dele, med mindre du bruker parenteser.',ex:'2+3×4 = 14\n(2+3)×4 = 20',
+   variants:()=>[V('+10 %','Legg på ti prosent',()=>insertOpVal('×',1.1)),V('+25 % MVA','Legg på merverdiavgift',()=>insertOpVal('×',1.25))],
+   custom:{label:'Legg på prosent',ph:'15',run:n=>insertOpVal('×',1+parseNum(n)/100)}},
+ '-':{g:'−',mark:1,n:'Subtraksjon',d:'Trekker fra. Foran et tall betyr minus at tallet er negativt.',ex:'100−30−20 = 50',
+   variants:()=>[V('−10 %','Trekk fra ti prosent',()=>insertOpVal('×',0.9)),V('uten MVA','Trekk ut 25 % merverdiavgift',()=>insertOpVal('÷',1.25))],
+   custom:{label:'Trekk fra prosent',ph:'15',run:n=>insertOpVal('×',1-parseNum(n)/100)}},
+ mod:{g:'mod',n:'Modulo',d:'Gir resten etter en heltallsdivisjon. Brukes til å sjekke delelighet og til å regne rundt i sykluser.',ex:'17 mod 5 = 2\n14 mod 7 = 0, altså delelig'},
+
+ /* --- percent --- */
+ '%':{g:'%',mark:1,n:'Prosent',
+   d:'Deler tallet på 100, slik at 15% blir 0,15. For MVA, rabatt og påslag er Prosent-fanen som regel raskere.',
+   ex:'200×15% = 30\n50% = 0,5',
+   vl:'Snarveier',
+   variants:()=>[
+     V('×1,25','Legg på 25 % MVA',()=>insertOpVal('×',1.25)),
+     V('÷1,25','Trekk ut 25 % MVA',()=>insertOpVal('÷',1.25)),
+     V('×1,15','Legg på 15 % MVA',()=>insertOpVal('×',1.15)),
+     V('Åpne Prosent','MVA, rabatt, påslag og tips',()=>switchMode('percent'))]},
+
+ /* --- single-value functions --- */
+ abs:{g:'|x|',mark:1,n:'Absoluttverdi',
+   d:'Avstanden fra null, alltid positiv.',
+   ex:'|−7| = 7',
+   vl:'Andre funksjoner som ikke har egen tast',
+   variants:()=>[
+     V('round','Rund av til nærmeste heltall',()=>insertFunc('round')),
+     V('floor','Rund alltid nedover',()=>insertFunc('floor')),
+     V('ceil','Rund alltid oppover',()=>insertFunc('ceil')),
+     V('sign','Gir −1, 0 eller 1',()=>insertFunc('sign'))]},
+ recip:{g:'1/x',n:'Omvendt verdi',d:'Én delt på tallet. Å gange med den omvendte verdien er det samme som å dele.',ex:'1/4 = 0,25',
+   variants:()=>[V('x²','I andre potens',()=>insertRaw('²')),V('√','Kvadratrot',()=>insertFunc('sqrt'))]},
+ '!':{g:'x!',n:'Fakultet',
+   d:'Ganger sammen alle heltall opp til tallet. Sier hvor mange rekkefølger et antall ting kan stå i. Krever et positivt heltall, og stopper på 170.',
+   ex:'5! = 1×2×3×4×5 = 120'},
+
+ /* --- entry and editing --- */
+ clear:{g:'AC',mark:1,n:'Nullstill',
+   d:'Tømmer uttrykket og resultatet. Historikken, minnet og variablene står igjen.',
+   vl:'Tøm mer',
+   variants:()=>[
+     V('Tøm minnet','Setter M tilbake til null',()=>memClear()),
+     V('Tøm variablene','Nullstiller A, B, C og D',()=>{ state.vars={A:0,B:0,C:0,D:0}; jSet(LS.vars,state.vars); paintVarKeys(); toastMsg('Variablene er tømt'); }),
+     V('Tøm historikken','Sletter alle utregninger',()=>{ state.history=[]; jSet(LS.hist,[]); updateBadge(); renderHistory(''); toastMsg('Historikken er tømt'); })]},
+ back:{g:'⌫',n:'Slett bakover',d:'Fjerner ett tegn. Står det en hel funksjon som sin( bakerst, fjernes hele.',ex:'sin(45 blir sin( blir tomt'},
+ paren:{g:'( )',n:'Parenteser',
+   d:'Setter inn den parentesen som mangler. Alt inni regnes ut først.',
+   ex:'(2+3)×4 = 20, mot 2+3×4 = 14',
+   variants:()=>[V('(','Bare venstre',()=>insertRaw('(')),V(')','Bare høyre',()=>insertRaw(')'))]},
+ sign:{g:'±',n:'Bytt fortegn',d:'Gjør det siste tallet negativt, eller positivt igjen.',ex:'7 blir −7'},
+ decimal:{g:',',n:'Desimalkomma',d:'Skiller heltall fra desimaler. Punktum fra et fysisk tastatur virker også.',ex:'12,5'},
+ equals:{g:'=',n:'Regn ut',
+   d:'Regner ut uttrykket og lagrer svaret i historikken. Svaret blir liggende som ANS til neste utregning.',
+   ex:'Trykk på svaret i displayet for å kopiere det',
+   variants:()=>[V('Kopier svaret','Legger det på utklippstavlen',()=>{ if(!state.error)copyText(state.result).then(o=>toastMsg(o?'Kopiert':'Klarte ikke å kopiere')); })]},
+
+ /* --- memory and variables --- */
+ ans:{g:'ANS',mark:1,n:'Forrige svar',
+   d:'Setter inn resultatet fra forrige utregning, så du kan regne videre på det.',
+   ex:'Etter 2+3 = 5 gir ANS deg 5',
+   vl:'Hent et tidligere svar',
+   variants:()=>{
+     const out=state.history.slice(0,6).map(h=>V(h.r,h.e,()=>insertRaw(formatNumber(parseNum(h.r),null,{raw:true}))));
+     return out.length?out:[V('Historikken er tom','Regn ut noe først',()=>{})];
+   }},
+ mAdd:{g:'M+',n:'Legg til i minnet',d:'Legger verdien i displayet til det du har lagret i minnet. Minnet vises som en pille i toppbaren.',ex:'Minne 10, verdi 5, M+ gir 15',
+   variants:()=>[V('Sett minnet','Erstatter i stedet for å legge til',()=>{ const v=currentValue(); if(v===null){toastMsg('Ingen verdi');return;} state.memory=v; updateDisplay(); toastMsg('Minne: '+formatNumber(v)); }),
+     V('M−','Trekk fra i stedet',()=>memSub()),V('MR','Hent verdien',()=>memRecall()),V('MC','Tøm minnet',()=>memClear())]},
+ mSub:{g:'M−',n:'Trekk fra minnet',d:'Trekker verdien i displayet fra det du har lagret i minnet.',ex:'Minne 10, verdi 5, M− gir 5',
+   variants:()=>[V('M+','Legg til i stedet',()=>memAdd()),V('MR','Hent verdien',()=>memRecall()),V('MC','Tøm minnet',()=>memClear())]},
+ mRecall:{g:'MR',n:'Hent fra minnet',d:'Setter den lagrede verdien inn i uttrykket. Du kan også trykke på M-pillen i toppbaren.',
+   variants:()=>[V('M+','Legg til i minnet',()=>memAdd()),V('M−','Trekk fra minnet',()=>memSub()),V('MC','Tøm minnet',()=>memClear())]},
+ mClear:{g:'MC',n:'Tøm minnet',d:'Setter minnet tilbake til null. Pillen i toppbaren forsvinner.',
+   variants:()=>[V('MR','Hent verdien først',()=>memRecall())]},
+ sto:{g:'STO',mark:1,n:'Lagre i variabel',
+   d:'Trykk STO og deretter A, B, C eller D for å lagre verdien i displayet der. En strek under bokstaven viser at den er i bruk.',
+   ex:'230 = så STO så A lagrer 230 i A',
+   vl:'Hva som ligger lagret nå',
+   variants:()=>['A','B','C','D'].map(k=>V(k+' = '+formatNumber(state.vars[k]||0,4),'Trykk for å sette inn',()=>insertRaw(k)))},
+ var:{g:'A',mark:1,n:'Variabler',
+   d:'A til D holder på hver sin verdi. Trykk for å sette bokstaven inn i uttrykket, eller STO først for å lagre i den.',
+   ex:'Med A = 230: A×3 gir 690',
+   vl:'Alle variablene',
+   variants:()=>['A','B','C','D'].map(k=>V(k+' = '+formatNumber(state.vars[k]||0,4),'Trykk for å sette inn',()=>insertRaw(k)))
+     .concat([V('Nullstill alle','Setter A til D til null',()=>{ state.vars={A:0,B:0,C:0,D:0}; jSet(LS.vars,state.vars); paintVarKeys(); toastMsg('Variablene er tømt'); })])},
+
+ /* --- RPN --- */
+ rpnEnter:{g:'ENTER',n:'Dytt på stakken',
+   d:'Legger tallet du har skrevet øverst på stakken. I RPN skriver du tallene først og operatoren til slutt, så du slipper parenteser.',
+   ex:'5 ENTER 3 + gir 8\n(2+3)×4 blir: 2 ENTER 3 + 4 ×'},
+ rpnSwap:{g:'x↔y',n:'Bytt x og y',d:'Bytter om de to øverste tallene. Nyttig når du har lagt dem inn i feil rekkefølge før en minus eller deling.',ex:'3 ENTER 7 x↔y − gir 4'},
+ rpnDrop:{g:'DROP',n:'Fjern øverste',d:'Kaster det øverste tallet på stakken. Har du et halvskrevet tall, tømmes det i stedet.'},
+ rpnRoll:{g:'ROLL',n:'Rull stakken',d:'Flytter det øverste tallet nederst, så du kommer til de andre verdiene.'},
+ rpnLast:{g:'LAST x',n:'Forrige verdi',d:'Henter tilbake tallet den forrige operasjonen brukte opp. Redder deg når du tastet feil operator.',ex:'Etter 8 3 ÷ gir LAST x deg 3 tilbake'},
+
+ /* --- tape --- */
+ tapeCommit:{g:'+ LINJE',mark:1,n:'Legg til linje',
+   d:'Regner ut det du har skrevet og legger det som en ny linje på strimmelen. Trykk på en linje for å endre den.',
+   ex:'Skriv 1200 og trykk + LINJE',
+   variants:()=>[V('− LINJE','Legg til som fradrag',()=>tapeCommit(-1))]},
+ tapeCommitMinus:{g:'−LINJE',n:'Legg til som fradrag',d:'Samme som + LINJE, men beløpet trekkes fra summen. Du kan snu fortegnet etterpå med knappen til venstre på linjen.'},
+ tapeUseSum:{g:'SUM',n:'Bruk summen',d:'Setter summen av strimmelen inn i feltet, så du kan regne videre på den.',ex:'SUM ×0,25 gir en fjerdedel av totalen'},
+ tapeClearEntry:{g:'AC',n:'Nullstill',d:'Tømmer feltet du skriver i. Er feltet allerede tomt, tømmes hele strimmelen.'},
+ rpnClear:{g:'AC',mark:1,n:'Tøm stakken',d:'Kaster alle tallene på stakken og det du holder på å skrive. Historikken står igjen.',
+   variants:()=>[V('DROP','Fjern bare det øverste',()=>rpnDrop())]},
+ '(':{g:'(',n:'Venstre parentes',d:'Åpner en parentes. Alt som står inni regnes ut før resten.',ex:'(2+3)×4 = 20'},
+ ')':{g:')',n:'Høyre parentes',d:'Lukker en parentes. Glemmer du den, lukkes den for deg når du regner ut.',ex:'sin(45) trenger begge'},
+ 'π_rpn':{g:'π',n:'Pi',d:'Dytter pi, ca. 3,14159, opp på stakken.',
+   variants:()=>[V('e','Eulers tall i stedet',()=>{ rpnConst('e'); })]}
+};
+/* Several keys do the same job in another mode, so they share one explanation. */
+const HELP_ALIAS={
+ rpnBack:'back', rpnSign:'sign', rpnDot:'decimal', 'rpnConst:pi':'π_rpn',
+ 'rpnFunc:sq':'²', 'rpnFunc:inv':'recip', 'rpnFunc:sqrt':'sqrt',
+ 'rpnOp:÷':'÷', 'rpnOp:×':'×', 'rpnOp:+':'+', 'rpnOp:-':'-', 'rpnOp:^':'^',
+ tapeParen:'paren', tapeSign:'sign', tapeDot:'decimal', tapeBack:'back', tapeAns:'ans'
+};
+/* The plain digits are left alone so a long press never interrupts fast entry. */
+
+function keyHelpFor(a,v){
+  const pair=a+':'+v;
+  if(HELP_ALIAS[pair])return HELP_ALIAS[pair];
+  if(HELP_ALIAS[a])return HELP_ALIAS[a];
+  if(v!==undefined&&KEY_HELP[v])return v;
+  if(KEY_HELP[a])return a;
+  return null;
+}
+/* The corner wedge is only worth showing where the extras are a real shortcut;
+   marking every key that has a cross-reference would just be noise. */
+function keyIsMarked(k){ const h=KEY_HELP[k]; return !!(h&&h.mark); }
+function keyHasExtras(k){
+  const h=KEY_HELP[k];
+  if(!h)return false;
+  if(h.custom)return true;
+  if(!h.variants)return false;
+  try{ return h.variants().length>0; }catch(e){ return false; }
+}
+let currentHelp=null;
+function openKeyHelp(k){
+  const h=KEY_HELP[k];
+  if(!h)return;
+  currentHelp=h;
+  el.keyGlyph.innerHTML=h.g||escapeHtml(k);
+  el.keyName.textContent=h.n||'';
+  el.keyDesc.textContent=h.d||'';
+  if(h.ex){ el.keyExample.style.display=''; el.keyExample.textContent=h.ex; }
+  else el.keyExample.style.display='none';
+
+  const list=h.variants?h.variants():[];
+  if(list.length){
+    el.keyVarWrap.style.display='';
+    el.keyVarLabel.textContent=h.vl||'Flere valg';
+    el.keyVariants.innerHTML='';
+    list.forEach(v=>{
+      const b=document.createElement('button');
+      b.className='var-btn'+(list.length%2===1&&v===list[list.length-1]?' wide':'');
+      b.type='button';
+      b.innerHTML='<span class="vl">'+escapeHtml(v.l)+'</span>'+(v.d?'<span class="vd">'+escapeHtml(v.d)+'</span>':'');
+      b.addEventListener('click',()=>{ closeKeyHelp(); buzz(); try{ v.run(); }catch(e){} });
+      el.keyVariants.appendChild(b);
+    });
+  }else el.keyVarWrap.style.display='none';
+
+  if(h.custom){
+    el.keyCustomWrap.style.display='';
+    el.keyCustomLabel.textContent=h.custom.label;
+    el.keyCustomInput.placeholder=h.custom.ph||'';
+    el.keyCustomInput.value='';
+  }else el.keyCustomWrap.style.display='none';
+
+  el.sheetOverlay.classList.add('open');
+  el.keySheet.classList.add('open');
+}
+function applyKeyCustom(){
+  if(!currentHelp||!currentHelp.custom)return;
+  const raw=el.keyCustomInput.value.trim();
+  const n=parseNum(raw);
+  if(!Number.isFinite(n)){ toastMsg('Skriv inn et tall'); return; }
+  const run=currentHelp.custom.run;
+  closeKeyHelp(); buzz();
+  try{ run(formatNumber(n,null,{raw:true})); }catch(e){}
+}
+function closeKeyHelp(){
+  el.sheetOverlay.classList.remove('open');
+  el.keySheet.classList.remove('open');
+  currentHelp=null;
+}
+
 /* ============ keypad rendering ============ */
 function renderButtons(){
   const layout=LAYOUTS[state.mode];
@@ -2438,7 +2769,11 @@ function renderButtons(){
     b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
     b.textContent=k.a==='trig'?state.trig.toUpperCase():k.t;
     if(k.a==='trig')b.dataset.trigBtn='1';
-    b.setAttribute('aria-label',k.t);
+    const hk=keyHelpFor(k.a,k.v);
+    if(hk){
+      b.setAttribute('aria-label',k.t+' — hold inne for forklaring');
+      if(keyIsMarked(hk))b.classList.add('has-more');
+    }else b.setAttribute('aria-label',k.t);
     grid.appendChild(b);
   });
   el.buttonsContainer.innerHTML='';
@@ -2471,17 +2806,13 @@ const ACTIONS={
   tapeAns:()=>tapeAns(), tapeUseSum:()=>tapeUseSum()
 };
 function runAction(a,v){ const fn=ACTIONS[a]; if(fn)fn(v); }
-function infoKeyFor(a,v){
-  if(v&&KEY_INFO[v])return v;
-  if(KEY_INFO[a])return a;
-  return null;
-}
+
 let holdTimer=null,heldFired=false;
 el.buttonsContainer.addEventListener('pointerdown',e=>{
   const btn=e.target.closest('.btn'); if(!btn)return;
   heldFired=false; ripple(e,btn); buzz();
-  const k=infoKeyFor(btn.dataset.a,btn.dataset.v);
-  if(k)holdTimer=setTimeout(()=>{ heldFired=true; buzz(22); showInfo(k); },520);
+  const k=keyHelpFor(btn.dataset.a,btn.dataset.v);
+  if(k)holdTimer=setTimeout(()=>{ heldFired=true; buzz(22); openKeyHelp(k); },450);
 });
 ['pointerup','pointerleave','pointercancel'].forEach(ev=>el.buttonsContainer.addEventListener(ev,()=>clearTimeout(holdTimer)));
 el.buttonsContainer.addEventListener('click',e=>{
@@ -2490,14 +2821,7 @@ el.buttonsContainer.addEventListener('click',e=>{
   if(heldFired){ heldFired=false; return; }
   runAction(btn.dataset.a,btn.dataset.v);
 });
-function showInfo(k){
-  const i=KEY_INFO[k]; if(!i)return;
-  el.infoTitle.textContent=i[0]; el.infoDesc.textContent=i[1];
-  if(i[2]){ el.infoExample.style.display=''; el.infoExample.textContent=i[2]; }
-  else el.infoExample.style.display='none';
-  el.modalOverlay.classList.add('open'); el.infoModal.classList.add('open');
-}
-function closeInfo(){ el.modalOverlay.classList.remove('open'); el.infoModal.classList.remove('open'); }
+
 function toggleTrig(){
   state.trig=state.trig==='deg'?'rad':'deg';
   lsSet(LS.trig,state.trig);
@@ -2572,11 +2896,11 @@ function onKey(e){
     if(e.key==='Escape')e.target.blur();
     return;
   }
-  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')){
+  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')){
     if(e.key==='Escape'){ closeSettings(); closeUnitSheet(); }
     return;
   }
-  if(el.infoModal.classList.contains('open')){ if(e.key==='Escape')closeInfo(); return; }
+  if(el.keySheet.classList.contains('open')){ if(e.key==='Escape')closeKeyHelp(); return; }
   if(state.historyOpen){ if(e.key==='Escape')closeHistory(); return; }
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const k=e.key;
@@ -2625,7 +2949,7 @@ let tx=0,ty=0,tracking=false;
 function swipeBlocked(t){ return t&&t.closest&&t.closest('.chips,input,textarea,.sheet-body,.history-list,.all-body,.calc-buttons'); }
 document.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
-  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||state.historyOpen||el.infoModal.classList.contains('open'))return;
+  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||state.historyOpen||el.keySheet.classList.contains('open'))return;
   if(swipeBlocked(e.target))return;
   tx=e.touches[0].clientX; ty=e.touches[0].clientY; tracking=true;
 },{passive:true});
@@ -2913,6 +3237,87 @@ function runTests(){
   ok('nøytral gir ingen farge',resultClass('42',false,true)==='result');
   state.answerColor=saveAC;
 
+
+  /* key help coverage and variants */
+  const NO_HELP=['num','rpnNum','tapeNum','rpnDot','rpnSign','rpnConst','rpnFunc','rpnOp','op','char','func','tapeOp','tapeChar','tapeDot','tapeSign','tapeBack','tapeAns','tapeParen','rpnClear','rpnBack','ans'];
+  Object.keys(LAYOUTS).forEach(mode=>{
+    LAYOUTS[mode].forEach(k=>{
+      if(k.a==='num'||k.a==='rpnNum'||k.a==='tapeNum')return;
+      const hk=keyHelpFor(k.a,k.v);
+      ok('hjelp finnes: '+mode+'/'+k.t,!!hk,k.a+':'+k.v);
+      if(hk){
+        const h=KEY_HELP[hk];
+        ok('hjelp har navn: '+k.t,!!h.n&&h.n.length>=2);
+        ok('hjelp har forklaring: '+k.t,!!h.d&&h.d.length>25);
+      }
+    });
+  });
+  ok('sifre har ingen hjelp',keyHelpFor('num','7')===null);
+  /* every variant list must build without throwing and be well formed */
+  Object.keys(KEY_HELP).forEach(k=>{
+    const h=KEY_HELP[k];
+    if(!h.variants)return;
+    let list=null,threw=false;
+    try{ list=h.variants(); }catch(e){ threw=true; }
+    ok('varianter bygges: '+k,!threw&&Array.isArray(list));
+    if(list)list.forEach((v,i)=>ok('variant '+k+'#'+i+' er komplett',!!v.l&&typeof v.run==='function'));
+  });
+
+  /* variants actually do what they claim */
+  const saveExpr=state.expression, saveJust=state.justEvaluated, saveModeK=state.mode;
+  state.mode='standard';
+  function runVariant(key,label){
+    state.expression=''; state.justEvaluated=false;
+    KEY_HELP[key].variants().find(v=>v.l===label).run();
+    return state.expression;
+  }
+  ok('x² gir x³',runVariant('²','x³')==='³',runVariant('²','x³'));
+  ok('x² gir invers',runVariant('²','x⁻¹')==='^(-1)');
+  ok('√ gir kubikkrot',runVariant('sqrt','∛')==='cbrt(');
+  ok('log gir ln',runVariant('log','ln')==='ln(');
+  ok('|x| gir floor',runVariant('abs','floor')==='floor(');
+  ok('|x| gir ceil',runVariant('abs','ceil')==='ceil(');
+  ok('π gir 2π',runVariant('π','2π')==='2π');
+  state.expression='500'; state.justEvaluated=false;
+  KEY_HELP['×'].variants().find(v=>v.l==='×10').run();
+  ok('× gir ×10',state.expression==='500×10',state.expression);
+  near('og regnes riktig',evaluate(state.expression),5000);
+  state.expression='800'; state.justEvaluated=false;
+  KEY_HELP['%'].variants().find(v=>v.l==='×1,25').run();
+  near('MVA-snarvei legger på 25 %',evaluate(state.expression),1000,1e-9);
+  state.expression='1000'; state.justEvaluated=false;
+  KEY_HELP['%'].variants().find(v=>v.l==='÷1,25').run();
+  near('MVA-snarvei trekker ut 25 %',evaluate(state.expression),800,1e-9);
+  state.expression='200'; state.justEvaluated=false;
+  KEY_HELP['+'].variants().find(v=>v.l==='+25 % MVA').run();
+  near('plusstasten legger på MVA',evaluate(state.expression),250,1e-9);
+  /* custom values */
+  state.expression='3'; state.justEvaluated=false;
+  KEY_HELP['²'].custom.run('4');
+  near('egen eksponent',evaluate(state.expression),81);
+  state.expression='32'; state.justEvaluated=false;
+  KEY_HELP.sqrt.custom.run('5');
+  near('n-te rot',evaluate(state.expression),2,1e-9);
+  state.expression='400'; state.justEvaluated=false;
+  KEY_HELP['×'].custom.run('1.25');
+  near('egen multiplikator',evaluate(state.expression),500,1e-9);
+  state.expression='200'; state.justEvaluated=false;
+  KEY_HELP['-'].custom.run('15');
+  near('trekk fra 15 prosent',evaluate(state.expression),170,1e-9);
+  /* operator variants must replace a trailing operator, not stack up */
+  state.expression='50+'; state.justEvaluated=false;
+  KEY_HELP['×'].variants().find(v=>v.l==='×2').run();
+  ok('erstatter etterfølgende operator',state.expression==='50×2',state.expression);
+  state.expression=saveExpr; state.justEvaluated=saveJust; state.mode=saveModeK;
+
+  /* keys that advertise extras must really have them */
+  ok('× er merket med ekstra valg',keyIsMarked('×'));
+  Object.keys(KEY_HELP).forEach(k=>{ if(KEY_HELP[k].mark)ok('merket tast har ekte ekstravalg: '+k,keyHasExtras(k)); });
+  ok('× har ekstra valg',keyHasExtras('×'));
+  ok('x² er merket med ekstra valg',keyIsMarked('²'));
+  ok('mod er ikke merket',!keyIsMarked('mod'));
+  ok('fakultet er ikke merket',!keyIsMarked('!'));
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -2926,9 +3331,11 @@ el.trigPill.addEventListener('click',()=>{ toggleTrig(); buzz(); });
 el.memPill.addEventListener('click',()=>{ memRecall(); buzz(); });
 el.settingsBtn.addEventListener('click',()=>{ openSettings(); buzz(); });
 el.closeSettingsBtn.addEventListener('click',closeSettings);
-el.modalOverlay.addEventListener('click',()=>{ closeSettings(); closeInfo(); });
-el.closeInfoBtn.addEventListener('click',closeInfo);
-el.sheetOverlay.addEventListener('click',closeUnitSheet);
+el.modalOverlay.addEventListener('click',closeSettings);
+el.keyCloseBtn.addEventListener('click',closeKeyHelp);
+el.keyCustomBtn.addEventListener('click',applyKeyCustom);
+el.keyCustomInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();applyKeyCustom();} });
+el.sheetOverlay.addEventListener('click',()=>{ closeUnitSheet(); closeKeyHelp(); });
 el.sheetCloseBtn.addEventListener('click',closeUnitSheet);
 el.histSearch.addEventListener('input',()=>renderHistory(el.histSearch.value));
 el.clearHistBtn.addEventListener('click',()=>{
@@ -3118,7 +3525,15 @@ function init(){
   }catch(e){}
   switchMode(start,true);
   renderHistory('');
-  if('serviceWorker' in navigator)window.addEventListener('load',registerSW);
+  /* Long press is invisible until you know it is there, so say it once. */
+  if(lsGet(LS.seenHint,'0')!=='1'){
+    lsSet(LS.seenHint,'1');
+    setTimeout(()=>toastMsg('Tips: hold inne en tast for forklaring'),1400);
+  }
+  /* Deferred so it runs after the whole script has evaluated. */
+  const boot=()=>{ if('serviceWorker' in navigator)registerSW(); startBuildWatch(); };
+  if(document.readyState==='complete')setTimeout(boot,0);
+  else window.addEventListener('load',boot);
 }
 init();
 /* A tab left open in the background can sit on an old build without noticing,
@@ -3126,13 +3541,13 @@ init();
 let waitingWorker=null;
 function registerSW(){
   navigator.serviceWorker.register('sw.js').then(reg=>{
-    if(reg.waiting){ waitingWorker=reg.waiting; el.updateBar.classList.add('show'); }
+    if(reg.waiting){ waitingWorker=reg.waiting; showUpdate(); }
     reg.addEventListener('updatefound',()=>{
       const nw=reg.installing;
       if(!nw)return;
       nw.addEventListener('statechange',()=>{
         if(nw.state==='installed'&&navigator.serviceWorker.controller){
-          waitingWorker=nw; el.updateBar.classList.add('show');
+          waitingWorker=nw; showUpdate();
         }
       });
     });
@@ -3143,14 +3558,46 @@ function registerSW(){
     if(reloaded)return; reloaded=true; location.reload();
   });
 }
+function showUpdate(){ el.updateBar.classList.add('show'); }
+
+/* The worker only reports an update when sw.js itself changed. Editing index.html
+   alone leaves it silent, so watch the file's ETag directly — no version number
+   to remember to bump on deploy. */
+let buildTag=null,lastCheck=0;
+function checkBuild(){
+  if(location.protocol==='file:')return Promise.resolve();
+  lastCheck=Date.now();
+  return fetch('index.html?b='+Date.now(),{method:'HEAD',cache:'no-store'})
+    .then(r=>{
+      if(!r.ok)return;
+      const tag=r.headers.get('etag')||r.headers.get('last-modified');
+      if(!tag)return;
+      if(buildTag===null){ buildTag=tag; return; }
+      if(tag!==buildTag)showUpdate();
+    }).catch(()=>{});
+}
+function startBuildWatch(){
+  checkBuild();
+  setInterval(checkBuild,30*60*1000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&Date.now()-lastCheck>5*60*1000)checkBuild();
+  });
+}
+
 el.updateBtn.addEventListener('click',()=>{
   el.updateBar.classList.remove('show');
-  if(waitingWorker)waitingWorker.postMessage({type:'SKIP_WAITING'});
-  else location.reload();
+  if(waitingWorker){ waitingWorker.postMessage({type:'SKIP_WAITING'}); return; }
+  /* No new worker, just new files: drop the cached shell so the reload
+     is forced to go to the network. */
+  const purge=('caches' in window)
+    ? caches.keys().then(ks=>Promise.all(ks.map(k=>caches.open(k)
+        .then(c=>Promise.all(['./','./index.html'].map(u=>c.delete(u)))))))
+    : Promise.resolve();
+  purge.catch(()=>{}).then(()=>location.reload());
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
