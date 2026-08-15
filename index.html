@@ -86,7 +86,6 @@
   --accent-text:#fff;
   --shadow:0 8px 28px rgba(60,55,45,.12); --shadow-sm:0 2px 10px rgba(60,55,45,.10);
 }
-body[data-mode="rpn"]{--display-height:172px}
 body[data-mode="standard"]{--accent:var(--acc-standard)}
 body[data-mode="professional"]{--accent:var(--acc-professional)}
 body[data-mode="rpn"]{--accent:var(--acc-rpn)}
@@ -123,7 +122,7 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 
 /* ---------- Display ---------- */
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0}
-.display-area{padding:26px 16px 10px;min-height:var(--display-height);max-height:var(--display-height);display:flex;flex-direction:column;justify-content:flex-end;position:relative;flex-shrink:0;background:var(--bg);cursor:pointer;user-select:none}
+.display-area{padding:26px 16px 12px;flex:1 1 auto;min-height:118px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;background:var(--bg);cursor:pointer;user-select:none}
 .display-chips{position:absolute;top:8px;left:14px;right:14px;display:flex;align-items:center;gap:6px}
 .mode-chip{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:20px;border:1px solid var(--accent-line)}
 .status-chip{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text-dim);background:var(--surface-light);padding:3px 8px;border-radius:20px;border:1px solid var(--border)}
@@ -149,8 +148,8 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .rpn-stack .lvl b{color:var(--text-dim);font-weight:700;font-size:10px;align-self:center;letter-spacing:.5px}
 
 /* ---------- Keypad ---------- */
-.buttons-container{flex:1;display:flex;flex-direction:column;background:var(--surface);overflow:hidden;padding:6px;border-top:1px solid var(--border);min-height:0}
-.calc-buttons{display:grid;gap:6px;flex:1;min-height:0;height:100%;grid-auto-rows:minmax(var(--btn-min-height),1fr);overflow-y:auto;scrollbar-width:none}
+.buttons-container{flex:0 0 auto;display:flex;flex-direction:column;background:var(--surface);overflow:hidden;padding:8px 18px 10px;border-top:1px solid var(--border);transition:height .3s cubic-bezier(.4,0,.2,1)}
+.calc-buttons{display:grid;gap:6px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;grid-auto-rows:minmax(var(--btn-min-height),1fr);justify-content:stretch}
 .calc-buttons::-webkit-scrollbar{display:none}
 .calc-buttons.standard-mode{grid-template-columns:repeat(4,1fr)}
 .calc-buttons.professional-mode{grid-template-columns:repeat(5,1fr);--btn-min-height:44px;--btn-font-size:17px;gap:5px}
@@ -332,6 +331,17 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .test-out{font-family:var(--font-mono);font-size:11px;line-height:1.55;white-space:pre-wrap;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;padding:11px;max-height:300px;overflow-y:auto;color:var(--text-secondary)}
 .test-out .p{color:var(--success)}.test-out .f{color:var(--danger);font-weight:700}
 
+/* Fold-away scientific rows */
+.zone-toggle{display:none;align-items:center;justify-content:center;gap:7px;width:100%;height:28px;flex-shrink:0;margin-bottom:6px;border:none;background:transparent;color:var(--text-dim);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:12px;transition:color var(--transition-fast),background var(--transition-fast);font-family:var(--font-sans)}
+body[data-mode="professional"] .zone-toggle{display:flex}
+.zone-toggle:active{background:var(--surface-light);color:var(--text-secondary)}
+.zone-toggle svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--transition)}
+body.fn-collapsed .zone-toggle svg{transform:rotate(-180deg)}
+body.fn-collapsed .zone-toggle{color:var(--accent)}
+body.fn-collapsed .btn.fn-key{display:none}
+body.fn-collapsed .btn.zone-start{margin-top:0}
+body.fn-collapsed .btn.zone-start::after{display:none}
+
 .btn.zone-start{margin-top:7px;position:relative}
 .btn.zone-start::after{content:'';position:absolute;left:-3px;right:-3px;top:-5px;height:1px;background:var(--border)}
 .btn.zone-start.clear::after,.btn.zone-start.equals::after{background:var(--border)}
@@ -442,7 +452,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
   </div>
 </header>
 
-<main class="main-content">
+<main class="main-content" id="mainContent">
   <div class="display-area" id="displayArea" role="button" tabindex="0" aria-label="Trykk for å kopiere resultatet">
     <div class="display-chips">
       <span class="spacer"></span>
@@ -453,7 +463,11 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     <div class="result" id="resultDisplay" aria-live="polite"><span>0</span></div>
   </div>
 
-  <div class="buttons-container" id="buttonsContainer"></div>
+  <div class="buttons-container" id="buttonsContainer">
+    <button class="zone-toggle" id="zoneToggle" aria-expanded="true">
+      <svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg><span id="zoneToggleLabel">Skjul funksjoner</span>
+    </button>
+  </div>
 
 
   <!-- TAPE -->
@@ -684,7 +698,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.3.0';
+const VERSION='5.4.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -695,7 +709,7 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',fnCollapsed:'pku_fncollapsed',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
 const MODES=['standard','professional','rpn','tape','percent','converter'];
 const MODE_LABEL={standard:'Standard',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
@@ -709,7 +723,7 @@ function jSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
 
 const state={
   mode:'standard', theme:'dark', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
-  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red',
+  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red', fnCollapsed:false,
   expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
   history:[], historyOpen:false, stack:[], rpnEntry:'',
   conv:{cat:'length',from:'meter',to:'kilometer',value:''},
@@ -722,7 +736,7 @@ const state={
 
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const el={};
-['displayArea','memPill','memValue','trigPill','liveResult','expressionDisplay','resultDisplay','rpnStack',
+['mainContent','displayArea','memPill','memValue','trigPill','liveResult','zoneToggle','zoneToggleLabel','expressionDisplay','resultDisplay','rpnStack',
  'buttonsContainer','percentPanel','converterPanel','bottomNav','historyBtn','historyBadge','settingsBtn',
  'pctChips','pctFields','pctResult','pctSentence','pctBreakdown','pctUseBtn','pctCopyBtn',
  'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
@@ -1379,10 +1393,10 @@ const LAYOUTS={
      column for column, so the digits, operators and = never move between modes. */
   {t:'sin',a:'func',v:'sin',c:'func'},{t:'cos',a:'func',v:'cos',c:'func'},{t:'tan',a:'func',v:'tan',c:'func'},{t:'x²',a:'char',v:'²',c:'func'},{t:'√',a:'func',v:'sqrt',c:'func'},
   {t:'sin⁻¹',a:'func',v:'asin',c:'func'},{t:'cos⁻¹',a:'func',v:'acos',c:'func'},{t:'tan⁻¹',a:'func',v:'atan',c:'func'},{t:'xʸ',a:'op',v:'^',c:'func'},{t:'∛',a:'func',v:'cbrt',c:'func'},
-  {t:'sinh',a:'func',v:'sinh',c:'func'},{t:'cosh',a:'func',v:'cosh',c:'func'},{t:'tanh',a:'func',v:'tanh',c:'func'},{t:'x!',a:'char',v:'!',c:'func'},{t:'π',a:'char',v:'π',c:'func'},
+  {t:'sinh',a:'func',v:'sinh',c:'func'},{t:'cosh',a:'func',v:'cosh',c:'func'},{t:'tanh',a:'func',v:'tanh',c:'func'},{t:'x!',a:'char',v:'!',c:'func'},{t:'mod',a:'op',v:'mod',c:'func'},
   {t:'ln',a:'func',v:'ln',c:'func'},{t:'log',a:'func',v:'log',c:'func'},{t:'log₂',a:'func',v:'log2',c:'func'},{t:'eˣ',a:'func',v:'exp',c:'func'},{t:'e',a:'char',v:'e',c:'func'},
   {t:'STO',a:'sto',c:'func accentish'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'},
-  {t:'AC',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'mod',a:'op',v:'mod',c:'func'},
+  {t:'AC',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'π',a:'char',v:'π',c:'func'},
   {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},{t:'|x|',a:'func',v:'abs',c:'func'},
   {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},{t:'1/x',a:'recip',c:'func'},
   {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},{t:'MC',a:'mClear',c:'func'},
@@ -2401,7 +2415,7 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor];
+const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.fnCollapsed];
 function exportSettings(){
   const data={app:'Pro Kalkulator Ultra',version:VERSION,exported:new Date().toISOString(),values:{}};
   BACKUP_KEYS.forEach(k=>{ const v=lsGet(k,null); if(v!==null)data.values[k]=v; });
@@ -2778,6 +2792,7 @@ function renderButtons(){
     b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
     b.textContent=k.a==='trig'?state.trig.toUpperCase():k.t;
     if(k.a==='trig')b.dataset.trigBtn='1';
+    if(zoneStart>0&&idx<zoneStart)b.classList.add('fn-key');
     if(zoneStart>0&&idx>=zoneStart&&idx<zoneStart+cols)b.classList.add('zone-start');
     const hk=keyHelpFor(k.a,k.v);
     if(hk){
@@ -2786,11 +2801,73 @@ function renderButtons(){
     }else b.setAttribute('aria-label',k.t);
     grid.appendChild(b);
   });
-  el.buttonsContainer.innerHTML='';
+  const old=el.buttonsContainer.querySelector('.calc-buttons');
+  if(old)old.remove();
   el.buttonsContainer.appendChild(grid);
   paintVarKeys();
+  sizeKeypad(false);
   updateDisplay();
 }
+/* Square keys wherever there is room for them: the grid row height is capped at the
+   column width, and the space that frees up goes to the display instead. */
+/* The keypad sits inside a fixed inset on every mode, so the columns are always the
+   same width. The cap only limits height, which keeps the keys close to square
+   wherever the row count allows it and avoids a different margin per mode. */
+const MAX_KEY=88;
+const KEY_CAP={standard:0,professional:0,rpn:0,tape:58};
+const DISPLAY_FLOOR={standard:132,professional:132,rpn:186,tape:0};
+function sizeKeypad(animate){
+  const c=el.buttonsContainer;
+  const grid=c.querySelector('.calc-buttons');
+  if(!grid||c.style.display==='none')return;
+  const mode=state.mode;
+  const cols=mode==='professional'?5:4;
+  const visible=grid.children.length-(document.body.classList.contains('fn-collapsed')&&mode==='professional'?grid.querySelectorAll('.fn-key').length:0);
+  const rows=Math.ceil(visible/cols);
+  if(!rows)return;
+  const cs=getComputedStyle(grid);
+  const gap=parseFloat(cs.rowGap)||6;
+  const padX=36,padY=18;
+  const innerW=(c.clientWidth||window.innerWidth)-padX;
+  const colW=(innerW-gap*(cols-1))/cols;
+  const toggleH=mode==='professional'?34:0;
+  const seam=(mode==='professional'&&!document.body.classList.contains('fn-collapsed'))||mode==='rpn'?7:0;
+  const avail=(el.mainContent.clientHeight||600)-DISPLAY_FLOOR[mode]-padY-toggleH-seam;
+  const fit=Math.floor((avail-gap*(rows-1))/rows);
+  const cap=Math.min(KEY_CAP[mode]||MAX_KEY,MAX_KEY,colW);
+  const minH=parseFloat(cs.getPropertyValue('--btn-min-height'))||44;
+  const h=Math.max(minH,Math.min(Math.floor(cap),Math.max(minH,fit)));
+  /* When the cap bites, narrow the grid to match so the keys stay square
+     and the leftover width becomes an even margin on both sides. */
+  /* On short screens even the minimum row height can overflow; cap the keypad
+     so the display keeps its floor and let the grid scroll the remainder. */
+  const maxC=(el.mainContent.clientHeight||600)-Math.min(DISPLAY_FLOOR[mode],140);
+  const target=Math.min(rows*h+gap*(rows-1)+padY+toggleH+seam,maxC);
+  const overflows=rows*h+gap*(rows-1)+padY+toggleH+seam>maxC;
+  if(animate){
+    const from=c.getBoundingClientRect().height;
+    c.style.height=from+'px';
+    void c.offsetHeight;
+    grid.style.gridAutoRows=h+'px';
+    c.style.height=target+'px';
+    clearTimeout(sizeKeypad._t);
+    sizeKeypad._t=setTimeout(()=>{ if(!overflows)c.style.height=''; },320);
+  }else{
+    grid.style.gridAutoRows=h+'px';
+    c.style.height=overflows?target+'px':'';
+  }
+}
+function setFnCollapsed(on,animate){
+  state.fnCollapsed=!!on;
+  document.body.classList.toggle('fn-collapsed',state.fnCollapsed);
+  el.zoneToggle.setAttribute('aria-expanded',state.fnCollapsed?'false':'true');
+  el.zoneToggleLabel.textContent=state.fnCollapsed?'Vis funksjoner':'Skjul funksjoner';
+  lsSet(LS.fnCollapsed,state.fnCollapsed?'1':'0');
+  sizeKeypad(animate);
+}
+let resizeTimer;
+window.addEventListener('resize',()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>sizeKeypad(false),120); });
+
 function ripple(e,btn){
   const r=btn.getBoundingClientRect();
   const s=document.createElement('span');
@@ -2866,6 +2943,7 @@ function switchMode(mode,skipSave){
   if(mode==='rpn')rpnRender();
   else if(isTape)tapeRender();
   else if(!isPanel)updateDisplay();
+  if(!isPanel)sizeKeypad(false);
   if(mode==='percent'){ renderPctChips(); renderPctFields(); pctCalc(); }
   if(mode==='converter'){
     renderCatChips(); renderFavs();
@@ -3357,6 +3435,27 @@ function runTests(){
   const proActs=LAYOUTS.professional.map(k=>k.a+':'+k.v);
   stdActs.forEach(a=>ok('vitenskapelig dekker standard: '+a,proActs.indexOf(a)>-1));
 
+
+  /* folding the scientific rows away */
+  const saveFn=document.body.classList.contains('fn-collapsed');
+  const proKeys=LAYOUTS.professional.length;
+  ok('vitenskapelig har 55 taster',proKeys===55,proKeys);
+  ok('fem rader kan legges ned',proKeys-30===25,proKeys-30);
+  /* the keys that survive a fold must cover everything Standard offers */
+  const kept=LAYOUTS.professional.slice(proKeys-30).map(k=>k.a+':'+k.v);
+  LAYOUTS.standard.forEach(k=>ok('beholdt ved nedlegging: '+k.t,kept.indexOf(k.a+':'+k.v)>-1));
+  ok('pi overlever nedlegging',kept.indexOf('char:π')>-1);
+  ok('vinkelmåte overlever nedlegging',kept.indexOf('trig:undefined')>-1);
+  ok('modulo ligger i funksjonsdelen',kept.indexOf('op:mod')<0);
+  setFnCollapsed(true,false);
+  ok('nedlagt tilstand settes',document.body.classList.contains('fn-collapsed'));
+  ok('nedlagt tilstand lagres',lsGet(LS.fnCollapsed,'0')==='1');
+  setFnCollapsed(false,false);
+  ok('utvidet tilstand settes',!document.body.classList.contains('fn-collapsed'));
+  setFnCollapsed(saveFn,false);
+  ok('tastestørrelsen har et tak',MAX_KEY>=60&&MAX_KEY<=120,MAX_KEY);
+  ok('sizeKeypad tåler å kalles',(()=>{try{sizeKeypad(false);return true;}catch(e){return false;}})());
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -3366,6 +3465,7 @@ function runTests(){
 el.bottomNav.addEventListener('click',e=>{ const b=e.target.closest('.nav-item'); if(!b)return; switchMode(b.dataset.mode); buzz(); });
 el.historyBtn.addEventListener('click',()=>{ state.historyOpen?closeHistory():openHistory(); buzz(); });
 el.historyOverlay.addEventListener('click',closeHistory);
+el.zoneToggle.addEventListener('click',()=>{ setFnCollapsed(!state.fnCollapsed,true); buzz(); });
 el.trigPill.addEventListener('click',()=>{ toggleTrig(); buzz(); });
 el.memPill.addEventListener('click',()=>{ memRecall(); buzz(); });
 el.settingsBtn.addEventListener('click',()=>{ openSettings(); buzz(); });
@@ -3543,6 +3643,7 @@ function init(){
   state.kbd=lsGet(LS.kbd,'1')==='1';
   state.rateSrc=lsGet(LS.src,'both');
   state.answerColor=lsGet(LS.answerColor,'red');
+  state.fnCollapsed=lsGet(LS.fnCollapsed,'0')==='1';
   state.history=jGet(LS.hist,[]);
   state.favs=jGet(LS.fav,[]);
   state.tape=jGet(LS.tape,[]);
@@ -3554,6 +3655,9 @@ function init(){
     state.conv=Object.assign(state.conv,savedConv,{value:''});
   const cachedRates=loadCachedRates();
   if(cachedRates){ applyRates(cachedRates); setRateState(cachedRates); }
+  document.body.classList.toggle('fn-collapsed',state.fnCollapsed);
+  el.zoneToggle.setAttribute('aria-expanded',state.fnCollapsed?'false':'true');
+  el.zoneToggleLabel.textContent=state.fnCollapsed?'Vis funksjoner':'Skjul funksjoner';
   updateBadge(); syncSettings();
   /* App shortcuts and deep links: ?mode=converter or #converter */
   let start=lsGet(LS.mode,'standard');
@@ -3636,7 +3740,7 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setFnCollapsed,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
