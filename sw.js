@@ -1,12 +1,15 @@
 /* Pro Kalkulator Ultra – service worker */
-const CORE='pku-core-v5';
-const RUNTIME='pku-runtime-v5';
+const CORE='pku-core-v51';
+const RUNTIME='pku-runtime-v51';
 const CORE_ASSETS=['./','./index.html','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CORE)
     .then(c=>Promise.allSettled(CORE_ASSETS.map(a=>c.add(a))))
-    .then(()=>self.skipWaiting()));
+    .then(()=>{}));
+});
+self.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting();
 });
 self.addEventListener('activate',e=>{
   e.waitUntil(caches.keys()
