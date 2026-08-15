@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta id="metaTheme" name="theme-color" content="#0a0c0b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kalkulator">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/icon-512.png">
+    <title>Pro Kalkulator Ultra</title>
+    <style>
+        :root {
+            --bg:#0a0c0b; --surface:#121514; --surface-light:#1a1e1c; --surface-lighter:#232826;
+            --border:#2a302d; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#5f6b66;
+            --danger:#e74c5e; --success:#2ecc71; --warning:#f39c12;
+            --key-number-bg:#161a18; --key-number-text:#eef2f0;
+            --key-func-bg:#1e2422;   --key-func-text:#9fb0aa;
+            --key-op-bg:#242b28;     --key-op-text:#d6e0dc;
+            --key-border:#2a302d;
+            --key-clear-bg:rgba(231,76,94,0.16); --key-clear-text:#ef6b78; --key-clear-border:rgba(231,76,94,0.35);
+            --key-equals-bg:#ff9f0a; --key-equals-text:#ffffff;
+            --nav-active:#ff9f0a; --nav-active-soft:rgba(255,159,10,0.12);
+            --radius-sm:10px; --radius-md:16px; --radius-lg:22px;
+            --shadow:0 8px 32px rgba(0,0,0,0.4); --shadow-sm:0 2px 12px rgba(0,0,0,0.3);
+            --transition:0.25s cubic-bezier(0.4,0,0.2,1); --transition-fast:0.15s cubic-bezier(0.4,0,0.2,1);
+            --font-mono:'SF Mono','Cascadia Code','Roboto Mono','Courier New',monospace;
+            --font-sans:'Segoe UI','Roboto',-apple-system,'Helvetica Neue',sans-serif;
+            --safe-top: env(safe-area-inset-top,0px); --safe-bottom: env(safe-area-inset-bottom,0px);
+            --safe-left: env(safe-area-inset-left,0px); --safe-right: env(safe-area-inset-right,0px);
+            --header-height:52px; --nav-height:62px; --display-height:140px;
+            --btn-min-height:48px; --btn-font-size:20px; --chip-font-size:13px; --result-font-size:44px;
+        }
+        [data-theme="light"] {
+            --bg:#f4f5f4; --surface:#ffffff; --surface-light:#f2f4f3; --surface-lighter:#e8eae9;
+            --border:#d9dddb; --text:#1c201e; --text-secondary:#5c6663; --text-dim:#9aa5a1;
+            --danger:#d63040; --success:#00a865; --warning:#e8890c;
+            --key-number-bg:#ffffff; --key-number-text:#202624;
+            --key-func-bg:#eceeed;   --key-func-text:#5c6663;
+            --key-op-bg:#e0e4e2;     --key-op-text:#333d39;
+            --key-border:#d9dddb;
+            --key-clear-bg:rgba(214,48,64,0.10); --key-clear-text:#d63040; --key-clear-border:rgba(214,48,64,0.30);
+            --key-equals-bg:#ff9500; --key-equals-text:#ffffff;
+            --nav-active:#d97706; --nav-active-soft:rgba(217,119,6,0.10);
+            --shadow:0 8px 28px rgba(20,25,22,0.10); --shadow-sm:0 2px 10px rgba(20,25,22,0.08);
+        }
+        [data-theme="amoled"] {
+            --bg:#000000; --surface:#0a0a0a; --surface-light:#101010; --surface-lighter:#181818;
+            --border:#242424; --text:#ffffff; --text-secondary:#a8a8a8; --text-dim:#666666;
+            --danger:#ff4444; --success:#00cc66; --warning:#ffaa00;
+            --key-number-bg:#0d0d0d; --key-number-text:#ffffff;
+            --key-func-bg:#151515;   --key-func-text:#999999;
+            --key-op-bg:#1c1c1c;     --key-op-text:#dddddd;
+            --key-border:#242424;
+            --key-clear-bg:rgba(255,68,68,0.14); --key-clear-text:#ff6060; --key-clear-border:rgba(255,68,68,0.35);
+            --key-equals-bg:#ff9f0a; --key-equals-text:#ffffff;
+            --nav-active:#ff9f0a; --nav-active-soft:rgba(255,159,10,0.16);
+            --shadow:0 8px 32px rgba(0,0,0,0.6); --shadow-sm:0 2px 12px rgba(0,0,0,0.5);
+        }
+        [data-theme="contrast"] {
+            --bg:#000000; --surface:#000000; --surface-light:#111111; --surface-lighter:#222222;
+            --border:#888888; --text:#ffffff; --text-secondary:#dddddd; --text-dim:#aaaaaa;
+            --danger:#ff3333; --success:#33ff33; --warning:#ff9900;
+            --key-number-bg:#000000; --key-number-text:#ffffff;
+            --key-func-bg:#111111;   --key-func-text:#eeeeee;
+            --key-op-bg:#222222;     --key-op-text:#ffffff;
+            --key-border:#888888;
+            --key-clear-bg:#2a0000; --key-clear-text:#ff8080; --key-clear-border:#ff4444;
+            --key-equals-bg:#ffff00; --key-equals-text:#000000;
+            --nav-active:#ffff00; --nav-active-soft:rgba(255,255,0,0.15);
+            --shadow:0 8px 32px rgba(0,0,0,0.8); --shadow-sm:0 2px 12px rgba(0,0,0,0.8);
+        }
+        [data-theme="pastel"] {
+            --bg:#f5f4f1; --surface:#fdfdfc; --surface-light:#f3f2ee; --surface-lighter:#eae8e3;
+            --border:#dedbd4; --text:#2c2a26; --text-secondary:#6d6961; --text-dim:#a8a49b;
+            --danger:#b55454; --success:#5da583; --warning:#c98f4a;
+            --key-number-bg:#ffffff; --key-number-text:#2c2a26;
+            --key-func-bg:#efede8;   --key-func-text:#6d6961;
+            --key-op-bg:#e4e1da;     --key-op-text:#44403a;
+            --key-border:#dedbd4;
+            --key-clear-bg:rgba(191,84,84,0.12); --key-clear-text:#b55454; --key-clear-border:rgba(191,84,84,0.32);
+            --key-equals-bg:#d9822b; --key-equals-text:#ffffff;
+            --nav-active:#c06a15; --nav-active-soft:rgba(192,106,21,0.12);
+            --shadow:0 8px 28px rgba(60,55,45,0.12); --shadow-sm:0 2px 10px rgba(60,55,45,0.10);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-sans); background:var(--bg); color:var(--text); touch-action:manipulation; overscroll-behavior:none; }
+        body { display:flex; flex-direction:column; padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); padding-left:var(--safe-left); padding-right:var(--safe-right); }
+        .app-header { display:flex; align-items:center; justify-content:space-between; height:var(--header-height); padding:0 12px; flex-shrink:0; background:var(--surface); border-bottom:1px solid var(--border); z-index:20; }
+        .brand { display:flex; align-items:center; gap:8px; }
+        .logo-icon { width:32px; height:32px; border-radius:9px; background:var(--text); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .logo-icon svg { width:18px; height:18px; fill:none; stroke:var(--bg); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+        .app-name { font-size:16px; font-weight:700; letter-spacing:-0.3px; color:var(--text); }
+        .app-version { font-size:9px; font-weight:500; color:var(--text-dim); letter-spacing:0.5px; }
+        .header-actions { display:flex; align-items:center; gap:2px; }
+        .header-btn { width:38px; height:38px; border-radius:50%; border:none; background:transparent; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background var(--transition-fast),color var(--transition-fast); position:relative; flex-shrink:0; }
+        .header-btn:hover { background:var(--surface-light); color:var(--text); }
+        .header-btn:active { background:var(--surface-lighter); transform:scale(0.92); }
+        .header-btn svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+        .header-btn .badge { position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:var(--text-secondary); color:var(--surface); font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface); }
+        .main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; min-height:0; }
+        .display-area { padding:12px 16px 8px; min-height:var(--display-height); max-height:var(--display-height); display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-end; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; position:relative; overflow:hidden; }
+        .mode-indicator { position:absolute; top:8px; left:16px; font-size:9px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--text-dim); z-index:1; }
+        .live-result { position:absolute; top:8px; right:16px; font-size:11px; color:var(--text-dim); font-family:var(--font-mono); z-index:1; }
+        .expression { font-size:16px; font-weight:400; color:var(--text-secondary); font-family:var(--font-mono); white-space:nowrap; overflow-x:auto; overflow-y:hidden; max-width:100%; text-align:right; direction:rtl; scrollbar-width:none; line-height:1.3; position:relative; z-index:1; }
+        .expression::-webkit-scrollbar { display:none; }
+        .expression span { direction:ltr; display:inline-block; }
+        .result { font-size:var(--result-font-size); font-weight:700; letter-spacing:-1.5px; color:var(--text); font-family:var(--font-mono); line-height:1.2; white-space:nowrap; overflow-x:auto; overflow-y:hidden; max-width:100%; text-align:right; scrollbar-width:none; position:relative; z-index:1; }
+        .result::-webkit-scrollbar { display:none; }
+        .result.shrink { font-size:calc(var(--result-font-size) * 0.75); }
+        .result.error { color:var(--danger); font-size:calc(var(--result-font-size) * 0.65); }
+        .buttons-container { flex:1; display:flex; flex-direction:column; background:var(--surface); overflow:hidden; padding:6px 10px 10px; min-height:0; }
+        .calc-buttons { display:grid; gap:5px; flex:1; min-height:0; height:100%; grid-auto-rows:minmax(var(--btn-min-height),1fr); overflow-y:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+        .calc-buttons::-webkit-scrollbar { display:none; }
+        .calc-buttons.standard-mode { grid-template-columns: repeat(4, 1fr); }
+        .calc-buttons.professional-mode { grid-template-columns: repeat(4, 1fr); --btn-min-height:38px; gap:4px; }
+        .calc-buttons.rpn-mode { grid-template-columns: repeat(4, 1fr); --btn-min-height:44px; }
+        .calc-btn { border:none; border-radius:var(--radius-sm); font-size:var(--btn-font-size); font-weight:500; cursor:pointer; transition:all var(--transition-fast); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); letter-spacing:0.2px; color:var(--text); background:var(--surface-light); border:1px solid var(--key-border); min-height:0; height:100%; width:100%; outline:none; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+        .calc-btn:active { transform:scale(0.94); filter:brightness(1.15); }
+        .calc-btn:focus-visible { outline:2px solid var(--text-dim); outline-offset:2px; }
+        .calc-btn .ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,0.22); transform:scale(0); animation:ripple-anim 0.5s ease-out; pointer-events:none; }
+        [data-theme="light"] .calc-btn .ripple,[data-theme="pastel"] .calc-btn .ripple { background:rgba(0,0,0,0.12); }
+        [data-theme="contrast"] .calc-btn .ripple { background:rgba(255,255,255,0.35); }
+        @keyframes ripple-anim { to { transform:scale(4); opacity:0; } }
+        .calc-btn.number-btn { background:var(--key-number-bg); color:var(--key-number-text); border-color:var(--key-border); font-weight:600; font-size:calc(var(--btn-font-size) * 1.1); }
+        .calc-btn.operator-btn { background:var(--key-op-bg); color:var(--key-op-text); border-color:var(--key-border); font-weight:600; font-size:calc(var(--btn-font-size) * 1.05); }
+        .calc-btn.function-btn { background:var(--key-func-bg); color:var(--key-func-text); border-color:var(--key-border); font-size:calc(var(--btn-font-size) * 0.8); font-weight:500; }
+        .calc-btn.memory-btn { background:var(--key-func-bg); color:var(--key-func-text); border-color:var(--key-border); font-weight:600; font-size:calc(var(--btn-font-size) * 0.75); letter-spacing:0.4px; }
+        .calc-btn.constant-btn { background:var(--key-func-bg); color:var(--key-op-text); border-color:var(--key-border); font-weight:600; font-size:calc(var(--btn-font-size) * 0.9); }
+        .calc-btn.backspace-btn { background:var(--key-func-bg); color:var(--key-func-text); border-color:var(--key-border); }
+        .calc-btn.clear-btn { background:var(--key-clear-bg); color:var(--key-clear-text); border-color:var(--key-clear-border); font-weight:700; }
+        .calc-btn.equals-btn { background:var(--key-equals-bg); color:var(--key-equals-text); font-weight:700; font-size:calc(var(--btn-font-size) * 1.2); border:none; }
+        .calc-btn .btn-label { font-size:inherit; line-height:1; }
+        .converter-container { flex:1; display:flex; flex-direction:column; padding:14px 16px 16px; gap:12px; overflow-y:auto; background:var(--surface); position:relative; scrollbar-width:none; }
+        .converter-container::-webkit-scrollbar { display:none; }
+        .category-chips { display:flex; gap:6px; overflow-x:auto; padding:4px 2px 6px; scrollbar-width:none; flex-shrink:0; position:relative; z-index:1; }
+        .category-chips::-webkit-scrollbar { display:none; }
+        .chip { padding:9px 16px; border-radius:999px; border:1px solid var(--border); background:var(--surface-light); color:var(--text-secondary); font-size:var(--chip-font-size); font-weight:600; cursor:pointer; white-space:nowrap; transition:all var(--transition-fast); flex-shrink:0; letter-spacing:0.3px; }
+        .chip:active { transform:scale(0.95); }
+        .chip.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+        .chip-ico { margin-right:6px; }
+        .rate-status { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text-dim); padding:0 2px; flex-shrink:0; position:relative; z-index:1; font-family:var(--font-mono); }
+        .rate-dot { width:6px; height:6px; border-radius:50%; background:var(--warning); flex-shrink:0; }
+        .rate-dot.live { background:var(--success); }
+        .rate-refresh { margin-left:auto; background:none; border:none; color:var(--text-dim); cursor:pointer; padding:4px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:color var(--transition-fast); }
+        .rate-refresh:active { color:var(--text); transform:scale(0.9); }
+        .rate-refresh svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+        .converter-card { position:relative; z-index:1; border-radius:var(--radius-lg); padding:16px; border:1px solid var(--border); background:var(--surface-light); overflow:hidden; flex-shrink:0; }
+        .converter-card .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; position:relative; z-index:1; gap:8px; }
+        .converter-card .card-label { font-size:10px; font-weight:800; letter-spacing:1.6px; text-transform:uppercase; color:var(--text-dim); }
+        .unit-picker { display:flex; align-items:center; gap:8px; max-width:68%; padding:7px 10px 7px 7px; border-radius:14px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; transition:all var(--transition-fast); font-family:var(--font-sans); }
+        .unit-picker:active { transform:scale(0.96); }
+        .unit-picker .u-symbol { min-width:30px; height:30px; padding:0 8px; border-radius:9px; background:var(--surface-lighter); color:var(--text-secondary); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; font-weight:700; flex-shrink:0; }
+        .unit-picker .u-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .unit-picker .chev { width:14px; height:14px; fill:none; stroke:var(--text-dim); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+        .u-flag { width:24px; height:18px; border-radius:4px; object-fit:cover; box-shadow:0 0 0 1px rgba(128,128,128,0.25); display:block; }
+        .u-symbol.flag { padding:0; background:transparent; }
+        .converter-card .value-input { width:100%; background:transparent; border:none; color:var(--text); font-size:30px; font-weight:700; font-family:var(--font-mono); padding:6px 0 2px; outline:none; letter-spacing:-0.5px; caret-color:var(--text); user-select:text; -webkit-user-select:text; position:relative; z-index:1; }
+        .converter-card .value-input.readonly { color:var(--text-secondary); caret-color:transparent; }
+        .converter-card .conversion-hint { font-size:11px; color:var(--text-dim); margin-top:4px; min-height:14px; position:relative; z-index:1; font-family:var(--font-mono); }
+        .swap-btn-wrapper { display:flex; justify-content:center; margin:-24px 0; position:relative; z-index:5; flex-shrink:0; pointer-events:none; }
+        .swap-btn { pointer-events:auto; width:52px; height:52px; border-radius:50%; border:1px solid var(--border); background:var(--surface-lighter); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 6px var(--surface), 0 2px 8px rgba(0,0,0,0.25); transition:transform .2s var(--transition-fast); }
+        .swap-btn:active { transform:scale(0.9); }
+        .swap-btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:transform .4s cubic-bezier(.34,1.56,.64,1); }
+        .pct-result { font-size:34px; font-weight:700; font-family:var(--font-mono); color:var(--text); padding:6px 0 2px; letter-spacing:-0.5px; position:relative; z-index:1; white-space:nowrap; overflow-x:auto; scrollbar-width:none; }
+        .pct-result::-webkit-scrollbar { display:none; }
+        .use-in-calc-btn { margin-top:12px; width:100%; padding:11px; border-radius:14px; border:1px solid var(--border); background:var(--surface-lighter); color:var(--text); font-weight:700; font-size:13px; cursor:pointer; transition:all var(--transition-fast); font-family:var(--font-sans); position:relative; z-index:1; }
+        .use-in-calc-btn:active { transform:scale(0.97); filter:brightness(1.1); }
+        .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); z-index:80; opacity:0; pointer-events:none; transition:opacity var(--transition); }
+        .sheet-overlay.open { opacity:1; pointer-events:auto; }
+        .unit-sheet { position:fixed; left:0; right:0; bottom:0; z-index:90; background:var(--surface); border-radius:26px 26px 0 0; border-top:1px solid var(--border); transform:translateY(105%); transition:transform .32s cubic-bezier(.32,.72,.24,1); max-height:72vh; display:flex; flex-direction:column; padding-bottom:calc(10px + var(--safe-bottom)); box-shadow:0 -14px 44px rgba(0,0,0,0.45); }
+        .unit-sheet.open { transform:translateY(0); }
+        .sheet-handle { width:44px; height:4px; border-radius:2px; background:var(--border); margin:10px auto 4px; flex-shrink:0; }
+        .sheet-title { padding:6px 20px 10px; font-size:14px; font-weight:700; color:var(--text-secondary); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+        .sheet-close { background:none; border:none; color:var(--text-secondary); font-size:13px; font-weight:700; cursor:pointer; padding:6px 10px; border-radius:10px; transition:background var(--transition-fast); }
+        .sheet-close:active { background:var(--surface-light); }
+        .sheet-search { padding:0 16px 8px; flex-shrink:0; }
+        .sheet-search input { width:100%; background:var(--surface-light); border:1px solid var(--border); border-radius:12px; padding:9px 12px; color:var(--text); font-size:13px; outline:none; font-family:var(--font-sans); }
+        .sheet-search input:focus { border-color:var(--text-dim); }
+        .sheet-grid { overflow-y:auto; padding:4px 14px 12px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .sheet-empty { grid-column:1/-1; text-align:center; color:var(--text-dim); font-size:12px; padding:18px 0; }
+        .unit-option { display:flex; align-items:center; gap:10px; padding:10px; border-radius:16px; border:1px solid var(--border); background:var(--surface-light); cursor:pointer; transition:all var(--transition-fast); color:var(--text); font-family:var(--font-sans); text-align:left; }
+        .unit-option:active { transform:scale(0.97); }
+        .unit-option .u-symbol { min-width:38px; height:38px; padding:0 8px; border-radius:11px; background:var(--surface-lighter); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; color:var(--text-secondary); font-size:12px; flex-shrink:0; }
+        .unit-option .u-symbol.flag { background:transparent; }
+        .unit-option .u-label { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .unit-option .check { width:16px; height:16px; margin-left:auto; fill:none; stroke:var(--text); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+        .unit-option.selected { border-color:var(--text-dim); background:var(--surface-lighter); }
+        .unit-option.selected .u-symbol:not(.flag) { background:var(--text); color:var(--bg); }
+        @media (max-width:340px) { .sheet-grid { grid-template-columns:1fr; } }
+        #settingsModal { display:block; }
+        .settings-sheet { position:fixed; left:0; right:0; bottom:0; margin:0 auto; width:min(520px,100vw); background:var(--surface); border-radius:26px 26px 0 0; border-top:1px solid var(--border); transform:translateY(105%); transition:transform .32s cubic-bezier(.32,.72,.24,1); max-height:82vh; overflow-y:auto; padding-bottom:calc(14px + var(--safe-bottom)); box-shadow:0 -14px 44px rgba(0,0,0,0.45); scrollbar-width:none; z-index:90; }
+        .settings-sheet::-webkit-scrollbar { display:none; }
+        #settingsModal.open .settings-sheet { transform:translateY(0); }
+        .settings-head { display:flex; align-items:center; justify-content:space-between; padding:6px 20px 12px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; }
+        .settings-title { font-size:15px; font-weight:700; }
+        .settings-body { padding:2px 20px 8px; }
+        .settings-section { padding:16px 0; border-bottom:1px solid var(--border); }
+        .settings-section:last-child { border-bottom:none; }
+        .settings-label { text-align:center; font-size:10px; font-weight:800; letter-spacing:1.6px; text-transform:uppercase; color:var(--text-dim); margin-bottom:10px; }
+        .seg { display:grid; gap:4px; background:var(--surface-light); border:1px solid var(--border); border-radius:14px; padding:4px; }
+        .seg-5 { grid-template-columns:repeat(5,1fr); }
+        .seg-2 { grid-template-columns:repeat(2,1fr); }
+        .seg-btn { border:none; background:transparent; color:var(--text-secondary); font-size:12px; font-weight:600; padding:9px 2px; border-radius:10px; cursor:pointer; transition:all var(--transition-fast); font-family:var(--font-sans); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .seg-5 .seg-btn { font-size:11px; }
+        .seg-btn.active { background:var(--text); color:var(--bg); }
+        .seg-btn:active { transform:scale(0.96); }
+        .bottom-nav { display:flex; align-items:center; justify-content:space-around; height:var(--nav-height); background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; padding:0 4px; z-index:20; }
+        .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:none; border:none; color:var(--text-secondary); cursor:pointer; padding:4px 0; margin:6px 2px; border-radius:14px; transition:all var(--transition-fast); position:relative; }
+        .nav-item svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+        .nav-item .nav-label { font-size:9px; font-weight:600; letter-spacing:0.3px; }
+        .nav-item.active { color:var(--nav-active); background:var(--nav-active-soft); }
+        .nav-item.active::after { content:''; position:absolute; top:-7px; left:50%; transform:translateX(-50%); width:24px; height:3px; border-radius:0 0 4px 4px; background:var(--nav-active); }
+        .history-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.55); z-index:50; opacity:0; pointer-events:none; transition:opacity var(--transition); backdrop-filter:blur(2px); }
+        .history-overlay.open { opacity:1; pointer-events:auto; }
+        .history-drawer { position:fixed; top:0; left:0; bottom:0; width:min(320px,85vw); background:var(--surface); z-index:60; transform:translateX(-100%); transition:transform var(--transition); display:flex; flex-direction:column; box-shadow:8px 0 40px rgba(0,0,0,0.4); border-right:1px solid var(--border); }
+        .history-drawer.open { transform:translateX(0); }
+        .history-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid var(--border); }
+        .history-header .title { font-size:16px; font-weight:700; }
+        .history-header .clear-history-btn { background:none; border:none; color:var(--text-secondary); font-size:12px; font-weight:600; cursor:pointer; padding:5px 8px; border-radius:8px; }
+        .history-header .clear-history-btn:hover { color:var(--danger); background:rgba(231,76,94,0.1); }
+        .history-search { padding:6px 12px; border-bottom:1px solid var(--border); }
+        .history-search input { width:100%; background:var(--surface-light); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:13px; outline:none; }
+        .history-list { flex:1; overflow-y:auto; padding:6px 10px; }
+        .history-empty { padding:16px 8px; text-align:center; color:var(--text-dim); font-size:12px; }
+        .history-entry { background:var(--surface-light); border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:5px; cursor:pointer; border:1px solid var(--border); transition:all var(--transition-fast); position:relative; }
+        .history-entry:hover { background:var(--surface-lighter); border-color:var(--text-dim); }
+        .history-entry .hist-expr { font-size:12px; color:var(--text-secondary); font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .history-entry .hist-result { font-size:18px; font-weight:700; font-family:var(--font-mono); margin-top:2px; }
+        .history-entry .hist-time { font-size:8px; color:var(--text-dim); margin-top:2px; text-transform:uppercase; }
+        .history-entry .hist-delete, .history-entry .hist-copy { position:absolute; top:8px; width:22px; height:22px; border-radius:50%; border:none; background:transparent; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:all var(--transition-fast); }
+        .history-entry .hist-delete { right:8px; }
+        .history-entry .hist-copy { right:32px; }
+        .history-entry:hover .hist-delete, .history-entry:hover .hist-copy { opacity:1; }
+        @media (hover:none) { .history-entry .hist-delete, .history-entry .hist-copy { opacity:0.6; } }
+        .history-entry .hist-delete:hover { color:var(--danger); background:rgba(231,76,94,0.1); }
+        .history-entry .hist-copy:hover { color:var(--text); }
+        .history-entry .hist-delete svg, .history-entry .hist-copy svg { width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+        .toast { position:fixed; bottom:calc(var(--nav-height) + var(--safe-bottom) + 16px); left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface-lighter); color:var(--text); padding:8px 16px; border-radius:20px; font-size:12px; font-weight:600; z-index:100; border:1px solid var(--border); box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:all 0.35s; white-space:nowrap; }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:70; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity var(--transition); }
+        .modal-overlay.open { opacity:1; pointer-events:auto; }
+        .modal { background:var(--surface); border-radius:var(--radius-lg); padding:18px; width:min(320px,85vw); border:1px solid var(--border); box-shadow:var(--shadow); }
+        .modal h3 { font-size:16px; margin-bottom:12px; color:var(--text); }
+        .modal .close-modal { background:var(--surface-lighter); color:var(--text); border:1px solid var(--border); padding:8px 16px; border-radius:18px; font-weight:600; cursor:pointer; margin-top:8px; width:100%; }
+        #infoModal .modal { max-width:340px; }
+        #infoTitle { margin-bottom:4px; }
+        #infoDesc { font-size:13px; color:var(--text-secondary); margin-bottom:12px; line-height:1.4; }
+        #infoExample { font-size:13px; color:var(--text-secondary); background:var(--surface-light); border:1px solid var(--border); padding:10px; border-radius:8px; margin-bottom:12px; font-family:var(--font-mono); white-space:pre-line; }
+        @media (max-width:380px) {
+            :root { --btn-font-size:17px; --btn-min-height:42px; --chip-font-size:11px; --result-font-size:34px; }
+            .calc-buttons { gap:3px; }
+            .buttons-container { padding:4px 6px 6px; }
+            .display-area { padding:8px 12px 6px; }
+            .converter-container { padding:8px 10px 10px; gap:10px; }
+            .converter-card { padding:13px; }
+            .converter-card .value-input { font-size:25px; }
+            .pct-result { font-size:27px; }
+            .nav-item .nav-label { font-size:8px; }
+            .settings-body { padding:2px 14px 8px; }
+        }
+        @media (min-width:500px) {
+            .calc-btn { border-radius:12px; }
+            .display-area { max-width:520px; margin:0 auto; width:100%; }
+            .buttons-container { max-width:520px; margin:0 auto; width:100%; }
+            .converter-container { max-width:520px; margin:0 auto; width:100%; }
+            .app-header { max-width:600px; margin:0 auto; width:100%; }
+            .bottom-nav { max-width:600px; margin:0 auto; width:100%; }
+            .unit-sheet { left:50%; transform:translate(-50%,105%); width:min(520px,100vw); border-radius:26px 26px 0 0; }
+            .unit-sheet.open { transform:translate(-50%,0); }
+        }
+        @media (orientation:landscape) and (max-height:500px) {
+            :root { --header-height:42px; --nav-height:48px; --display-height:70px; --btn-font-size:15px; --btn-min-height:34px; }
+            .calc-buttons.standard-mode, .calc-buttons.professional-mode, .calc-buttons.rpn-mode { --btn-min-height:34px; }
+            .result { font-size:26px; }
+            .expression { font-size:13px; }
+            .calc-buttons { gap:2px; }
+            .converter-container { padding:6px 8px; }
+            .converter-card { padding:10px 12px; }
+            .converter-card .value-input { font-size:18px; }
+            .pct-result { font-size:20px; }
+            .swap-btn { width:42px; height:42px; }
+            .swap-btn-wrapper { margin:-18px 0; }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <div class="logo-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="13" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
+            <div><div class="app-name">Pro Kalkulator Ultra</div><div class="app-version">v4.2</div></div>
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" id="historyToggleBtn" aria-label="Historikk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor"/><polyline points="12 7 12 12 15 14" fill="none" stroke="currentColor"/></svg><span class="badge" id="historyBadge" style="display:none;">0</span></button>
+            <button class="header-btn" id="themeToggleBtn" aria-label="Bytt mellom mørkt og lyst tema"></button>
+            <button class="header-btn" id="settingsBtn" aria-label="Innstillinger"><svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7" fill="none" stroke="currentColor"/><circle cx="9" cy="7" r="2.5" fill="none" stroke="currentColor"/><line x1="5" y1="12" x2="19" y2="12" fill="none" stroke="currentColor"/><circle cx="15" cy="12" r="2.5" fill="none" stroke="currentColor"/><line x1="5" y1="17" x2="19" y2="17" fill="none" stroke="currentColor"/><circle cx="7" cy="17" r="2.5" fill="none" stroke="currentColor"/></svg></button>
+        </div>
+    </header>
+
+    <main class="main-content" id="mainContent">
+        <div class="display-area" id="displayArea">
+            <span class="mode-indicator" id="modeIndicator">Standard</span>
+            <span class="live-result" id="liveResult"></span>
+            <div class="expression" id="expressionDisplay"><span></span></div>
+            <div class="result" id="resultDisplay" aria-live="polite">0</div>
+        </div>
+        <div class="buttons-container" id="buttonsContainer"></div>
+
+        <div class="converter-container" id="percentContainer" style="display:none;">
+            <div class="category-chips" id="pctChips"></div>
+            <div class="converter-card">
+                <div class="card-header"><span class="card-label" id="pctXLabel">Prosent (%)</span></div>
+                <input type="text" class="value-input" id="pctXInput" placeholder="0" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="converter-card">
+                <div class="card-header"><span class="card-label" id="pctYLabel">Verdi</span></div>
+                <input type="text" class="value-input" id="pctYInput" placeholder="0" inputmode="decimal" autocomplete="off">
+            </div>
+            <div class="converter-card">
+                <div class="card-header"><span class="card-label">Resultat</span></div>
+                <div class="pct-result" id="pctResult">–</div>
+                <div class="conversion-hint" id="pctSentence"></div>
+                <button class="use-in-calc-btn" id="pctUseBtn">Bruk i kalkulator (ANS)</button>
+            </div>
+        </div>
+
+        <div class="converter-container" id="converterContainer" style="display:none;">
+            <div class="category-chips" id="categoryChips"></div>
+            <div class="rate-status" id="rateStatus" style="display:none;">
+                <span class="rate-dot" id="rateDot"></span>
+                <span id="rateText">Standardkurser (offline)</span>
+                <button class="rate-refresh" id="rateRefreshBtn" aria-label="Oppdater valutakurser"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10" fill="none"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" fill="none"/></svg></button>
+            </div>
+            <div class="converter-card from-card">
+                <div class="card-header">
+                    <span class="card-label">Fra</span>
+                    <button class="unit-picker" id="fromUnitPicker" aria-label="Velg fra-enhet">
+                        <span class="u-symbol" id="fromUnitSymbol">m</span>
+                        <span class="u-name" id="fromUnitName">Meter</span>
+                        <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" fill="none"/></svg>
+                    </button>
+                </div>
+                <input type="text" class="value-input" id="fromValueInput" placeholder="0" inputmode="decimal" autocomplete="off">
+                <div class="conversion-hint" id="fromHint"></div>
+            </div>
+            <div class="swap-btn-wrapper">
+                <button class="swap-btn" id="swapUnitsBtn" aria-label="Bytt enheter"><svg viewBox="0 0 24 24"><polyline points="17 3 21 7 17 11"/><line x1="21" y1="7" x2="9" y2="7"/><polyline points="7 13 3 17 7 21"/><line x1="3" y1="17" x2="15" y2="17"/></svg></button>
+            </div>
+            <div class="converter-card to-card">
+                <div class="card-header">
+                    <span class="card-label">Til</span>
+                    <button class="unit-picker" id="toUnitPicker" aria-label="Velg til-enhet">
+                        <span class="u-symbol" id="toUnitSymbol">km</span>
+                        <span class="u-name" id="toUnitName">Kilometer</span>
+                        <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" fill="none"/></svg>
+                    </button>
+                </div>
+                <input type="text" class="value-input readonly" id="toValueInput" placeholder="Resultat" readonly>
+                <div class="conversion-hint" id="toHint"></div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-mode="standard" aria-label="Standard kalkulator"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="12" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/></svg><span class="nav-label">Standard</span></button>
+        <button class="nav-item" data-mode="professional" aria-label="Profesjonell"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="10" y2="9"/><line x1="14" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="10" y2="13"/><line x1="14" y1="13" x2="17" y2="13"/></svg><span class="nav-label">Pro</span></button>
+        <button class="nav-item" data-mode="rpn" aria-label="RPN kalkulator"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/><line x1="12" y1="15" x2="12" y2="21"/></svg><span class="nav-label">RPN</span></button>
+        <button class="nav-item" data-mode="percent" aria-label="Prosentkalkulator"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg><span class="nav-label">Prosent</span></button>
+        <button class="nav-item" data-mode="converter" aria-label="Konverter"><svg viewBox="0 0 24 24"><polyline points="17 3 21 7 17 11"/><line x1="21" y1="7" x2="9" y2="7"/><polyline points="7 13 3 17 7 21"/><line x1="3" y1="17" x2="15" y2="17"/></svg><span class="nav-label">Konverter</span></button>
+    </nav>
+
+    <div class="history-overlay" id="historyOverlay"></div>
+    <div class="history-drawer" id="historyDrawer">
+        <div class="history-header"><span class="title">Historikk</span><button class="clear-history-btn" id="clearHistoryBtn">Tøm alt</button></div>
+        <div class="history-search"><input type="text" id="historySearchInput" placeholder="Søk i historikk..." autocomplete="off"></div>
+        <div class="history-list" id="historyList"><div class="history-empty">Ingen beregninger enda.</div></div>
+    </div>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="settings-sheet" role="dialog" aria-modal="true" aria-label="Innstillinger">
+            <div class="sheet-handle"></div>
+            <div class="settings-head">
+                <span class="settings-title">Innstillinger</span>
+                <button class="sheet-close" id="closeSettingsBtn">Ferdig</button>
+            </div>
+            <div class="settings-body">
+                <section class="settings-section">
+                    <div class="settings-label">Tema</div>
+                    <div class="seg seg-5" id="themeOptions">
+                        <button class="seg-btn" data-theme="dark">Mørk</button>
+                        <button class="seg-btn" data-theme="light">Lys</button>
+                        <button class="seg-btn" data-theme="amoled">AMOLED</button>
+                        <button class="seg-btn" data-theme="contrast">Kontrast</button>
+                        <button class="seg-btn" data-theme="pastel">Pastell</button>
+                    </div>
+                </section>
+                <section class="settings-section">
+                    <div class="settings-label">Desimaler</div>
+                    <div class="seg seg-5" id="decimalOptions">
+                        <button class="seg-btn" data-decimals="4">4</button>
+                        <button class="seg-btn" data-decimals="6">6</button>
+                        <button class="seg-btn" data-decimals="8">8</button>
+                        <button class="seg-btn" data-decimals="10">10</button>
+                        <button class="seg-btn" data-decimals="12">12</button>
+                    </div>
+                </section>
+                <section class="settings-section">
+                    <div class="settings-label">Vinkelmåte</div>
+                    <div class="seg seg-2" id="trigOptions">
+                        <button class="seg-btn" data-trig="deg">DEG</button>
+                        <button class="seg-btn" data-trig="rad">RAD</button>
+                    </div>
+                </section>
+                <section class="settings-section">
+                    <div class="settings-label">App</div>
+                    <button class="use-in-calc-btn" id="installBtn" style="display:none;margin-top:0;">Installer som app</button>
+                    <div class="conversion-hint" id="installHint" style="text-align:center;min-height:0;margin-top:8px;"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="infoModal">
+        <div class="modal">
+            <h3 id="infoTitle"></h3>
+            <p id="infoDesc"></p>
+            <div id="infoExample"></div>
+            <button class="close-modal" id="closeInfoBtn">Lukk</button>
+        </div>
+    </div>
+
+    <div class="sheet-overlay" id="sheetOverlay"></div>
+    <div class="unit-sheet" id="unitSheet" role="dialog" aria-modal="true" aria-label="Velg enhet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title"><span id="sheetTitle">Velg enhet</span><button class="sheet-close" id="sheetCloseBtn">Ferdig</button></div>
+        <div class="sheet-search" id="sheetSearchWrap" style="display:none;"><input type="text" id="sheetSearchInput" placeholder="Søk etter enhet eller valuta…" autocomplete="off"></div>
+        <div class="sheet-grid" id="sheetGrid"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function(){
+            'use strict';
+            const CONFIG = { maxExpressionLength:500, maxHistoryEntries:200, defaultDecimals:8, ratesUrl:'https://open.er-api.com/v6/latest/NOK', metaUrl:'https://restcountries.com/v3.1/all?fields=name,currencies,flags,cca2' };
+            const MODE_ORDER = ['standard','professional','rpn','percent','converter'];
+            const META_COLORS = { dark:'#0a0c0b', light:'#f4f5f4', amoled:'#000000', contrast:'#000000', pastel:'#f5f4f1' };
+            const state = {
+                mode:'standard', theme:'dark', expression:'', result:'0', history:[],
+                justEvaluated:false, lastAnswer:0, trigMode:'deg', decimals:CONFIG.defaultDecimals,
+                converter:{ category:'length', fromUnit:'meter', toUnit:'kilometer', fromValue:'', toValue:'' },
+                pctType:'of', pctResult:null,
+                historyOpen:false, stack:[], memory:0, liveResult:''
+            };
+            const $ = s => document.querySelector(s);
+            const $$ = s => document.querySelectorAll(s);
+            const expressionDisplay=$('#expressionDisplay'), resultDisplay=$('#resultDisplay'), buttonsContainer=$('#buttonsContainer'),
+                converterContainer=$('#converterContainer'), percentContainer=$('#percentContainer'), displayArea=$('#displayArea'), modeIndicator=$('#modeIndicator'), bottomNav=$('#bottomNav'),
+                mainContent=$('#mainContent'),
+                historyOverlay=$('#historyOverlay'), historyDrawer=$('#historyDrawer'), historyList=$('#historyList'), historyBadge=$('#historyBadge'),
+                toast=$('#toast'), categoryChips=$('#categoryChips'),
+                fromValueInput=$('#fromValueInput'), toValueInput=$('#toValueInput'), fromHint=$('#fromHint'), toHint=$('#toHint'),
+                fromUnitPicker=$('#fromUnitPicker'), toUnitPicker=$('#toUnitPicker'),
+                fromUnitSymbol=$('#fromUnitSymbol'), fromUnitName=$('#fromUnitName'),
+                toUnitSymbol=$('#toUnitSymbol'), toUnitName=$('#toUnitName'),
+                rateStatus=$('#rateStatus'), rateDot=$('#rateDot'), rateText=$('#rateText'), rateRefreshBtn=$('#rateRefreshBtn'),
+                pctChips=$('#pctChips'), pctXLabel=$('#pctXLabel'), pctXInput=$('#pctXInput'), pctYLabel=$('#pctYLabel'), pctYInput=$('#pctYInput'),
+                pctResult=$('#pctResult'), pctSentence=$('#pctSentence'), pctUseBtn=$('#pctUseBtn'),
+                sheetOverlay=$('#sheetOverlay'), unitSheet=$('#unitSheet'), sheetGrid=$('#sheetGrid'),
+                sheetTitle=$('#sheetTitle'), sheetCloseBtn=$('#sheetCloseBtn'),
+                sheetSearchWrap=$('#sheetSearchWrap'), sheetSearchInput=$('#sheetSearchInput'),
+                liveResultEl=$('#liveResult'), settingsModal=$('#settingsModal'), historySearchInput=$('#historySearchInput'),
+                historyToggleBtn=$('#historyToggleBtn'), clearHistoryBtn=$('#clearHistoryBtn'),
+                themeToggleBtn=$('#themeToggleBtn'), metaTheme=$('#metaTheme'),
+                installBtn=$('#installBtn'), installHint=$('#installHint'),
+                settingsBtn=$('#settingsBtn'), closeSettingsBtn=$('#closeSettingsBtn'), swapUnitsBtn=$('#swapUnitsBtn'),
+                infoModal=$('#infoModal'), infoTitle=$('#infoTitle'), infoDesc=$('#infoDesc'), infoExample=$('#infoExample');
+
+            const buttonInfo = {
+                'sin': { title: 'Sinus (sin)', desc: 'Beregner sinus til en vinkel. Vinkelen må være i grader eller radianer avhengig av DEG/RAD-innstillingen.', example: 'Eksempel: sin(30) = 0.5 (i DEG-modus)\nI RAD-modus: sin(π/6) = 0.5' },
+                'cos': { title: 'Cosinus (cos)', desc: 'Beregner cosinus til en vinkel.', example: 'Eksempel: cos(60) = 0.5 (i DEG-modus)' },
+                'tan': { title: 'Tangens (tan)', desc: 'Beregner tangens til en vinkel. Merk: tan(90°) er udefinert.', example: 'Eksempel: tan(45) = 1 (i DEG-modus)' },
+                'log': { title: 'Logaritme (log)', desc: 'Briggsk logaritme med grunntall 10. Finner eksponenten som 10 må opphøyes i for å få tallet.', example: 'Eksempel: log(100) = 2 fordi 10² = 100' },
+                'ln': { title: 'Naturlig logaritme (ln)', desc: 'Naturlig logaritme med grunntall e (≈2.71828).', example: 'Eksempel: ln(e) = 1, ln(1) = 0' },
+                'sqrt': { title: 'Kvadratrot (√)', desc: 'Finner tallet som ganget med seg selv gir det oppgitte tallet.', example: 'Eksempel: √(9) = 3 fordi 3 × 3 = 9' },
+                'cbrt': { title: 'Kubikkrot (∛)', desc: 'Finner tallet som ganget med seg selv tre ganger gir det oppgitte tallet.', example: 'Eksempel: ∛(27) = 3 fordi 3 × 3 × 3 = 27' },
+                'square': { title: 'Kvadrat (x²)', desc: 'Opphøyer tallet i andre potens.', example: 'Eksempel: 5² = 25' },
+                'power': { title: 'Potens (xⁿ)', desc: 'Opphøyer et tall i en valgfri eksponent.', example: 'Eksempel: 2^3 = 8 (2 opphøyd i 3)' },
+                'factorial': { title: 'Fakultet (x!)', desc: 'Produktet av alle positive heltall opp til tallet. Kun gyldig for ikke-negative heltall.', example: 'Eksempel: 5! = 5×4×3×2×1 = 120' },
+                'reciprocal': { title: 'Resiprok (¹/x)', desc: 'Finner det inverse tallet (1 delt på tallet).', example: 'Eksempel: ¹/4 = 0.25 fordi 1/4 = 0.25' },
+                'pi': { title: 'π (pi)', desc: 'Forholdet mellom sirkelens omkrets og diameter, omtrent 3.14159.', example: 'Eksempel: Omkrets av sirkel med radius r = 2πr' },
+                'e': { title: 'e (Eulers tall)', desc: 'Grunntallet for naturlige logaritmer, omtrent 2.71828.', example: 'Eksempel: e ≈ 2.71828. Brukes i eksponentiell vekst: e^x' },
+                'percent': { title: 'Prosent (%)', desc: 'Konverterer et tall til prosent ved å dele på 100.', example: 'Eksempel: 50% = 0.5\n(2+3)% = 0.05' },
+                'trigMode': { title: 'DEG/RAD', desc: 'Bytter mellom grader og radianer for trigonometriske funksjoner.', example: 'I DEG-modus: sin(30) = 0.5\nI RAD-modus: sin(π/6) = 0.5' },
+                'memoryClear': { title: 'Minne tøm (MC)', desc: 'Tømmer det lagrede minnet til 0.', example: 'Etter MC er minnet 0.' },
+                'memoryRecall': { title: 'Minne hent (MR)', desc: 'Henter verdien fra minnet og setter den inn i uttrykket.', example: 'Hvis minne = 5, setter MR inn 5.' },
+                'memoryAdd': { title: 'Legg til minne (M+)', desc: 'Legger resultatet til verdien i minnet.', example: 'Hvis minne = 10 og resultat = 5, blir minne 15 etter M+.' },
+                'memorySubtract': { title: 'Trekk fra minne (M-)', desc: 'Trekker resultatet fra verdien i minnet.', example: 'Hvis minne = 10 og resultat = 5, blir minne 5 etter M-.' },
+                'ans': { title: 'Siste svar (ANS)', desc: 'Henter det sist beregnede resultatet.', example: 'Etter å ha regnet 2+3=5, vil ANS sette inn 5.' },
+                'paren': { title: 'Parenteser', desc: 'Brukes til å gruppere deler av et uttrykk for å kontrollere rekkefølgen på beregninger.', example: 'Eksempel: (2+3)×4 = 20 (uten parenteser ville det vært 2+3×4 = 14)' }
+            };
+
+            const conversionData = {
+                length:{label:'Lengde',ico:'📏',units:{meter:{l:'Meter',s:'m',f:1},kilometer:{l:'Kilometer',s:'km',f:1000},centimeter:{l:'Centimeter',s:'cm',f:0.01},millimeter:{l:'Millimeter',s:'mm',f:0.001},nautical_mile:{l:'Nautisk mil',s:'nmi',f:1852},mile:{l:'Mile',s:'mi',f:1609.344},yard:{l:'Yard',s:'yd',f:0.9144},foot:{l:'Fot',s:'ft',f:0.3048},inch:{l:'Tomme',s:'in',f:0.0254}}},
+                weight:{label:'Vekt',ico:'⚖️',units:{kilogram:{l:'Kilogram',s:'kg',f:1},gram:{l:'Gram',s:'g',f:0.001},milligram:{l:'Milligram',s:'mg',f:1e-6},ton:{l:'Tonn',s:'t',f:1000},carat:{l:'Karat',s:'ct',f:0.0002},pound:{l:'Pund',s:'lb',f:0.45359237},ounce:{l:'Unse',s:'oz',f:0.028349523},stone:{l:'Stone',s:'st',f:6.35029318}}},
+                temperature:{label:'Temperatur',ico:'🌡️',units:{celsius:{l:'Celsius',s:'°C',f:null},fahrenheit:{l:'Fahrenheit',s:'°F',f:null},kelvin:{l:'Kelvin',s:'K',f:null}}},
+                area:{label:'Areal',ico:'📐',units:{square_meter:{l:'m²',s:'m²',f:1},square_kilometer:{l:'km²',s:'km²',f:1e6},hectare:{l:'Hektar',s:'ha',f:10000},acre:{l:'Acre',s:'ac',f:4046.8564224},square_foot:{l:'ft²',s:'ft²',f:0.09290304}}},
+                volume:{label:'Volum',ico:'🧊',units:{liter:{l:'Liter',s:'L',f:1},deciliter:{l:'Desiliter',s:'dL',f:0.1},milliliter:{l:'mL',s:'mL',f:0.001},cubic_meter:{l:'m³',s:'m³',f:1000},gallon:{l:'Gallon (US)',s:'gal',f:3.785411784},quart:{l:'Quart (US)',s:'qt',f:0.946352946},pint:{l:'Pint (US)',s:'pt',f:0.473176473},cup:{l:'Cup (US)',s:'cup',f:0.2365882365}}},
+                speed:{label:'Fart',ico:'🚀',units:{meter_per_second:{l:'m/s',s:'m/s',f:1},km_per_hour:{l:'km/t',s:'km/t',f:0.27777778},mph:{l:'mph',s:'mph',f:0.44704},knot:{l:'Knop',s:'kn',f:0.51444444}}},
+                time:{label:'Tid',ico:'⏱️',units:{second:{l:'Sekund',s:'s',f:1},minute:{l:'Minutt',s:'min',f:60},hour:{l:'Time',s:'t',f:3600},day:{l:'Dag',s:'d',f:86400},week:{l:'Uke',s:'u',f:604800},month:{l:'Måned (30d)',s:'mnd',f:2592000},year:{l:'År (365d)',s:'år',f:31536000}}},
+                energy:{label:'Energi',ico:'⚡',units:{joule:{l:'Joule',s:'J',f:1},kilojoule:{l:'Kilojoule',s:'kJ',f:1000},calorie:{l:'Kalori',s:'cal',f:4.184},kilocalorie:{l:'Kilokalori',s:'kcal',f:4184},watt_hour:{l:'Watt-time',s:'Wh',f:3600},kwh:{l:'Kilowatt-time',s:'kWh',f:3600000}}},
+                pressure:{label:'Trykk',ico:'🎈',units:{pascal:{l:'Pascal',s:'Pa',f:1},kilopascal:{l:'Kilopascal',s:'kPa',f:1000},bar:{l:'Bar',s:'bar',f:100000},psi:{l:'PSI',s:'psi',f:6894.757},atmosphere:{l:'Atmosfære',s:'atm',f:101325}}},
+                fuel:{label:'Drivstoff',ico:'⛽',units:{l_per_100km:{l:'L/100km',s:'L/100km',f:null},mpg_us:{l:'MPG (US)',s:'mpg',f:235.215},mpg_uk:{l:'MPG (UK)',s:'mpg',f:282.481}}},
+                currency:{label:'Valuta',ico:'💱',units:{
+                    nok:{l:'Norsk krone',s:'NOK',f:1,sym:'kr',flag:'https://flagcdn.com/w40/no.png'},
+                    usd:{l:'Amerikansk dollar',s:'USD',f:10.5,sym:'$',flag:'https://flagcdn.com/w40/us.png'},
+                    eur:{l:'Euro',s:'EUR',f:11.2,sym:'€',flag:'https://flagcdn.com/w40/eu.png'},
+                    gbp:{l:'Britisk pund',s:'GBP',f:13.0,sym:'£',flag:'https://flagcdn.com/w40/gb.png'},
+                    sek:{l:'Svensk krone',s:'SEK',f:1.05,sym:'kr',flag:'https://flagcdn.com/w40/se.png'},
+                    dkk:{l:'Dansk krone',s:'DKK',f:1.5,sym:'kr',flag:'https://flagcdn.com/w40/dk.png'},
+                    jpy:{l:'Japansk yen',s:'JPY',f:0.067,sym:'¥',flag:'https://flagcdn.com/w40/jp.png'},
+                    chf:{l:'Sveitsisk franc',s:'CHF',f:11.75,sym:'Fr',flag:'https://flagcdn.com/w40/ch.png'}
+                }}
+            };
+            const CUR_NO={NOK:'Norsk krone',USD:'Amerikansk dollar',EUR:'Euro',GBP:'Britisk pund',SEK:'Svensk krone',DKK:'Dansk krone',JPY:'Japansk yen',CHF:'Sveitsisk franc',CNY:'Kinesisk yuan',CAD:'Canadisk dollar',AUD:'Australsk dollar',PLN:'Polsk złoty',INR:'Indisk rupi',BRL:'Brasiliansk real',RUB:'Russisk rubel',TRY:'Tyrkisk lira',THB:'Thailandsk baht',MXN:'Meksikansk peso',KRW:'Sørkoreansk won',ISK:'Islandsk krone',CZK:'Tsjekkisk koruna',HUF:'Ungarsk forint',ZAR:'Sørafrikansk rand',HKD:'Hongkong-dollar',SGD:'Singaporsk dollar',NZD:'Newzealandsk dollar',AED:'UAE dirham',SAR:'Saudiarabisk riyal'};
+
+            const standardLayout = [
+                {l:'MC',a:'memoryClear',c:'memory-btn'},{l:'MR',a:'memoryRecall',c:'memory-btn'},{l:'M+',a:'memoryAdd',c:'memory-btn'},{l:'M-',a:'memorySubtract',c:'memory-btn'},
+                {l:'C',a:'clear',c:'clear-btn'},{l:'⌫',a:'backspace',c:'backspace-btn'},{l:'%',a:'percent',c:'operator-btn'},{l:'÷',a:'operator',v:'÷',c:'operator-btn'},
+                {l:'7',a:'number',v:'7',c:'number-btn'},{l:'8',a:'number',v:'8',c:'number-btn'},{l:'9',a:'number',v:'9',c:'number-btn'},{l:'×',a:'operator',v:'×',c:'operator-btn'},
+                {l:'4',a:'number',v:'4',c:'number-btn'},{l:'5',a:'number',v:'5',c:'number-btn'},{l:'6',a:'number',v:'6',c:'number-btn'},{l:'−',a:'operator',v:'−',c:'operator-btn'},
+                {l:'1',a:'number',v:'1',c:'number-btn'},{l:'2',a:'number',v:'2',c:'number-btn'},{l:'3',a:'number',v:'3',c:'number-btn'},{l:'+',a:'operator',v:'+',c:'operator-btn'},
+                {l:'±',a:'sign',c:'function-btn'},{l:'0',a:'number',v:'0',c:'number-btn'},{l:'.',a:'decimal',c:'number-btn'},{l:'=',a:'equals',c:'equals-btn'}
+            ];
+            const professionalLayout = [
+                {l:'MC',a:'memoryClear',c:'memory-btn'},{l:'MR',a:'memoryRecall',c:'memory-btn'},{l:'M+',a:'memoryAdd',c:'memory-btn'},{l:'M-',a:'memorySubtract',c:'memory-btn'},
+                {l:'C',a:'clear',c:'clear-btn'},{l:'⌫',a:'backspace',c:'backspace-btn'},{l:'(',a:'paren',v:'(',c:'function-btn'},{l:')',a:'paren',v:')',c:'function-btn'},
+                {l:'sin',a:'func',v:'sin(',c:'function-btn'},{l:'cos',a:'func',v:'cos(',c:'function-btn'},{l:'tan',a:'func',v:'tan(',c:'function-btn'},{l:'√',a:'func',v:'√(',c:'function-btn'},
+                {l:'log',a:'func',v:'log(',c:'function-btn'},{l:'ln',a:'func',v:'ln(',c:'function-btn'},{l:'x²',a:'power',v:'²',c:'function-btn'},{l:'xⁿ',a:'power',v:'^',c:'function-btn'},
+                {l:'π',a:'constant',v:'π',c:'constant-btn'},{l:'e',a:'constant',v:'e',c:'constant-btn'},{l:'x!',a:'factorial',c:'function-btn'},{l:'¹/x',a:'reciprocal',c:'function-btn'},
+                {l:'7',a:'number',v:'7',c:'number-btn'},{l:'8',a:'number',v:'8',c:'number-btn'},{l:'9',a:'number',v:'9',c:'number-btn'},{l:'÷',a:'operator',v:'÷',c:'operator-btn'},
+                {l:'4',a:'number',v:'4',c:'number-btn'},{l:'5',a:'number',v:'5',c:'number-btn'},{l:'6',a:'number',v:'6',c:'number-btn'},{l:'×',a:'operator',v:'×',c:'operator-btn'},
+                {l:'1',a:'number',v:'1',c:'number-btn'},{l:'2',a:'number',v:'2',c:'number-btn'},{l:'3',a:'number',v:'3',c:'number-btn'},{l:'−',a:'operator',v:'−',c:'operator-btn'},
+                {l:'±',a:'sign',c:'function-btn'},{l:'0',a:'number',v:'0',c:'number-btn'},{l:'.',a:'decimal',c:'number-btn'},{l:'+',a:'operator',v:'+',c:'operator-btn'},
+                {l:'%',a:'percent',c:'operator-btn'},{l:'ANS',a:'ans',c:'constant-btn'},{l:'DEG',a:'trigMode',c:'function-btn'},{l:'=',a:'equals',c:'equals-btn'}
+            ];
+            const rpnLayout = [
+                {l:'C',a:'rpnClear',c:'clear-btn'},{l:'⌫',a:'rpnBackspace',c:'backspace-btn'},{l:'SWAP',a:'rpnSwap',c:'function-btn'},{l:'DROP',a:'rpnDrop',c:'function-btn'},
+                {l:'7',a:'rpnNumber',v:'7',c:'number-btn'},{l:'8',a:'rpnNumber',v:'8',c:'number-btn'},{l:'9',a:'rpnNumber',v:'9',c:'number-btn'},{l:'+',a:'rpnOp',v:'+',c:'operator-btn'},
+                {l:'4',a:'rpnNumber',v:'4',c:'number-btn'},{l:'5',a:'rpnNumber',v:'5',c:'number-btn'},{l:'6',a:'rpnNumber',v:'6',c:'number-btn'},{l:'−',a:'rpnOp',v:'-',c:'operator-btn'},
+                {l:'1',a:'rpnNumber',v:'1',c:'number-btn'},{l:'2',a:'rpnNumber',v:'2',c:'number-btn'},{l:'3',a:'rpnNumber',v:'3',c:'number-btn'},{l:'×',a:'rpnOp',v:'*',c:'operator-btn'},
+                {l:'0',a:'rpnNumber',v:'0',c:'number-btn'},{l:'.',a:'rpnDecimal',c:'number-btn'},{l:'ENTER',a:'rpnEnter',c:'equals-btn'},{l:'÷',a:'rpnOp',v:'/',c:'operator-btn'},
+                {l:'MC',a:'memoryClear',c:'memory-btn'},{l:'MR',a:'memoryRecall',c:'memory-btn'},{l:'M+',a:'memoryAdd',c:'memory-btn'},{l:'M-',a:'memorySubtract',c:'memory-btn'}
+            ];
+
+            function parseNum(v){ if(typeof v!=='string')v=String(v); return parseFloat(v.replace(',','.')); }
+            function formatNumber(num, dec) {
+                if (typeof num !== 'number' || !Number.isFinite(num)) return 'Error';
+                const d = dec || state.decimals;
+                if (Number.isInteger(num) && Math.abs(num) < 1e15) return num.toString();
+                const abs = Math.abs(num);
+                if (abs !== 0 && (abs < 1e-6 || abs > 1e12)) return num.toExponential(6);
+                let s = num.toPrecision(d);
+                if (s.includes('.')) s = s.replace(/\.?0+$/,'');
+                if (s === '-0') s = '0';
+                return s;
+            }
+            function evaluateExpression(expr) { return evaluateRPN(toRPN(tokenize(expr))); }
+            function tokenize(expr) {
+                const tokens=[]; let i=0; const s=expr;
+                while(i<s.length){
+                    const c=s[i];
+                    if(c===' '){i++;continue;}
+                    if(c==='π'){tokens.push({t:'num',v:Math.PI});i++;continue;}
+                    if(c==='e'&&!/[a-zA-Z]/.test(s[i+1]||'')&&!/[a-zA-Z0-9]/.test(s[i-1]||'')){tokens.push({t:'num',v:Math.E});i++;continue;}
+                    if(/[0-9.]/.test(c)){
+                        let n='';
+                        while(i<s.length&&/[0-9.]/.test(s[i])){n+=s[i];i++;}
+                        if((s[i]==='e'||s[i]==='E')&&/[0-9+-]/.test(s[i+1]||'')){
+                            n+=s[i++];
+                            if(s[i]==='+'||s[i]==='-')n+=s[i++];
+                            while(i<s.length&&/[0-9]/.test(s[i])){n+=s[i];i++;}
+                        }
+                        tokens.push({t:'num',v:parseFloat(n)});
+                        continue;
+                    }
+                    if(/[+\-−×÷^%]/.test(c)){
+                        if((c==='-'||c==='−')&&(tokens.length===0||tokens[tokens.length-1].t==='op'||tokens[tokens.length-1].t==='lp'||tokens[tokens.length-1].t==='func')){tokens.push({t:'unary'});}
+                        else { tokens.push({t:'op',v:c==='−'?'-':c});}
+                        i++;continue;
+                    }
+                    if(c==='('){tokens.push({t:'lp',v:'('});i++;continue;}
+                    if(c===')'){tokens.push({t:'rp',v:')'});i++;continue;}
+                    if(c==='√'){tokens.push({t:'func',v:'sqrt'});i++;continue;}
+                    if(c==='∛'){tokens.push({t:'func',v:'cbrt'});i++;continue;}
+                    if(c==='²'){tokens.push({t:'sq'});i++;continue;}
+                    if(c==='!'){tokens.push({t:'fact'});i++;continue;}
+                    if(/[a-zA-Z]/.test(c)){let w='';while(i<s.length&&/[a-zA-Z]/.test(s[i])){w+=s[i];i++;}const lw=w.toLowerCase();
+                        if(['sin','cos','tan','asin','acos','atan','log','ln','sqrt','cbrt'].includes(lw)){tokens.push({t:'func',v:lw});}
+                        else if(lw==='ans'){tokens.push({t:'num',v:state.lastAnswer});}
+                        else{tokens.push({t:'err',v:w});}
+                        continue;
+                    }
+                    i++;
+                }
+                return tokens;
+            }
+            function toRPN(tokens){
+                const out=[],ops=[];const prec={'+':1,'-':1,'×':2,'÷':2,'%':3,'^':4};const rightAssoc={'^':true};
+                for(const t of tokens){
+                    if(t.t==='err')throw new Error('Ugyldig token: '+t.v);
+                    if(t.t==='num'){out.push(t);continue;}
+                    if(t.t==='func'){ops.push(t);continue;}
+                    if(t.t==='unary'){ops.push({t:'op',v:'unary',p:3.5});continue;}
+                    if(t.t==='lp'){ops.push(t);continue;}
+                    if(t.t==='rp'){while(ops.length&&ops[ops.length-1].t!=='lp'){out.push(ops.pop());}if(ops.length)ops.pop();else throw new Error('Ubalanserte parenteser');if(ops.length&&ops[ops.length-1].t==='func')out.push(ops.pop());continue;}
+                    if(t.t==='sq'||t.t==='fact'){out.push(t);continue;}
+                    if(t.t==='op'){const p=prec[t.v]||1;while(ops.length&&ops[ops.length-1].t!=='lp'){const top=ops[ops.length-1];const tp=top.p||(prec[top.v]||0);if(tp>p||(tp===p&&!rightAssoc[t.v]))out.push(ops.pop());else break;}ops.push({t:'op',v:t.v,p});continue;}
+                }
+                while(ops.length){const op=ops.pop();if(op.t==='lp')throw new Error('Ubalanserte parenteser');out.push(op);}
+                return out;
+            }
+            function evaluateRPN(rpn){
+                const st=[];
+                for(const t of rpn){
+                    if(t.t==='num'){st.push(t.v);}
+                    else if(t.t==='op'){
+                        if(t.v==='unary'){const a=st.pop();if(a===undefined)throw new Error('Ugyldig uttrykk');st.push(-a);}
+                        else{const b=st.pop(),a=st.pop();if(a===undefined||b===undefined)throw new Error('Ugyldig uttrykk');switch(t.v){
+                            case '+':st.push(a+b);break; case '-':st.push(a-b);break; case '×':st.push(a*b);break;
+                            case '÷':if(b===0)throw new Error('Divisjon med null');st.push(a/b);break;
+                            case '%':st.push(a%b);break; case '^':st.push(Math.pow(a,b));break; }}
+                    }
+                    else if(t.t==='func'){const a=st.pop();if(a===undefined)throw new Error('Ugyldig funksjonsargument');const rad=state.trigMode==='rad';const toRad=v=>rad?v:v*Math.PI/180;switch(t.v){
+                        case 'sin':st.push(Math.sin(toRad(a)));break; case 'cos':st.push(Math.cos(toRad(a)));break; case 'tan':st.push(Math.tan(toRad(a)));break;
+                        case 'asin':st.push(rad?Math.asin(a):Math.asin(a)*180/Math.PI);break;
+                        case 'acos':st.push(rad?Math.acos(a):Math.acos(a)*180/Math.PI);break;
+                        case 'atan':st.push(rad?Math.atan(a):Math.atan(a)*180/Math.PI);break;
+                        case 'log':if(a<=0)throw new Error('Logaritme krever positivt tall');st.push(Math.log10(a));break;
+                        case 'ln':if(a<=0)throw new Error('Logaritme krever positivt tall');st.push(Math.log(a));break;
+                        case 'sqrt':if(a<0)throw new Error('Kan ikke ta rot av negativt tall');st.push(Math.sqrt(a));break;
+                        case 'cbrt':st.push(Math.cbrt(a));break; }}
+                    else if(t.t==='sq'){const a=st.pop();if(a===undefined)throw new Error('Ugyldig uttrykk');st.push(a*a);}
+                    else if(t.t==='fact'){const a=st.pop();if(a===undefined||a<0||!Number.isInteger(a)||a>170)throw new Error('Fakultet krever positivt heltall');let r=1;for(let i=2;i<=a;i++)r*=i;st.push(r);}
+                }
+                if(st.length!==1)throw new Error('Ugyldig uttrykk');
+                return st[0];
+            }
+
+            function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+            function getDisplayExpression(){let e=state.expression.replace(/×/g,' × ').replace(/÷/g,' ÷ ').replace(/−/g,' − ').replace(/\+/g,' + ').replace(/\^/g,' ^ ').replace(/\s+/g,' ').trim();return e;}
+            function updateDisplay(){
+                if(state.mode==='rpn'){
+                    expressionDisplay.innerHTML='<span>'+escapeHtml(state.stack.length?('Stack: '+state.stack.map(formatNumber).join(', ')):'')+'</span>';
+                } else {
+                    expressionDisplay.innerHTML='<span>'+escapeHtml(getDisplayExpression())+'</span>';
+                }
+                resultDisplay.textContent=state.result;
+                resultDisplay.classList.remove('shrink','error');
+                if(state.result==='Error'||state.result==='Ugyldig uttrykk')resultDisplay.classList.add('error');
+                else if(state.result.length>12)resultDisplay.classList.add('shrink');
+                expressionDisplay.scrollLeft=expressionDisplay.scrollWidth;
+                resultDisplay.scrollLeft=resultDisplay.scrollWidth;
+                if(state.mode!=='rpn')updateLiveResult(); else liveResultEl.textContent='';
+            }
+            function updateLiveResult(){
+                if(state.expression.trim()===''){liveResultEl.textContent='';return;}
+                try{const r=evaluateExpression(state.expression);if(typeof r==='number'&&Number.isFinite(r))liveResultEl.textContent='= '+formatNumber(r);else liveResultEl.textContent='';}catch(e){liveResultEl.textContent='';}
+            }
+            function appendToExpression(str){
+                if(state.justEvaluated&&state.result!=='Error'&&state.result!=='Ugyldig uttrykk'){if(/[0-9(πe√∛]/.test(str))state.expression=str;else state.expression=state.lastAnswer.toString()+str;state.justEvaluated=false;}
+                else if(state.justEvaluated){state.expression=str;state.justEvaluated=false;}
+                else {if(state.expression.length>=CONFIG.maxExpressionLength){showToast('Maksimal lengde');return false;}state.expression+=str;}
+                updateDisplay();return true;
+            }
+            function insertValue(str){
+                if(state.justEvaluated){state.expression=str;state.justEvaluated=false;updateDisplay();return;}
+                const e=state.expression;
+                if(e!==''&&/[0-9)πe]/.test(e[e.length-1]))state.expression+='×'+str;else state.expression+=str;
+                updateDisplay();
+            }
+            function handleNumber(num){appendToExpression(num);}
+            function handleOperator(op){
+                if(state.justEvaluated){if(state.result!=='Error'&&state.result!=='Ugyldig uttrykk'){state.expression=state.lastAnswer.toString()+op;state.justEvaluated=false;updateDisplay();return;}else{state.expression='';state.justEvaluated=false;}}
+                const expr=state.expression;
+                if(expr===''){if(op==='−'){state.expression='−';updateDisplay();}return;}
+                const last=expr[expr.length-1];
+                if(last==='('){if(op==='−')state.expression+='−';updateDisplay();return;}
+                if(['+','−','×','÷','^'].includes(last)){state.expression=expr.slice(0,-1)+op;}
+                else state.expression+=op;
+                updateDisplay();
+            }
+            function handleDecimal(){const expr=state.expression;if(state.justEvaluated){state.expression='0.';state.justEvaluated=false;updateDisplay();return;}if(expr===''){state.expression='0.';updateDisplay();return;}let i=expr.length-1,has=false;while(i>=0&&/[0-9.]/.test(expr[i])){if(expr[i]==='.'){has=true;break;}i--;}if(!has)state.expression+='.';updateDisplay();}
+            function handleParen(p){if(state.justEvaluated&&state.result!=='Error'){state.expression=p;state.justEvaluated=false;updateDisplay();return;}if(p==='('){const e=state.expression;if(e!==''&&/[0-9)]/.test(e[e.length-1]))state.expression+='×(';else state.expression+='(';}else{const oc=(state.expression.match(/\(/g)||[]).length,cc=(state.expression.match(/\)/g)||[]).length;if(cc<oc&&state.expression!==''&&!/[(\+−×÷\^]/.test(state.expression[state.expression.length-1]))state.expression+=')';}updateDisplay();}
+            function handleFunc(f){if(state.justEvaluated&&state.result!=='Error'){state.expression=f;state.justEvaluated=false;updateDisplay();return;}const e=state.expression;if(e!==''&&/[0-9)]/.test(e[e.length-1]))state.expression+='×'+f;else state.expression+=f;updateDisplay();}
+            function handleConstant(v){insertValue(v);}
+            function handlePower(p){if(p==='²'){const e=state.expression;if(state.justEvaluated&&state.result!=='Error'){state.expression=state.lastAnswer.toString()+'²';state.justEvaluated=false;updateDisplay();return;}if(e!==''&&/[0-9)]/.test(e[e.length-1]))state.expression+='²';updateDisplay();}else handleOperator('^');}
+            function handleFactorial(){const e=state.expression;if(state.justEvaluated&&state.result!=='Error'){state.expression=state.lastAnswer.toString()+'!';state.justEvaluated=false;updateDisplay();return;}if(e!==''&&/[0-9)]/.test(e[e.length-1]))state.expression+='!';updateDisplay();}
+            function handleReciprocal(){const e=state.expression;if(state.justEvaluated&&state.result!=='Error'){state.expression='('+state.lastAnswer.toString()+')^(-1)';state.justEvaluated=false;updateDisplay();return;}if(e!==''&&/[0-9)]/.test(e[e.length-1]))state.expression='('+e+')^(-1)';updateDisplay();}
+            function handleSign(){
+                const e=state.expression;
+                if(state.justEvaluated&&state.result!=='Error'){state.expression='−('+state.lastAnswer.toString()+')';state.justEvaluated=false;updateDisplay();return;}
+                if(e===''){state.expression='−';updateDisplay();return;}
+                let i=e.length-1,start=-1;
+                while(i>=0){const c=e[i];if(/[0-9.)]/.test(c)){i--;continue;}else if(c==='('&&i>0&&e[i-1]==='−'){start=i-1;break;}else if(c==='−'&&i===0){start=0;break;}else if('+-×÷^'.includes(c)){start=i+1;break;}i--;}
+                if(start===-1)start=0;
+                const before=e.slice(0,start),rest=e.slice(start);
+                if(rest===''){state.expression=before+'−';updateDisplay();return;}
+                if(rest.startsWith('−(')&&rest.endsWith(')'))state.expression=before+rest.slice(2,-1);
+                else if(rest.startsWith('-'))state.expression=before+rest.slice(1);
+                else state.expression=before+'−('+rest+')';
+                updateDisplay();
+            }
+            function handlePercent(){const e=state.expression;if(state.justEvaluated&&state.result!=='Error'){state.expression='('+state.lastAnswer.toString()+')÷100';state.justEvaluated=false;updateDisplay();return;}if(e!==''&&/[0-9)]/.test(e[e.length-1]))state.expression='('+e+')÷100';updateDisplay();}
+            function handleAns(){insertValue(state.lastAnswer.toString());}
+            function handleTrigMode(){state.trigMode=state.trigMode==='deg'?'rad':'deg';updateTrigLabel();showToast('Vinkelmåte: '+(state.trigMode==='deg'?'DEG':'RAD'));}
+            function updateTrigLabel(){const btn=document.querySelector('.calc-btn[data-action="trigMode"] .btn-label');if(btn)btn.textContent=state.trigMode==='deg'?'DEG':'RAD';}
+            function handleEquals(){
+                const expr=state.expression.trim();if(expr==='')return;
+                try{
+                    const result=evaluateExpression(expr);
+                    const formatted=formatNumber(result);
+                    addHistoryEntry(expr,formatted);
+                    state.result=formatted;state.lastAnswer=result;state.justEvaluated=true;state.expression=expr;
+                    updateDisplay();
+                }catch(e){state.result='Error';state.justEvaluated=true;updateDisplay();showToast(e.message||'Beregningsfeil');}
+            }
+            function handleClear(){state.expression='';state.result='0';state.justEvaluated=false;liveResultEl.textContent='';updateDisplay();}
+            function handleBackspace(){
+                if(state.justEvaluated)state.justEvaluated=false;
+                const e=state.expression;if(e==='')return;
+                const funcs=['sin(','cos(','tan(','asin(','acos(','atan(','log(','ln(','√(','∛('];
+                let removed=false;
+                for(const f of funcs){if(e.endsWith(f)){state.expression=e.slice(0,-f.length);removed=true;break;}}
+                if(!removed)state.expression=e.slice(0,-1);
+                if(state.expression==='')state.result='0';
+                updateDisplay();
+            }
+
+            function memoryClear(){state.memory=0;showToast('Minne tømt');}
+            function memoryRecall(){insertValue(state.memory.toString());showToast('Minne hentet');}
+            function memoryAdd(){const r=parseFloat(state.result);if(!isNaN(r)&&Number.isFinite(r)){state.memory+=r;showToast('Lagt til minne');}else showToast('Ugyldig verdi for M+');}
+            function memorySubtract(){const r=parseFloat(state.result);if(!isNaN(r)&&Number.isFinite(r)){state.memory-=r;showToast('Trukket fra minne');}else showToast('Ugyldig verdi for M-');}
+
+            function rpnClear(){state.stack=[];state.expression='';state.result='0';updateDisplay();}
+            function rpnBackspace(){if(state.expression!==''){state.expression=state.expression.slice(0,-1);updateDisplay();}else if(state.stack.length){state.stack.pop();updateRpnDisplay();}}
+            function rpnSwap(){if(state.stack.length>=2){const a=state.stack.pop(),b=state.stack.pop();state.stack.push(a,b);updateRpnDisplay();}else showToast('Trenger to tall');}
+            function rpnDrop(){if(state.stack.length)state.stack.pop();updateRpnDisplay();}
+            function rpnEnter(){if(state.expression!==''){const v=parseFloat(state.expression);if(!isNaN(v)){state.stack.push(v);state.expression='';}else showToast('Ugyldig tall');}else if(state.result!=='0'&&state.result!=='Error'){const v=parseFloat(state.result);if(!isNaN(v))state.stack.push(v);}updateRpnDisplay();}
+            function rpnNumber(n){state.expression+=n;updateDisplay();}
+            function rpnDecimal(){if(!state.expression.includes('.'))state.expression+=state.expression===''?'0.':'.';updateDisplay();}
+            function rpnOp(op){if(state.stack.length<2){showToast('Trenger to tall');return;}const b=state.stack.pop(),a=state.stack.pop();let res;switch(op){case '+':res=a+b;break;case '-':res=a-b;break;case '*':res=a*b;break;case '/':if(b===0){state.stack.push(a,b);showToast('Divisjon med null');return;}res=a/b;break;}state.stack.push(res);state.result=formatNumber(res);state.expression='';updateRpnDisplay();}
+            function updateRpnDisplay(){if(state.stack.length){state.result=formatNumber(state.stack[state.stack.length-1]);}else if(state.expression==='')state.result='0';updateDisplay();}
+
+            const pctTypes=[
+                {k:'of', l:'% av tall', x:'Prosent (%)', y:'Verdi'},
+                {k:'what', l:'Hvor mange %', x:'Del', y:'Helhet'},
+                {k:'change', l:'Endring %', x:'Startverdi', y:'Sluttverdi'}
+            ];
+            function renderPctChips(){
+                pctChips.innerHTML='';
+                pctTypes.forEach(t=>{
+                    const chip=document.createElement('button');
+                    chip.className='chip'+(state.pctType===t.k?' active':'');
+                    chip.textContent=t.l;
+                    chip.addEventListener('click',()=>{ state.pctType=t.k; renderPctChips();renderPctLabels();percentCalc(); });
+                    pctChips.appendChild(chip);
+                });
+            }
+            function renderPctLabels(){
+                const t=pctTypes.find(x=>x.k===state.pctType)||pctTypes[0];
+                pctXLabel.textContent=t.x; pctYLabel.textContent=t.y;
+            }
+            function percentCalc(){
+                const x=parseNum(pctXInput.value), y=parseNum(pctYInput.value);
+                const hasX=!isNaN(x), hasY=!isNaN(y);
+                let res=null, sentence='';
+                if(state.pctType==='of'){ if(hasX&&hasY){ res=x/100*y; sentence=formatNumber(x)+' % av '+formatNumber(y)+' = '+formatNumber(res); } }
+                else if(state.pctType==='what'){ if(hasX&&hasY){ if(y!==0){ res=x/y*100; sentence=formatNumber(x)+' av '+formatNumber(y)+' = '+formatNumber(res)+' %'; } else sentence='Helhet kan ikke være 0'; } }
+                else { if(hasX&&hasY){ if(x!==0){ res=(y-x)/Math.abs(x)*100; sentence=(res>=0?'Økning på ':'Nedgang på ')+formatNumber(Math.abs(res))+' % fra '+formatNumber(x)+' til '+formatNumber(y); } else sentence='Startverdi kan ikke være 0'; } }
+                state.pctResult=res;
+                if(res===null){ pctResult.textContent='–'; pctSentence.textContent=sentence; }
+                else { pctResult.textContent=(state.pctType==='of'?formatNumber(res):formatNumber(res)+' %'); pctSentence.textContent=sentence; }
+            }
+            pctXInput.addEventListener('input',percentCalc);
+            pctYInput.addEventListener('input',percentCalc);
+            pctUseBtn.addEventListener('click',()=>{
+                if(state.pctResult!==null&&Number.isFinite(state.pctResult)){ state.lastAnswer=state.pctResult; showToast('Lagret som ANS: '+formatNumber(state.pctResult)); }
+                else showToast('Ingen gyldig verdi å lagre');
+            });
+
+            function getUnitList(cat){const d=conversionData[cat];return Object.keys(d.units).map(k=>{const u=d.units[k];return {key:k,label:u.l,symbol:u.s,factor:u.f,flag:u.flag||null,sym:u.sym||''};});}
+            function setBadge(el,u){
+                if(u.flag){
+                    el.classList.add('flag');
+                    el.innerHTML='<img class="u-flag" src="'+u.flag+'" alt="" loading="lazy">';
+                    const img=el.querySelector('img');
+                    if(img)img.addEventListener('error',()=>{ el.classList.remove('flag'); el.textContent=u.symbol; });
+                } else { el.classList.remove('flag'); el.textContent=u.symbol; }
+            }
+            function populateCategoryChips(){categoryChips.innerHTML='';Object.keys(conversionData).forEach(cat=>{const chip=document.createElement('button');chip.className='chip'+(cat===state.converter.category?' active':'');chip.innerHTML='<span class="chip-ico">'+(conversionData[cat].ico||'')+'</span>'+escapeHtml(conversionData[cat].label);chip.dataset.category=cat;chip.addEventListener('click',()=>setConverterCategory(cat));categoryChips.appendChild(chip);});}
+            function setConverterCategory(cat){state.converter.category=cat;$$('.chip').forEach(c=>c.classList.toggle('active',c.dataset.category===cat));const units=getUnitList(cat);if(units.length){const prevF=state.converter.fromUnit,prevT=state.converter.toUnit;state.converter.fromUnit=units[0].key;state.converter.toUnit=units.length>1?units[1].key:units[0].key;if(prevF&&units.some(u=>u.key===prevF))state.converter.fromUnit=prevF;if(prevT&&units.some(u=>u.key===prevT))state.converter.toUnit=prevT;}renderUnitPickers();refreshRateStatus();performConversion();}
+            function renderUnitPickers(){
+                const units=getUnitList(state.converter.category);
+                const f=units.find(u=>u.key===state.converter.fromUnit)||units[0];
+                const t=units.find(u=>u.key===state.converter.toUnit)||units[0];
+                if(f){setBadge(fromUnitSymbol,f);fromUnitName.textContent=f.label;}
+                if(t){setBadge(toUnitSymbol,t);toUnitName.textContent=t.label;}
+            }
+            let sheetTarget='from', sheetUnits=[];
+            function openUnitSheet(target){
+                sheetTarget=target;
+                sheetUnits=getUnitList(state.converter.category);
+                sheetTitle.textContent=sheetTarget==='from'?'Velg «Fra»-enhet':'Velg «Til»-enhet';
+                sheetSearchWrap.style.display=sheetUnits.length>=10?'block':'none';
+                sheetSearchInput.value='';
+                renderSheetGrid('');
+                sheetOverlay.classList.add('open');unitSheet.classList.add('open');
+            }
+            function renderSheetGrid(filter){
+                const f=(filter||'').toLowerCase().trim();
+                const current=sheetTarget==='from'?state.converter.fromUnit:state.converter.toUnit;
+                sheetGrid.innerHTML='';
+                const list=f?sheetUnits.filter(u=>u.label.toLowerCase().includes(f)||u.symbol.toLowerCase().includes(f)||u.key.toLowerCase().includes(f)):sheetUnits;
+                if(!list.length){ sheetGrid.innerHTML='<div class="sheet-empty">Ingen treff for «'+escapeHtml(filter)+'»</div>'; return; }
+                list.forEach(u=>{
+                    const btn=document.createElement('button');
+                    btn.type='button';
+                    btn.className='unit-option'+(u.key===current?' selected':'');
+                    const sym=document.createElement('span');sym.className='u-symbol';setBadge(sym,u);
+                    const lab=document.createElement('span');lab.className='u-label';lab.textContent=u.label;
+                    btn.appendChild(sym);btn.appendChild(lab);
+                    if(u.key===current)btn.insertAdjacentHTML('beforeend','<svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" fill="none"/></svg>');
+                    btn.addEventListener('click',()=>{
+                        if(sheetTarget==='from')state.converter.fromUnit=u.key;else state.converter.toUnit=u.key;
+                        closeUnitSheet();renderUnitPickers();performConversion();showToast(u.label);
+                    });
+                    sheetGrid.appendChild(btn);
+                });
+            }
+            sheetSearchInput.addEventListener('input',()=>renderSheetGrid(sheetSearchInput.value));
+            function closeUnitSheet(){sheetOverlay.classList.remove('open');unitSheet.classList.remove('open');}
+
+            function fetchJSON(url,ms){
+                return new Promise((resolve,reject)=>{
+                    const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+                    const timer=setTimeout(()=>{ if(ctrl)ctrl.abort(); reject(new Error('Tidsavbrudd')); },ms||8000);
+                    fetch(url, ctrl?{signal:ctrl.signal}:{})
+                        .then(r=>{ if(!r.ok)throw new Error('HTTP '+r.status); return r.json(); })
+                        .then(j=>{ clearTimeout(timer); resolve(j); })
+                        .catch(e=>{ clearTimeout(timer); reject(e); });
+                });
+            }
+            function loadCachedMeta(){ try{ const c=JSON.parse(localStorage.getItem('procalc_curmeta')||'null'); if(c&&c.meta&&Object.keys(c.meta).length)return c.meta; }catch(e){} return null; }
+            function cacheMeta(m){ try{ localStorage.setItem('procalc_curmeta',JSON.stringify({t:Date.now(),meta:m})); }catch(e){} }
+            function buildMeta(arr){
+                if(!Array.isArray(arr))return null;
+                const meta={};
+                arr.forEach(co=>{
+                    const cc=(co.cca2||'').toLowerCase();
+                    const flag=co.flags&&co.flags.png;
+                    const curs=co.currencies||{};
+                    Object.keys(curs).forEach(code=>{
+                        if(!/^[A-Z]{3}$/.test(code))return;
+                        if(code==='EUR'){ if(!meta.EUR)meta.EUR={name:'Euro',sym:'€',flag:'https://flagcdn.com/w40/eu.png'}; return; }
+                        if(!meta[code])meta[code]={name:(curs[code]&&curs[code].name)||code,sym:(curs[code]&&curs[code].symbol)||'',flag:flag||('https://flagcdn.com/w40/'+cc+'.png')};
+                    });
+                });
+                return Object.keys(meta).length?meta:null;
+            }
+            function applyCurrencyData(rates,meta){
+                meta=meta||{};
+                const prev=conversionData.currency.units;
+                const units={};
+                function add(c){
+                    const m=meta[c]; const key=c.toLowerCase();
+                    const f=(rates&&typeof rates[c]==='number'&&rates[c]>0)?1/rates[c]:(prev[key]?prev[key].f:1);
+                    units[key]={ l:CUR_NO[c]||(m?m.name:(prev[key]?prev[key].l:c)), s:c, f:f,
+                        sym:(m&&m.sym)||(prev[key]?prev[key].sym:''),
+                        flag:((m&&m.flag)||(prev[key]?prev[key].flag:null))||('https://flagcdn.com/w40/'+c.slice(0,2).toLowerCase()+'.png') };
+                }
+                add('NOK');
+                if(rates){
+                    const pref=['USD','EUR','GBP','SEK','DKK','JPY','CHF','CAD','AUD','CNY','INR','PLN','ISK','KRW','MXN','BRL','TRY','THB','RUB','CZK','HUF','ZAR','HKD','SGD','NZD','AED','SAR'];
+                    pref.forEach(c=>{ if(typeof rates[c]==='number'&&rates[c]>0)add(c); });
+                    Object.keys(rates).sort().forEach(c=>{ if(c!=='NOK'&&typeof rates[c]==='number'&&rates[c]>0&&!units[c.toLowerCase()])add(c); });
+                } else {
+                    Object.keys(prev).forEach(k=>{
+                        const c=k.toUpperCase(); const m=meta[c];
+                        units[k]={ l:CUR_NO[c]||(m?m.name:prev[k].l), s:c, f:prev[k].f,
+                            sym:(m&&m.sym)||prev[k].sym||'',
+                            flag:(m&&m.flag)||prev[k].flag||('https://flagcdn.com/w40/'+c.slice(0,2).toLowerCase()+'.png') };
+                    });
+                }
+                conversionData.currency.units=units;
+                if(!units[state.converter.fromUnit])state.converter.fromUnit='nok';
+                if(!units[state.converter.toUnit])state.converter.toUnit='usd';
+            }
+            let liveFetching=false, liveOk=false;
+            function refreshRateStatus(){
+                const isCur=state.converter.category==='currency';
+                rateStatus.style.display=isCur?'flex':'none';
+                if(isCur)ensureCurrencyLive(false);
+            }
+            function ensureCurrencyLive(force){
+                if(liveFetching)return;
+                if(liveOk&&!force)return;
+                if(force)liveOk=false;
+                liveFetching=true;
+                rateDot.classList.remove('live');
+                rateText.textContent='Henter live valuta-data…';
+                const cached=loadCachedMeta();
+                const metaPromise=cached?Promise.resolve(null):fetchJSON(CONFIG.metaUrl,12000).catch(()=>null);
+                Promise.allSettled([fetchJSON(CONFIG.ratesUrl,8000),metaPromise]).then(rs=>{
+                    const ratesJ=rs[0].status==='fulfilled'?rs[0].value:null;
+                    const metaJ=rs[1].status==='fulfilled'?rs[1].value:null;
+                    const rates=(ratesJ&&ratesJ.result==='success'&&ratesJ.rates)?ratesJ.rates:null;
+                    let meta=buildMeta(metaJ);
+                    if(meta)cacheMeta(meta);
+                    meta=meta||cached;
+                    if(rates||meta){
+                        applyCurrencyData(rates,meta);
+                        const count=Object.keys(conversionData.currency.units).length;
+                        if(rates){
+                            liveOk=true;rateDot.classList.add('live');
+                            rateText.textContent='Live kurser • '+count+' valutaer'+(ratesJ.time_last_update_short?' • '+ratesJ.time_last_update_short:'');
+                        } else { rateText.textContent=meta?'Standardkurser • ikoner hentet':'Offline: standardkurser'; }
+                        if(state.converter.category==='currency'){
+                            renderUnitPickers();performConversion();
+                            if(unitSheet.classList.contains('open'))openUnitSheet(sheetTarget);
+                        }
+                        if(force)showToast(rates?'Valutakurser oppdatert':'Ikoner oppdatert');
+                    } else {
+                        rateText.textContent='Offline: standardkurser';
+                        if(force)showToast('Live-data utilgjengelig – bruker standardverdier');
+                    }
+                }).finally(()=>{ liveFetching=false; });
+            }
+            rateRefreshBtn.addEventListener('click',()=>ensureCurrencyLive(true));
+
+            function convertFuel(v,f,t){
+                let l100;
+                if(f==='l_per_100km')l100=v;else l100=conversionData.fuel.units[f].f/v;
+                if(t==='l_per_100km')return l100;
+                return conversionData.fuel.units[t].f/l100;
+            }
+            function performConversion(){
+                const cat=state.converter.category,data=conversionData[cat],fk=state.converter.fromUnit,tk=state.converter.toUnit;
+                const iv=parseNum(fromValueInput.value);
+                if(isNaN(iv)||fromValueInput.value.trim()===''){toValueInput.value='';updateHints();return;}
+                let result;
+                if(cat==='temperature'){result=convertTemperature(iv,fk,tk);}
+                else if(cat==='fuel'){result=convertFuel(iv,fk,tk);}
+                else{const ff=data.units[fk].f,tf=data.units[tk].f;result=iv*ff/tf;}
+                toValueInput.value=formatNumber(result);
+                updateHints();
+            }
+            function convertTemperature(v,f,t){let c;switch(f){case'celsius':c=v;break;case'fahrenheit':c=(v-32)*5/9;break;case'kelvin':c=v-273.15;break;}switch(t){case'celsius':return c;case'fahrenheit':return c*9/5+32;case'kelvin':return c+273.15;}}
+            function updateHints(){
+                const cat=state.converter.category,data=conversionData[cat],fk=state.converter.fromUnit,tk=state.converter.toUnit;
+                if(!data||!data.units[fk]||!data.units[tk])return;
+                let one;
+                if(cat==='temperature')one=convertTemperature(1,fk,tk);
+                else if(cat==='fuel')one=convertFuel(1,fk,tk);
+                else one=data.units[fk].f/data.units[tk].f;
+                fromHint.textContent='1 '+data.units[fk].s+' = '+formatNumber(one)+' '+data.units[tk].s;
+                toHint.textContent=data.units[tk].l;
+            }
+            let swapRot=0;
+            function swapUnits(){
+                const t=state.converter.fromUnit;state.converter.fromUnit=state.converter.toUnit;state.converter.toUnit=t;
+                swapRot+=180;
+                const svg=swapUnitsBtn.querySelector('svg');
+                if(svg)svg.style.transform='rotate('+swapRot+'deg)';
+                renderUnitPickers();performConversion();
+            }
+
+            function addHistoryEntry(e,r){state.history.unshift({expr:e,result:r,timestamp:new Date().toISOString()});if(state.history.length>CONFIG.maxHistoryEntries)state.history.pop();saveHistory();updateHistoryBadge();renderHistory(historySearchInput.value);}
+            function updateHistoryBadge(){const c=state.history.length;if(c>0){historyBadge.style.display='flex';historyBadge.textContent=c>99?'99+':c.toString();}else historyBadge.style.display='none';}
+            function renderHistory(filter){
+                filter=filter||'';
+                if(state.history.length===0){historyList.innerHTML='<div class="history-empty">Ingen beregninger enda.</div>';return;}
+                historyList.innerHTML='';
+                const filtered=state.history.filter(e=>!filter||e.expr.includes(filter)||e.result.includes(filter));
+                if(filtered.length===0){historyList.innerHTML='<div class="history-empty">Ingen treff.</div>';return;}
+                filtered.forEach((entry)=>{
+                    const realIdx=state.history.indexOf(entry);
+                    const div=document.createElement('div');div.className='history-entry';
+                    const time=new Date(entry.timestamp);
+                    const ts=time.toLocaleDateString('no-NO',{day:'2-digit',month:'short'})+' '+time.toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});
+                    div.innerHTML='<div class="hist-expr">'+escapeHtml(entry.expr)+'</div><div class="hist-result">'+escapeHtml(entry.result)+'</div><div class="hist-time">'+ts+'</div><button class="hist-copy" aria-label="Kopier"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><button class="hist-delete" aria-label="Slett"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>';
+                    div.addEventListener('click',e=>{
+                        if(e.target.closest('.hist-delete')||e.target.closest('.hist-copy'))return;
+                        state.expression=entry.expr;state.result=entry.result;state.justEvaluated=true;state.lastAnswer=parseFloat(entry.result)||0;
+                        closeHistory();updateDisplay();showToast('Uttrykk hentet');
+                    });
+                    div.querySelector('.hist-copy').addEventListener('click',e=>{e.stopPropagation();copyText(entry.result,'Kopiert: '+entry.result);});
+                    div.querySelector('.hist-delete').addEventListener('click',e=>{e.stopPropagation();state.history.splice(realIdx,1);saveHistory();updateHistoryBadge();renderHistory(historySearchInput.value);showToast('Slettet');});
+                    historyList.appendChild(div);
+                });
+            }
+            function saveHistory(){try{localStorage.setItem('procalc_history',JSON.stringify(state.history));}catch(e){}}
+            function loadHistory(){try{const s=localStorage.getItem('procalc_history');if(s)state.history=JSON.parse(s);if(!Array.isArray(state.history))state.history=[];}catch(e){state.history=[];}}
+            function clearHistory(){state.history=[];saveHistory();updateHistoryBadge();renderHistory();showToast('Historikk tømt');}
+            function exportHistory(){if(state.history.length===0){showToast('Ingen historikk å eksportere');return;}const csv=['Uttrykk,Resultat,Tidspunkt'];state.history.forEach(e=>{csv.push('"'+e.expr.replace(/"/g,'""')+'","'+e.result.replace(/"/g,'""')+'","'+e.timestamp+'"');});const blob=new Blob([csv.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kalkulator_historikk.csv';a.click();URL.revokeObjectURL(a.href);showToast('Historikk eksportert');}
+
+            function copyText(txt,msg){
+                if(navigator.clipboard&&navigator.clipboard.writeText){
+                    navigator.clipboard.writeText(txt).then(()=>showToast(msg)).catch(()=>fallbackCopy(txt,msg));
+                } else fallbackCopy(txt,msg);
+            }
+            function fallbackCopy(txt,msg){
+                const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+                document.body.appendChild(ta);ta.focus();ta.select();
+                try{document.execCommand('copy');showToast(msg);}catch(e){showToast('Kopiering feilet');}
+                ta.remove();
+            }
+
+            const ICON_SUN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" fill="none" stroke="currentColor"/></svg>';
+            const ICON_MOON='<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="none" stroke="currentColor"/></svg>';
+            function isLightTheme(){ return state.theme==='light'||state.theme==='pastel'; }
+            function updateThemeToggleIcon(){ themeToggleBtn.innerHTML=isLightTheme()?ICON_MOON:ICON_SUN; }
+            function updateMetaTheme(){ metaTheme.setAttribute('content',META_COLORS[state.theme]||META_COLORS.dark); }
+            function toggleTheme(t){state.theme=t;document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('procalc_theme',t);}catch(e){}showToast('Tema: '+t);updateThemeButtons();updateThemeToggleIcon();updateMetaTheme();}
+            function loadTheme(){let s=null;try{s=localStorage.getItem('procalc_theme');}catch(e){}if(s)state.theme=s;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)state.theme='light';else state.theme='dark';document.documentElement.setAttribute('data-theme',state.theme);updateThemeToggleIcon();updateMetaTheme();}
+            function updateThemeButtons(){$$('#themeOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===state.theme));}
+            function setDecimals(d){state.decimals=parseInt(d,10);try{localStorage.setItem('procalc_dec',d);}catch(e){}showToast('Desimaler: '+d);updateDecimalButtons();updateDisplay();}
+            function loadDecimals(){try{const s=localStorage.getItem('procalc_dec');if(s)state.decimals=parseInt(s,10);}catch(e){}}
+            function updateDecimalButtons(){$$('#decimalOptions .seg-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.decimals,10)===state.decimals));}
+            function setTrigMode(t){state.trigMode=t;try{localStorage.setItem('procalc_trig',t);}catch(e){}showToast('Vinkelmåte: '+t.toUpperCase());updateTrigButtons();updateTrigLabel();}
+            function loadTrigMode(){try{const s=localStorage.getItem('procalc_trig');if(s)state.trigMode=s;}catch(e){}}
+            function updateTrigButtons(){$$('#trigOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.trig===state.trigMode));}
+
+            function switchMode(mode){
+                if(mode===state.mode)return;
+                state.mode=mode;
+                $$('.nav-item').forEach(i=>i.classList.toggle('active',i.dataset.mode===mode));
+                const names={standard:'Standard',professional:'Pro',rpn:'RPN',percent:'Prosent',converter:'Konverter'};
+                modeIndicator.textContent=names[mode]||mode;
+                closeUnitSheet();
+                if(mode==='converter'){
+                    buttonsContainer.style.display='none';percentContainer.style.display='none';converterContainer.style.display='flex';displayArea.style.display='none';
+                    populateCategoryChips();setConverterCategory(state.converter.category);
+                } else if(mode==='percent'){
+                    buttonsContainer.style.display='none';converterContainer.style.display='none';percentContainer.style.display='flex';displayArea.style.display='none';
+                    renderPctChips();renderPctLabels();percentCalc();
+                } else {
+                    buttonsContainer.style.display='flex';converterContainer.style.display='none';percentContainer.style.display='none';displayArea.style.display='flex';
+                    renderButtons();updateDisplay();
+                }
+            }
+
+            let swX0=null, swY0=null, swT0=0, swLocked=false;
+            function swipeBlockedTarget(t){ return t && typeof t.closest==='function' && t.closest('.category-chips, input, textarea, select, .sheet-grid'); }
+            function anyOverlayOpen(){ return unitSheet.classList.contains('open')||settingsModal.classList.contains('open')||infoModal.classList.contains('open')||state.historyOpen; }
+            mainContent.addEventListener('touchstart',e=>{
+                if(e.touches.length!==1||anyOverlayOpen()||swipeBlockedTarget(e.target))return;
+                const t=e.touches[0];
+                swX0=t.clientX; swY0=t.clientY; swT0=Date.now(); swLocked=false;
+            },{passive:true});
+            mainContent.addEventListener('touchmove',e=>{
+                if(swX0===null)return;
+                const t=e.touches[0];
+                const dx=t.clientX-swX0, dy=t.clientY-swY0;
+                if(!swLocked&&Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.4)swLocked=true;
+                if(swLocked&&Math.abs(dy)>70){swLocked=false;swX0=null;}
+            },{passive:true});
+            mainContent.addEventListener('touchend',e=>{
+                if(swX0===null)return;
+                const t=e.changedTouches[0];
+                const dx=t.clientX-swX0, dy=t.clientY-swY0;
+                const dt=Date.now()-swT0;
+                swX0=null;
+                if(!swLocked||anyOverlayOpen())return;
+                if(Math.abs(dx)<60||Math.abs(dy)>50||dt>650)return;
+                const idx=MODE_ORDER.indexOf(state.mode);
+                if(dx<0&&idx<MODE_ORDER.length-1)switchMode(MODE_ORDER[idx+1]);
+                else if(dx>0&&idx>0)switchMode(MODE_ORDER[idx-1]);
+            },{passive:true});
+            mainContent.addEventListener('touchcancel',()=>{swX0=null;swLocked=false;},{passive:true});
+
+            function renderButtons(){
+                let layout,gridClass;
+                if(state.mode==='professional'){layout=professionalLayout;gridClass='professional-mode';}
+                else if(state.mode==='rpn'){layout=rpnLayout;gridClass='rpn-mode';}
+                else{layout=standardLayout;gridClass='standard-mode';}
+                buttonsContainer.innerHTML='';
+                const grid=document.createElement('div');
+                grid.className='calc-buttons '+gridClass;
+                layout.forEach(def=>{
+                    const btn=document.createElement('button');
+                    btn.className='calc-btn '+(def.c||'');
+                    btn.dataset.action=def.a;
+                    if(def.v)btn.dataset.value=def.v;
+                    btn.setAttribute('aria-label',def.l);
+                    btn.innerHTML='<span class="btn-label">'+def.l+'</span>';
+                    if(def.a==='trigMode')btn.querySelector('.btn-label').textContent=state.trigMode==='deg'?'DEG':'RAD';
+                    btn.addEventListener('pointerdown',(e)=>{
+                        if(e.pointerType==='mouse'&&e.button!==0)return;
+                        createRipple(e,btn);
+                        if(navigator.vibrate)try{navigator.vibrate(10);}catch(err){}
+                    });
+                    let longPressTimer=null,isLongPress=false;
+                    btn.addEventListener('pointerdown',(e)=>{
+                        if(e.pointerType==='mouse'&&e.button!==0)return;
+                        longPressTimer=setTimeout(()=>{
+                            isLongPress=true;
+                            const info=getButtonInfo(def.a,def.v);
+                            if(info)showInfoModal(info.title,info.desc,info.example);
+                        },500);
+                    });
+                    btn.addEventListener('pointerup',()=>{clearTimeout(longPressTimer);setTimeout(()=>{isLongPress=false;},0);});
+                    btn.addEventListener('pointerleave',()=>{clearTimeout(longPressTimer);isLongPress=false;});
+                    btn.addEventListener('pointercancel',()=>{clearTimeout(longPressTimer);isLongPress=false;});
+                    btn.addEventListener('contextmenu',e=>e.preventDefault());
+                    btn.addEventListener('click',(e)=>{
+                        if(isLongPress){e.preventDefault();return;}
+                        handleButtonAction(def.a,def.v);
+                    });
+                    grid.appendChild(btn);
+                });
+                buttonsContainer.appendChild(grid);
+            }
+            function getButtonInfo(action,value){
+                if(action==='func'&&value){
+                    if(value.startsWith('sin('))return buttonInfo.sin;
+                    if(value.startsWith('cos('))return buttonInfo.cos;
+                    if(value.startsWith('tan('))return buttonInfo.tan;
+                    if(value.startsWith('√('))return buttonInfo.sqrt;
+                    if(value.startsWith('∛('))return buttonInfo.cbrt;
+                    if(value.startsWith('log('))return buttonInfo.log;
+                    if(value.startsWith('ln('))return buttonInfo.ln;
+                }
+                if(action==='power'&&value==='²')return buttonInfo.square;
+                if(action==='power'&&value==='^')return buttonInfo.power;
+                if(action==='factorial')return buttonInfo.factorial;
+                if(action==='reciprocal')return buttonInfo.reciprocal;
+                if(action==='constant'&&value==='π')return buttonInfo.pi;
+                if(action==='constant'&&value==='e')return buttonInfo.e;
+                if(action==='percent')return buttonInfo.percent;
+                if(action==='trigMode')return buttonInfo.trigMode;
+                if(action==='memoryClear')return buttonInfo.memoryClear;
+                if(action==='memoryRecall')return buttonInfo.memoryRecall;
+                if(action==='memoryAdd')return buttonInfo.memoryAdd;
+                if(action==='memorySubtract')return buttonInfo.memorySubtract;
+                if(action==='ans')return buttonInfo.ans;
+                if(action==='paren')return buttonInfo.paren;
+                return null;
+            }
+            const rpnFns={rpnClear:rpnClear,rpnBackspace:rpnBackspace,rpnSwap:rpnSwap,rpnDrop:rpnDrop,rpnEnter:rpnEnter,rpnNumber:rpnNumber,rpnDecimal:rpnDecimal,rpnOp:rpnOp};
+            const memoryFns={memoryClear:memoryClear,memoryRecall:memoryRecall,memoryAdd:memoryAdd,memorySubtract:memorySubtract};
+            function handleButtonAction(a,v){
+                if(state.mode==='rpn'&&rpnFns[a]){rpnFns[a](v);return;}
+                if(memoryFns[a]){memoryFns[a]();return;}
+                switch(a){
+                    case'number':handleNumber(v);break;case'operator':handleOperator(v);break;case'decimal':handleDecimal();break;case'equals':handleEquals();break;case'clear':handleClear();break;case'backspace':handleBackspace();break;case'sign':handleSign();break;case'percent':handlePercent();break;case'paren':handleParen(v);break;case'func':handleFunc(v);break;case'constant':handleConstant(v);break;case'power':handlePower(v);break;case'factorial':handleFactorial();break;case'reciprocal':handleReciprocal();break;case'ans':handleAns();break;case'trigMode':handleTrigMode();break;
+                }
+            }
+            function createRipple(e,btn){const rect=btn.getBoundingClientRect();const ripple=document.createElement('span');ripple.className='ripple';const size=Math.max(rect.width,rect.height)*1.2;ripple.style.width=ripple.style.height=size+'px';ripple.style.left=(e.clientX-rect.left-size/2)+'px';ripple.style.top=(e.clientY-rect.top-size/2)+'px';btn.appendChild(ripple);setTimeout(()=>ripple.remove(),500);}
+
+            function showInfoModal(title,desc,example){infoTitle.textContent=title;infoDesc.textContent=desc;infoExample.textContent=example||'';infoModal.classList.add('open');}
+            function closeInfoModal(){infoModal.classList.remove('open');}
+
+            function openHistory(){state.historyOpen=true;historyOverlay.classList.add('open');historyDrawer.classList.add('open');renderHistory(historySearchInput.value);}
+            function closeHistory(){state.historyOpen=false;historyOverlay.classList.remove('open');historyDrawer.classList.remove('open');}
+            let toastTimer=null;
+            function showToast(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200);}
+
+            function handleKeyboard(e){
+                const t=e.target;
+                if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)){if(e.key==='Escape'&&unitSheet.classList.contains('open'))closeUnitSheet();return;}
+                if(unitSheet.classList.contains('open')){if(e.key==='Escape')closeUnitSheet();return;}
+                if(settingsModal.classList.contains('open')){if(e.key==='Escape')settingsModal.classList.remove('open');return;}
+                if((e.key==='Enter'||e.key===' ')&&t&&typeof t.closest==='function'&&t.closest('button'))return;
+                if(state.mode==='converter'||state.mode==='percent')return;
+                const key=e.key;
+                if(/[0-9]/.test(key)){state.mode==='rpn'?rpnNumber(key):handleNumber(key);}
+                else if(key===','||key==='.'){state.mode==='rpn'?rpnDecimal():handleDecimal();}
+                else if(key==='+'){state.mode==='rpn'?rpnOp('+'):handleOperator('+');}
+                else if(key==='-'){state.mode==='rpn'?rpnOp('-'):handleOperator('−');}
+                else if(key==='*'){state.mode==='rpn'?rpnOp('*'):handleOperator('×');}
+                else if(key==='/'){e.preventDefault();state.mode==='rpn'?rpnOp('/'):handleOperator('÷');}
+                else if(key==='Enter'){e.preventDefault();state.mode==='rpn'?rpnEnter():handleEquals();}
+                else if(key==='Backspace'){state.mode==='rpn'?rpnBackspace():handleBackspace();}
+                else if(key==='Escape'){state.mode==='rpn'?rpnClear():handleClear();}
+                else if(state.mode!=='rpn'&&key==='^'){handlePower('^');}
+                else if(state.mode!=='rpn'&&key==='('){handleParen('(');}
+                else if(state.mode!=='rpn'&&key===')'){handleParen(')');}
+                else if(state.mode!=='rpn'&&key==='%'){handlePercent();}
+            }
+
+            /* ============ PWA: INSTALLASJON ============ */
+            let deferredPrompt=null;
+            const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+            const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+            window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; installBtn.style.display='block'; installBtn.textContent='Installer som app'; });
+            window.addEventListener('appinstalled',()=>{ installBtn.style.display='none'; installHint.textContent='Appen er installert på enheten.'; showToast('Appen er installert'); });
+            installBtn.addEventListener('click',async()=>{
+                if(deferredPrompt){
+                    deferredPrompt.prompt();
+                    const choice=await deferredPrompt.userChoice;
+                    showToast(choice.outcome==='accepted'?'Appen installeres':'Installasjon avbrutt');
+                    deferredPrompt=null; installBtn.style.display='none';
+                } else if(isIOS&&!isStandalone){
+                    showInfoModal('Installer på iOS/iPadOS','Åpne delingsmenyen (Del-knappen) i nettleseren, og velg deretter «Legg til på hjemskjerm». Appen åpnes da i fullskjerm som en egen app.','');
+                } else {
+                    showToast('Bruk nettlesermenyen → «Legg til på startskjerm»');
+                }
+            });
+
+            document.addEventListener('keydown',handleKeyboard);
+            historyToggleBtn.addEventListener('click',()=>state.historyOpen?closeHistory():openHistory());
+            historyOverlay.addEventListener('click',closeHistory);
+            clearHistoryBtn.addEventListener('click',clearHistory);
+            themeToggleBtn.addEventListener('click',()=>{ toggleTheme(isLightTheme()?'dark':'light'); });
+            settingsBtn.addEventListener('click',()=>settingsModal.classList.add('open'));
+            closeSettingsBtn.addEventListener('click',()=>settingsModal.classList.remove('open'));
+            settingsModal.addEventListener('click',e=>{if(e.target===settingsModal)settingsModal.classList.remove('open');});
+            $$('#themeOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>toggleTheme(b.dataset.theme)));
+            $$('#decimalOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>setDecimals(b.dataset.decimals)));
+            $$('#trigOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>setTrigMode(b.dataset.trig)));
+            $('#closeInfoBtn').addEventListener('click',closeInfoModal);
+            infoModal.addEventListener('click',(e)=>{if(e.target===infoModal)closeInfoModal();});
+            historySearchInput.addEventListener('input',()=>renderHistory(historySearchInput.value));
+            $$('.nav-item').forEach(item=>item.addEventListener('click',()=>switchMode(item.dataset.mode)));
+            fromUnitPicker.addEventListener('click',()=>openUnitSheet('from'));
+            toUnitPicker.addEventListener('click',()=>openUnitSheet('to'));
+            sheetOverlay.addEventListener('click',closeUnitSheet);
+            sheetCloseBtn.addEventListener('click',closeUnitSheet);
+            fromValueInput.addEventListener('input',performConversion);
+            swapUnitsBtn.addEventListener('click',swapUnits);
+            resultDisplay.addEventListener('dblclick',()=>{copyText(state.result,'Resultat kopiert');});
+
+            function init(){
+                loadTheme();loadDecimals();loadTrigMode();loadHistory();
+                updateThemeButtons();updateDecimalButtons();updateTrigButtons();updateThemeToggleIcon();
+                updateHistoryBadge();renderHistory();renderButtons();updateDisplay();
+                populateCategoryChips();renderUnitPickers();updateHints();
+                renderPctChips();renderPctLabels();
+                const defaultUnits=getUnitList(state.converter.category);
+                if(defaultUnits.length){state.converter.fromUnit=defaultUnits[0].key;state.converter.toUnit=defaultUnits.length>1?defaultUnits[1].key:defaultUnits[0].key;}
+                renderUnitPickers();
+                /* PWA-status og dypelenker fra manifest-shortcuts */
+                if(isStandalone){ installHint.textContent='Kjører som installert app.'; }
+                else if(isIOS){ installBtn.style.display='block'; installBtn.textContent='Installer (guide for iOS)'; }
+                const hash=location.hash.replace('#','');
+                if(MODE_ORDER.includes(hash))switchMode(hash);
+                const hh=document.querySelector('.history-header');
+                if(hh&&!hh.querySelector('.export-history-btn')){
+                    const expBtn=document.createElement('button');
+                    expBtn.className='clear-history-btn export-history-btn';
+                    expBtn.textContent='Eksporter';
+                    expBtn.style.marginRight='8px';
+                    expBtn.addEventListener('click',exportHistory);
+                    hh.insertBefore(expBtn,clearHistoryBtn);
+                }
+                /* Registrer service worker for offline og installasjon */
+                if('serviceWorker' in navigator){
+                    window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+                }
+                console.log('Pro Kalkulator Ultra klar');
+            }
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+        })();
+    </script>
+</body>
+</html>
