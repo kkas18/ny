@@ -1,13 +1,14 @@
 {
   "name": "Pro Kalkulator Ultra",
   "short_name": "Kalkulator",
-  "description": "Profesjonell kalkulator med standard, vitenskapelig, RPN, prosent og konvertering med live valutakurser.",
+  "description": "Norsk kalkulator med vitenskapelig modus, RPN, prosent og MVA, og enhetskonvertering med offisielle kurser fra Norges Bank.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "lang": "no",
+  "dir": "ltr",
   "background_color": "#0a0c0b",
   "theme_color": "#0a0c0b",
   "categories": ["productivity", "utilities", "finance"],
@@ -18,7 +19,8 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Konverter", "short_name": "Konverter", "url": "./#converter" },
-    { "name": "Prosent", "short_name": "Prosent", "url": "./#percent" }
+    { "name": "Konverter", "short_name": "Konverter", "url": "./?mode=converter" },
+    { "name": "Prosent og MVA", "short_name": "Prosent", "url": "./?mode=percent" },
+    { "name": "Vitenskapelig", "short_name": "Vitensk.", "url": "./?mode=professional" }
   ]
 }
