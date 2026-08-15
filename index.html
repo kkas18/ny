@@ -358,8 +358,8 @@ body.sci .zone-toggle{color:var(--accent)}
 .calc-buttons{animation:keysIn .22s ease}
 @keyframes keysIn{from{opacity:.35}to{opacity:1}}
 
-.btn.zone-start{margin-top:7px;position:relative}
-.btn.zone-start::after{content:'';position:absolute;left:-3px;right:-3px;top:-5px;height:1px;background:var(--border)}
+.btn.zone-start{position:relative}
+.btn.zone-start::after{content:'';position:absolute;left:-3px;right:-3px;top:-4px;height:1px;background:var(--border);opacity:.9}
 .btn.zone-start.clear::after,.btn.zone-start.equals::after{background:var(--border)}
 
 /* ---------- Key help sheet ---------- */
@@ -734,7 +734,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.6.0';
+const VERSION='5.6.1';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -2883,6 +2883,8 @@ function renderButtons(){
 const MAX_KEY=88;
 const KEY_CAP={standard:0,rpn:0,tape:58};
 const DISPLAY_FLOOR={standard:132,rpn:186,tape:0};
+/* The scientific pad needs eleven rows, so the display gives up part of its share. */
+const SCI_FLOOR=98;
 function sizeKeypad(animate){
   const c=el.buttonsContainer;
   const grid=c.querySelector('.calc-buttons');
@@ -2891,18 +2893,26 @@ function sizeKeypad(animate){
   const cols=activeCols();
   const rows=Math.ceil(grid.children.length/cols);
   if(!rows)return;
-  const cs=getComputedStyle(grid);
+  const cs=getComputedStyle(grid), ccs=getComputedStyle(c);
   const gap=parseFloat(cs.rowGap)||6;
-  const padX=36,padY=18;
+  /* Read the real padding rather than hardcoding it: the short-screen media query
+     changes it, and a guess that disagrees with the stylesheet mis-sizes the keys. */
+  const padX=(parseFloat(ccs.paddingLeft)||0)+(parseFloat(ccs.paddingRight)||0);
+  const padY=(parseFloat(ccs.paddingTop)||0)+(parseFloat(ccs.paddingBottom)||0);
   const innerW=(c.clientWidth||window.innerWidth)-padX;
   const colW=(innerW-gap*(cols-1))/cols;
-  const toggleH=mode==='standard'?34:0;
-  const seam=(mode==='standard'&&state.sci)||mode==='rpn'?7:0;
+  let toggleH=0;
+  if(mode==='standard'&&el.zoneToggle.offsetParent!==null){
+    const tcs=getComputedStyle(el.zoneToggle);
+    toggleH=el.zoneToggle.getBoundingClientRect().height+(parseFloat(tcs.marginBottom)||0);
+  }
+  const seam=0;
   const mainH=el.mainContent.clientHeight||600;
   /* The display has a CSS floor of its own; budget against that rather than a
      guessed constant, or the two disagree and the keypad pushes past the nav. */
   const dispMin=parseFloat(getComputedStyle(el.displayArea).minHeight)||100;
-  const floor=Math.max(dispMin,Math.min(DISPLAY_FLOOR[mode]||0,Math.round(mainH*0.34)));
+  const base=(mode==='standard'&&state.sci)?SCI_FLOOR:(DISPLAY_FLOOR[mode]||0);
+  const floor=Math.max(dispMin,Math.min(base,Math.round(mainH*0.34)));
   const avail=mainH-floor-padY-toggleH-seam;
   const fit=Math.floor((avail-gap*(rows-1))/rows);
   const cap=Math.min(KEY_CAP[mode]||MAX_KEY,MAX_KEY,colW);
@@ -2927,6 +2937,9 @@ function sizeKeypad(animate){
     grid.style.gridAutoRows=h+'px';
     c.style.height=overflows?target+'px':'';
   }
+  /* If the pad cannot fit, the rows that must stay reachable are the digits and
+     operators, so park the scroll at the bottom and let the functions run off the top. */
+  if(overflows)requestAnimationFrame(()=>{ grid.scrollTop=grid.scrollHeight; });
 }
 function paintSciToggle(){
   document.body.classList.toggle('sci',state.sci);
@@ -3585,6 +3598,26 @@ function runTests(){
   const shown=parseNum(formatNumber(exact,2,{raw:true}));
   ok('avrundet tekst ville drevet av',Math.abs(convert(shown,'currency','usd','nok')-250)>1e-6||Math.abs(exact-shown)<1e-12);
   state.conv=saveCv2;
+
+
+  /* A vertical margin on a key breaks fixed grid rows: the key keeps its
+     min-height and spills into the row below. Guard against reintroducing it. */
+  (function(){
+    const probe=document.createElement('div');
+    probe.className='calc-buttons professional-mode';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    ['btn','btn zone-start','btn equals','btn clear','btn func','btn op'].forEach(cl=>{
+      const b=document.createElement('button'); b.className=cl; b.textContent='x'; probe.appendChild(b);
+    });
+    document.body.appendChild(probe);
+    Array.from(probe.children).forEach(b=>{
+      const cs=getComputedStyle(b);
+      ok('tast uten toppmarg: '+b.className,parseFloat(cs.marginTop)===0,cs.marginTop);
+      ok('tast uten bunnmarg: '+b.className,parseFloat(cs.marginBottom)===0,cs.marginBottom);
+    });
+    probe.remove();
+  })();
+  ok('vitenskapelig gulv er lavere enn vanlig',SCI_FLOOR<DISPLAY_FLOOR.standard,SCI_FLOOR);
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
