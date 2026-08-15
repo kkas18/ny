@@ -87,7 +87,7 @@
   --shadow:0 8px 28px rgba(60,55,45,.12); --shadow-sm:0 2px 10px rgba(60,55,45,.10);
 }
 body[data-mode="standard"]{--accent:var(--acc-standard)}
-body[data-mode="professional"]{--accent:var(--acc-professional)}
+body.sci[data-mode="standard"]{--accent:var(--acc-professional)}
 body[data-mode="rpn"]{--accent:var(--acc-rpn)}
 body[data-mode="tape"]{--accent:var(--acc-tape)}
 body[data-mode="percent"]{--accent:var(--acc-percent)}
@@ -350,14 +350,13 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 
 /* Fold-away scientific rows */
 .zone-toggle{display:none;align-items:center;justify-content:center;gap:7px;width:100%;height:28px;flex-shrink:0;margin-bottom:6px;border:none;background:transparent;color:var(--text-dim);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-radius:12px;transition:color var(--transition-fast),background var(--transition-fast);font-family:var(--font-sans)}
-body[data-mode="professional"] .zone-toggle{display:flex}
+body[data-mode="standard"] .zone-toggle{display:flex}
 .zone-toggle:active{background:var(--surface-light);color:var(--text-secondary)}
 .zone-toggle svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--transition)}
-body.fn-collapsed .zone-toggle svg{transform:rotate(-180deg)}
-body.fn-collapsed .zone-toggle{color:var(--accent)}
-body.fn-collapsed .btn.fn-key{display:none}
-body.fn-collapsed .btn.zone-start{margin-top:0}
-body.fn-collapsed .btn.zone-start::after{display:none}
+body.sci .zone-toggle svg{transform:rotate(-180deg)}
+body.sci .zone-toggle{color:var(--accent)}
+.calc-buttons{animation:keysIn .22s ease}
+@keyframes keysIn{from{opacity:.35}to{opacity:1}}
 
 .btn.zone-start{margin-top:7px;position:relative}
 .btn.zone-start::after{content:'';position:absolute;left:-3px;right:-3px;top:-5px;height:1px;background:var(--border)}
@@ -451,8 +450,26 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 .io-row{display:flex;gap:7px;margin-top:8px}
 .io-row .action-btn{margin-top:0}
 
-@media (max-height:680px){:root{--display-height:124px;--result-font-size:37px;--btn-min-height:44px;--nav-height:58px}}
-@media (min-width:520px){.panel{padding-left:max(12px,calc((100% - 500px)/2));padding-right:max(12px,calc((100% - 500px)/2))}}
+@media (max-height:780px){
+  :root{--result-font-size:37px;--btn-min-height:40px;--nav-height:58px}
+  .display-area{min-height:104px;padding-top:22px}
+  .calc-buttons.professional-mode{--btn-min-height:34px;--btn-font-size:14px}
+  .buttons-container{padding:6px 14px 8px}
+}
+@media (max-height:520px){
+  :root{--result-font-size:30px;--btn-min-height:34px;--nav-height:52px;--header-height:44px}
+  .display-area{min-height:76px;padding-top:18px}
+  .zone-toggle{height:24px;margin-bottom:4px}
+  .calc-buttons.professional-mode{--btn-min-height:28px;--btn-font-size:13px}
+}
+@media (min-width:520px){
+  .panel{padding-left:max(12px,calc((100% - 500px)/2));padding-right:max(12px,calc((100% - 500px)/2))}
+  /* Explicit width, not max-width: an auto margin on the cross axis of a flex
+     column turns off stretch and the grid would shrink to its content. */
+  .calc-buttons{width:min(100%,520px);margin-inline:auto}
+  .tape-list,.tape-foot,.tape-entry,.tape-toolbar{padding-left:max(10px,calc((100% - 520px)/2));padding-right:max(10px,calc((100% - 520px)/2))}
+  .display-area{padding-left:max(16px,calc((100% - 520px)/2));padding-right:max(16px,calc((100% - 520px)/2))}
+}
 </style>
 </head>
 <body data-mode="standard">
@@ -482,7 +499,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 
   <div class="buttons-container" id="buttonsContainer">
     <button class="zone-toggle" id="zoneToggle" aria-expanded="true">
-      <svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg><span id="zoneToggleLabel">Skjul funksjoner</span>
+      <svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg><span id="zoneToggleLabel">Vitenskapelig</span>
     </button>
   </div>
 
@@ -601,8 +618,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 </main>
 
 <nav class="bottom-nav" id="bottomNav">
-  <button class="nav-item active" data-mode="standard" aria-label="Standard"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7.5" x2="16" y2="7.5"/><line x1="8" y1="12" x2="12" y2="12"/><line x1="8" y1="16.5" x2="16" y2="16.5"/></svg><span class="nav-label">Standard</span></button>
-  <button class="nav-item" data-mode="professional" aria-label="Vitenskapelig"><svg viewBox="0 0 24 24"><path d="M9 3v6L4 19a2 2 0 0 0 1.8 3h12.4A2 2 0 0 0 20 19l-5-10V3"/><line x1="8" y1="3" x2="16" y2="3"/><line x1="7" y1="14" x2="17" y2="14"/></svg><span class="nav-label">Vitensk.</span></button>
+  <button class="nav-item active" data-mode="standard" aria-current="page" aria-label="Kalkulator"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7.5" x2="16" y2="7.5"/><line x1="8" y1="12" x2="12" y2="12"/><line x1="8" y1="16.5" x2="16" y2="16.5"/></svg><span class="nav-label">Kalkulator</span></button>
   <button class="nav-item" data-mode="rpn" aria-label="RPN"><svg viewBox="0 0 24 24"><rect x="3" y="14" width="18" height="6" rx="1.6"/><rect x="6" y="8" width="12" height="4" rx="1.4"/><rect x="9" y="3" width="6" height="3" rx="1.2"/></svg><span class="nav-label">RPN</span></button>
   <button class="nav-item" data-mode="tape" aria-label="Tape"><svg viewBox="0 0 24 24"><path d="M6 3h12v16l-2.5-1.6L13 19l-2.5-1.6L8 19l-2-1.3z"/><line x1="9" y1="7.5" x2="15" y2="7.5"/><line x1="9" y1="11.5" x2="15" y2="11.5"/></svg><span class="nav-label">Tape</span></button>
   <button class="nav-item" data-mode="percent" aria-label="Prosent og MVA"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span class="nav-label">Prosent</span></button>
@@ -718,7 +734,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.5.1';
+const VERSION='5.6.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -729,10 +745,10 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',fnCollapsed:'pku_fncollapsed',allOpen:'pku_allopen',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',allOpen:'pku_allopen',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
-const MODES=['standard','professional','rpn','tape','percent','converter'];
-const MODE_LABEL={standard:'Standard',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
+const MODES=['standard','rpn','tape','percent','converter'];
+const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
 const THEME_BG={dark:'#0a0c0b',light:'#f4f5f4',amoled:'#000000',contrast:'#000000',pastel:'#f5f4f1'};
 
 /* ============ storage helpers ============ */
@@ -743,7 +759,7 @@ function jSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
 
 const state={
   mode:'standard', theme:'dark', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
-  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red', fnCollapsed:false,
+  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red', sci:false,
   expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
   history:[], historyOpen:false, stack:[], rpnEntry:'',
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
@@ -2052,7 +2068,7 @@ function renderUnitGrid(q){
 
 /* ============ history ============ */
 function addHistory(expr,res){
-  state.history.unshift({e:expr,r:res,t:Date.now(),m:state.mode});
+  state.history.unshift({e:expr,r:res,t:Date.now(),m:(state.mode==='standard'&&state.sci)?'professional':state.mode});
   if(state.history.length>CFG.maxHistory)state.history.length=CFG.maxHistory;
   jSet(LS.hist,state.history);
   updateBadge();
@@ -2462,7 +2478,7 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.fnCollapsed,LS.allOpen];
+const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen];
 function exportSettings(){
   const data={app:'Pro Kalkulator Ultra',version:VERSION,exported:new Date().toISOString(),values:{}};
   BACKUP_KEYS.forEach(k=>{ const v=lsGet(k,null); if(v!==null)data.values[k]=v; });
@@ -2824,13 +2840,18 @@ function closeKeyHelp(){
 }
 
 /* ============ keypad rendering ============ */
+/* The calculator tab holds both layouts: the simple one, and the scientific one
+   that grows a fifth column and five rows on top without moving a single key. */
+function activeLayoutName(){ return (state.mode==='standard'&&state.sci)?'professional':state.mode; }
+function activeCols(){ return activeLayoutName()==='professional'?5:4; }
 function renderButtons(){
-  const layout=LAYOUTS[state.mode];
+  const name=activeLayoutName();
+  const layout=LAYOUTS[name];
   if(!layout){ el.buttonsContainer.innerHTML=''; return; }
   const grid=document.createElement('div');
-  grid.className='calc-buttons '+state.mode+'-mode';
+  grid.className='calc-buttons '+name+'-mode';
   /* Every keypad ends with the same six-row skeleton; mark where it starts. */
-  const cols=state.mode==='professional'?5:4;
+  const cols=activeCols();
   const zoneStart=layout.length-cols*6;
   layout.forEach((k,idx)=>{
     const b=document.createElement('button');
@@ -2839,7 +2860,6 @@ function renderButtons(){
     b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
     b.textContent=k.a==='trig'?state.trig.toUpperCase():k.t;
     if(k.a==='trig')b.dataset.trigBtn='1';
-    if(zoneStart>0&&idx<zoneStart)b.classList.add('fn-key');
     if(zoneStart>0&&idx>=zoneStart&&idx<zoneStart+cols)b.classList.add('zone-start');
     const hk=keyHelpFor(k.a,k.v);
     if(hk){
@@ -2861,25 +2881,29 @@ function renderButtons(){
    same width. The cap only limits height, which keeps the keys close to square
    wherever the row count allows it and avoids a different margin per mode. */
 const MAX_KEY=88;
-const KEY_CAP={standard:0,professional:0,rpn:0,tape:58};
-const DISPLAY_FLOOR={standard:132,professional:132,rpn:186,tape:0};
+const KEY_CAP={standard:0,rpn:0,tape:58};
+const DISPLAY_FLOOR={standard:132,rpn:186,tape:0};
 function sizeKeypad(animate){
   const c=el.buttonsContainer;
   const grid=c.querySelector('.calc-buttons');
   if(!grid||c.style.display==='none')return;
   const mode=state.mode;
-  const cols=mode==='professional'?5:4;
-  const visible=grid.children.length-(document.body.classList.contains('fn-collapsed')&&mode==='professional'?grid.querySelectorAll('.fn-key').length:0);
-  const rows=Math.ceil(visible/cols);
+  const cols=activeCols();
+  const rows=Math.ceil(grid.children.length/cols);
   if(!rows)return;
   const cs=getComputedStyle(grid);
   const gap=parseFloat(cs.rowGap)||6;
   const padX=36,padY=18;
   const innerW=(c.clientWidth||window.innerWidth)-padX;
   const colW=(innerW-gap*(cols-1))/cols;
-  const toggleH=mode==='professional'?34:0;
-  const seam=(mode==='professional'&&!document.body.classList.contains('fn-collapsed'))||mode==='rpn'?7:0;
-  const avail=(el.mainContent.clientHeight||600)-DISPLAY_FLOOR[mode]-padY-toggleH-seam;
+  const toggleH=mode==='standard'?34:0;
+  const seam=(mode==='standard'&&state.sci)||mode==='rpn'?7:0;
+  const mainH=el.mainContent.clientHeight||600;
+  /* The display has a CSS floor of its own; budget against that rather than a
+     guessed constant, or the two disagree and the keypad pushes past the nav. */
+  const dispMin=parseFloat(getComputedStyle(el.displayArea).minHeight)||100;
+  const floor=Math.max(dispMin,Math.min(DISPLAY_FLOOR[mode]||0,Math.round(mainH*0.34)));
+  const avail=mainH-floor-padY-toggleH-seam;
   const fit=Math.floor((avail-gap*(rows-1))/rows);
   const cap=Math.min(KEY_CAP[mode]||MAX_KEY,MAX_KEY,colW);
   const minH=parseFloat(cs.getPropertyValue('--btn-min-height'))||44;
@@ -2888,7 +2912,7 @@ function sizeKeypad(animate){
      and the leftover width becomes an even margin on both sides. */
   /* On short screens even the minimum row height can overflow; cap the keypad
      so the display keeps its floor and let the grid scroll the remainder. */
-  const maxC=(el.mainContent.clientHeight||600)-Math.min(DISPLAY_FLOOR[mode],140);
+  const maxC=mainH-(mode==='tape'?0:dispMin)-2;
   const target=Math.min(rows*h+gap*(rows-1)+padY+toggleH+seam,maxC);
   const overflows=rows*h+gap*(rows-1)+padY+toggleH+seam>maxC;
   if(animate){
@@ -2904,13 +2928,26 @@ function sizeKeypad(animate){
     c.style.height=overflows?target+'px':'';
   }
 }
-function setFnCollapsed(on,animate){
-  state.fnCollapsed=!!on;
-  document.body.classList.toggle('fn-collapsed',state.fnCollapsed);
-  el.zoneToggle.setAttribute('aria-expanded',state.fnCollapsed?'false':'true');
-  el.zoneToggleLabel.textContent=state.fnCollapsed?'Vis funksjoner':'Skjul funksjoner';
-  lsSet(LS.fnCollapsed,state.fnCollapsed?'1':'0');
-  sizeKeypad(animate);
+function paintSciToggle(){
+  document.body.classList.toggle('sci',state.sci);
+  el.zoneToggle.setAttribute('aria-expanded',state.sci?'true':'false');
+  el.zoneToggleLabel.textContent=state.sci?'Enkel':'Vitenskapelig';
+}
+function setSci(on,animate){
+  state.sci=!!on;
+  lsSet(LS.sci,state.sci?'1':'0');
+  paintSciToggle();
+  const from=animate?el.buttonsContainer.getBoundingClientRect().height:0;
+  renderButtons();
+  if(animate){
+    const c=el.buttonsContainer;
+    const to=c.getBoundingClientRect().height;
+    c.style.height=from+'px';
+    void c.offsetHeight;
+    c.style.height=to+'px';
+    clearTimeout(setSci._t);
+    setSci._t=setTimeout(()=>{ c.style.height=''; sizeKeypad(false); },320);
+  }
 }
 let resizeTimer;
 window.addEventListener('resize',()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>sizeKeypad(false),120); });
@@ -2965,7 +3002,7 @@ function toggleTrig(){
   toastMsg(state.trig==='deg'?'Regner i grader':'Regner i radianer');
 }
 function paintTrigChip(){
-  const show=state.mode==='professional'||state.mode==='standard';
+  const show=state.mode==='standard';
   el.trigPill.style.display=show?'flex':'none';
   el.trigPill.textContent=state.trig==='deg'?'GRADER':'RADIANER';
   el.trigPill.classList.toggle('on',state.trig==='rad');
@@ -2976,7 +3013,11 @@ function switchMode(mode,skipSave){
   if(MODES.indexOf(mode)<0)return;
   state.mode=mode;
   document.body.dataset.mode=mode;
-  $$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  $$('.nav-item').forEach(b=>{
+    const on=b.dataset.mode===mode;
+    b.classList.toggle('active',on);
+    if(on)b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+  });
   const isPanel=mode==='percent'||mode==='converter';
   const isTape=mode==='tape';
   el.buttonsContainer.style.display=isPanel?'none':'flex';
@@ -3484,23 +3525,28 @@ function runTests(){
   stdActs.forEach(a=>ok('vitenskapelig dekker standard: '+a,proActs.indexOf(a)>-1));
 
 
-  /* folding the scientific rows away */
-  const saveFn=document.body.classList.contains('fn-collapsed');
+  /* one calculator tab, two layouts */
+  const saveSci=state.sci, saveModeS=state.mode;
   const proKeys=LAYOUTS.professional.length;
   ok('vitenskapelig har 55 taster',proKeys===55,proKeys);
-  ok('fem rader kan legges ned',proKeys-30===25,proKeys-30);
-  /* the keys that survive a fold must cover everything Standard offers */
-  const kept=LAYOUTS.professional.slice(proKeys-30).map(k=>k.a+':'+k.v);
-  LAYOUTS.standard.forEach(k=>ok('beholdt ved nedlegging: '+k.t,kept.indexOf(k.a+':'+k.v)>-1));
-  ok('pi overlever nedlegging',kept.indexOf('char:π')>-1);
-  ok('vinkelmåte overlever nedlegging',kept.indexOf('trig:undefined')>-1);
-  ok('modulo ligger i funksjonsdelen',kept.indexOf('op:mod')<0);
-  setFnCollapsed(true,false);
-  ok('nedlagt tilstand settes',document.body.classList.contains('fn-collapsed'));
-  ok('nedlagt tilstand lagres',lsGet(LS.fnCollapsed,'0')==='1');
-  setFnCollapsed(false,false);
-  ok('utvidet tilstand settes',!document.body.classList.contains('fn-collapsed'));
-  setFnCollapsed(saveFn,false);
+  /* expanding must add keys, never move the ones already under the thumb */
+  const shared=LAYOUTS.professional.slice(proKeys-30);
+  const cols5=shared.filter((k,i)=>i%5<4).map(k=>k.a+':'+k.v);
+  LAYOUTS.standard.forEach(k=>ok('enkel tast finnes også utvidet: '+k.t,cols5.indexOf(k.a+':'+k.v)>-1));
+  ok('utvidet legger til en femte kolonne',shared.filter((k,i)=>i%5===4).length===6);
+  state.mode='standard';
+  setSci(true,false);
+  ok('utvidet velger vitenskapelig oppsett',activeLayoutName()==='professional',activeLayoutName());
+  ok('utvidet gir fem kolonner',activeCols()===5);
+  ok('utvidet tilstand lagres',lsGet(LS.sci,'0')==='1');
+  ok('utvidet setter kroppsklassen',document.body.classList.contains('sci'));
+  setSci(false,false);
+  ok('enkel velger standardoppsett',activeLayoutName()==='standard');
+  ok('enkel gir fire kolonner',activeCols()===4);
+  ok('andre moduser påvirkes ikke av utvidelsen',(()=>{state.mode='rpn';state.sci=true;const r=activeLayoutName()==='rpn'&&activeCols()===4;state.mode='standard';state.sci=false;return r;})());
+  ok('vitenskapelig er ikke lenger en egen fane',MODES.indexOf('professional')<0);
+  ok('fem faner i navigasjonen',MODES.length===5,MODES.length);
+  state.sci=saveSci; state.mode=saveModeS; paintSciToggle();
   ok('tastestørrelsen har et tak',MAX_KEY>=60&&MAX_KEY<=120,MAX_KEY);
   ok('sizeKeypad tåler å kalles',(()=>{try{sizeKeypad(false);return true;}catch(e){return false;}})());
 
@@ -3549,7 +3595,7 @@ function runTests(){
 el.bottomNav.addEventListener('click',e=>{ const b=e.target.closest('.nav-item'); if(!b)return; switchMode(b.dataset.mode); buzz(); });
 el.historyBtn.addEventListener('click',()=>{ state.historyOpen?closeHistory():openHistory(); buzz(); });
 el.historyOverlay.addEventListener('click',closeHistory);
-el.zoneToggle.addEventListener('click',()=>{ setFnCollapsed(!state.fnCollapsed,true); buzz(); });
+el.zoneToggle.addEventListener('click',()=>{ setSci(!state.sci,true); buzz(); });
 el.trigPill.addEventListener('click',()=>{ toggleTrig(); buzz(); });
 el.memPill.addEventListener('click',()=>{ memRecall(); buzz(); });
 el.settingsBtn.addEventListener('click',()=>{ openSettings(); buzz(); });
@@ -3744,7 +3790,7 @@ function init(){
   state.kbd=lsGet(LS.kbd,'1')==='1';
   state.rateSrc=lsGet(LS.src,'both');
   state.answerColor=lsGet(LS.answerColor,'red');
-  state.fnCollapsed=lsGet(LS.fnCollapsed,'0')==='1';
+  state.sci=lsGet(LS.sci,'0')==='1';
   state.allOpen=lsGet(LS.allOpen,'1')==='1';
   state.history=jGet(LS.hist,[]);
   state.favs=jGet(LS.fav,[]);
@@ -3757,9 +3803,7 @@ function init(){
     state.conv=Object.assign(state.conv,savedConv,{value:'1',auto:true});
   const cachedRates=loadCachedRates();
   if(cachedRates){ applyRates(cachedRates); setRateState(cachedRates); }
-  document.body.classList.toggle('fn-collapsed',state.fnCollapsed);
-  el.zoneToggle.setAttribute('aria-expanded',state.fnCollapsed?'false':'true');
-  el.zoneToggleLabel.textContent=state.fnCollapsed?'Vis funksjoner':'Skjul funksjoner';
+  paintSciToggle();
   el.allUnits.classList.toggle('open',state.allOpen);
   updateBadge(); syncSettings();
   /* App shortcuts and deep links: ?mode=converter or #converter */
@@ -3767,7 +3811,9 @@ function init(){
   try{
     const q=new URLSearchParams(location.search).get('mode');
     const h=(location.hash||'').replace('#','');
-    if(MODES.indexOf(q)>-1)start=q; else if(MODES.indexOf(h)>-1)start=h;
+    const want=MODES.indexOf(q)>-1?q:(MODES.indexOf(h)>-1?h:null);
+    if(want)start=want;
+    else if(q==='professional'||h==='professional'){ start='standard'; state.sci=true; paintSciToggle(); }
   }catch(e){}
   switchMode(start,true);
   renderHistory('');
@@ -3843,7 +3889,7 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setFnCollapsed,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
