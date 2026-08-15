@@ -718,7 +718,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.5.0';
+const VERSION='5.5.1';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -746,7 +746,7 @@ const state={
   haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red', fnCollapsed:false,
   expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
   history:[], historyOpen:false, stack:[], rpnEntry:'',
-  conv:{cat:'length',from:'meter',to:'kilometer',value:''},
+  conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', allOpen:true, sheetFor:null,
   vars:{A:0,B:0,C:0,D:0}, stoArmed:false,
@@ -1829,8 +1829,9 @@ function setCategory(k){
   state.conv.from=d[0]; state.conv.to=d[1];
   const fav=state.favs.find(f=>f.cat===k);
   if(fav&&UNITS[k].units[fav.from]&&UNITS[k].units[fav.to]){ state.conv.from=fav.from; state.conv.to=fav.to; }
-  state.conv.value='';
-  el.fromInput.value='';
+  /* Start on 1 so the panel shows a real rate immediately instead of an empty form. */
+  state.conv.value='1'; state.conv.auto=true;
+  el.fromInput.value='1';
   el.rateBar.style.display=UNITS[k].live?'flex':'none';
   el.fromInput.inputMode=(k==='numbers'||COMPOUND_CATS.indexOf(k)>-1)?'text':'decimal';
   if(UNITS[k].live)loadRates(false);
@@ -1882,7 +1883,8 @@ function renderConverter(){
     }).join('   ');
   }else{
     const out=convert(raw,c.cat,c.from,c.to);
-    if(!Number.isFinite(out)){ el.toInput.value='—'; el.fromHint.textContent=''; el.toHint.textContent='Kan ikke konverteres'; renderAllUnits(NaN); return; }
+    if(!Number.isFinite(out)){ c.lastOut=NaN; el.toInput.value='—'; el.fromHint.textContent=''; el.toHint.textContent='Kan ikke konverteres'; renderAllUnits(NaN); return; }
+    c.lastOut=out;
     outText=formatNumber(out,convDecimals(c.cat,out));
     const wasCompound=Number.isFinite(parseCompound(c.value,c.cat,c.from));
     el.fromHint.textContent=wasCompound?('Tolket som '+formatNumber(raw,6)+' '+d.units[c.from].s):'';
@@ -1956,8 +1958,17 @@ function renderSpark(){
 function saveConv(){ jSet(LS.conv,state.conv); }
 function swapUnits(){
   const c=state.conv, t=c.from; c.from=c.to; c.to=t;
-  if(c.cat!=='numbers'&&el.toInput.value)c.value=el.toInput.value.replace(/[\u202F\u00A0]/g,'');
-  else if(c.cat==='numbers'&&el.toInput.value)c.value=el.toInput.value.replace(/\s/g,'');
+  if(c.cat==='numbers'){
+    const out=(el.toInput.value||'').replace(/\s/g,'');
+    if(out)c.value=out;
+  }else if(c.auto){
+    /* An untouched 1 means the user is checking a rate, so keep the 1 and
+       simply reverse the direction: 1 NOK → USD becomes 1 USD → NOK. */
+  }else if(Number.isFinite(c.lastOut)){
+    /* Carry the exact result across, not the rounded text, or a swap and a
+       swap back would drift away from the number you started with. */
+    c.value=formatNumber(c.lastOut,10,{raw:true});
+  }
   el.fromInput.value=c.value;
   renderConverter(); saveConv(); buzz(14);
 }
@@ -1973,6 +1984,8 @@ function renderFavs(){
     b.title=d.label;
     b.addEventListener('click',()=>{
       state.conv.cat=f.cat; state.conv.from=f.from; state.conv.to=f.to;
+      if(!state.conv.value){ state.conv.value='1'; state.conv.auto=true; }
+      el.fromInput.value=state.conv.value;
       el.rateBar.style.display=UNITS[f.cat].live?'flex':'none';
       if(UNITS[f.cat].live)loadRates(false);
       renderCatChips(); renderConverter(); renderFavs(); saveConv(); buzz();
@@ -2983,7 +2996,8 @@ function switchMode(mode,skipSave){
     renderCatChips(); renderFavs();
     el.rateBar.style.display=cat().live?'flex':'none';
     if(cat().live)loadRates(false);
-    el.fromInput.value=state.conv.value||'';
+    if(!state.conv.value){ state.conv.value='1'; state.conv.auto=true; }
+    el.fromInput.value=state.conv.value;
     renderConverter();
   }
   if(!skipSave)lsSet(LS.mode,mode);
@@ -3508,6 +3522,24 @@ function runTests(){
   });
   state.conv=saveCv;
 
+
+  /* the converter should always open on a usable amount */
+  ok('konverteren starter på 1',state.conv.value==='1'||!state.conv.auto,state.conv.value);
+  const saveCv2=Object.assign({},state.conv);
+  /* a swap on an untouched 1 reverses direction and keeps the 1 */
+  state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd';
+  state.conv.value='1'; state.conv.auto=true;
+  const rateNokUsd=convert(1,'currency','nok','usd');
+  ok('kursen finnes',Number.isFinite(rateNokUsd)&&rateNokUsd>0,rateNokUsd);
+  /* a swap on a typed amount must carry the exact value, not the rounded text */
+  state.conv.auto=false;
+  const exact=convert(250,'currency','nok','usd');
+  const carried=parseNum(formatNumber(exact,10,{raw:true}));
+  near('bytte mister ikke presisjon',convert(carried,'currency','usd','nok'),250,1e-6);
+  const shown=parseNum(formatNumber(exact,2,{raw:true}));
+  ok('avrundet tekst ville drevet av',Math.abs(convert(shown,'currency','usd','nok')-250)>1e-6||Math.abs(exact-shown)<1e-12);
+  state.conv=saveCv2;
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -3546,7 +3578,23 @@ el.fromPicker.addEventListener('click',()=>{ openUnitSheet('from'); buzz(); });
 el.toPicker.addEventListener('click',()=>{ openUnitSheet('to'); buzz(); });
 el.sheetSearch.addEventListener('input',()=>renderUnitGrid(el.sheetSearch.value));
 el.swapBtn.addEventListener('click',swapUnits);
+/* The prefilled 1 is a suggestion. Clearing it on focus is deterministic;
+   select() has to be deferred on mobile and can then swallow the first keystroke.
+   Tapping away without typing puts the 1 back so the panel is never left blank. */
+el.fromInput.addEventListener('focus',()=>{
+  if(!state.conv.auto)return;
+  el.fromInput.value='';
+  state.conv.value='';
+  renderConverter();
+});
+el.fromInput.addEventListener('blur',()=>{
+  if(el.fromInput.value.trim()!=='')return;
+  state.conv.value='1'; state.conv.auto=true;
+  el.fromInput.value='1';
+  renderConverter(); saveConv();
+});
 el.fromInput.addEventListener('input',()=>{
+  state.conv.auto=false;
   let v=el.fromInput.value;
   if(state.conv.cat==='numbers'){
     const base=cat().units[state.conv.from].base;
@@ -3706,7 +3754,7 @@ function init(){
   if(sv&&typeof sv==='object')['A','B','C','D'].forEach(k=>{ if(typeof sv[k]==='number')state.vars[k]=sv[k]; });
   const savedConv=jGet(LS.conv,null);
   if(savedConv&&UNITS[savedConv.cat]&&UNITS[savedConv.cat].units[savedConv.from]&&UNITS[savedConv.cat].units[savedConv.to])
-    state.conv=Object.assign(state.conv,savedConv,{value:''});
+    state.conv=Object.assign(state.conv,savedConv,{value:'1',auto:true});
   const cachedRates=loadCachedRates();
   if(cachedRates){ applyRates(cachedRates); setRateState(cachedRates); }
   document.body.classList.toggle('fn-collapsed',state.fnCollapsed);
