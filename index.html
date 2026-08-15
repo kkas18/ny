@@ -184,6 +184,8 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;flex-shrink:0;scroll-behavior:smooth}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex-shrink:0;padding:8px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface-light);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all var(--transition-fast);display:flex;align-items:center;gap:5px}
+.chip svg{width:16px;height:16px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.8}
+.chip.active svg{opacity:1}
 .chip.active{background:var(--accent);color:var(--accent-text);border-color:transparent}
 .chip:active{transform:scale(.95)}
 .card{background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 15px;flex-shrink:0}
@@ -876,79 +878,79 @@ function evaluate(expr){
 
 /* ============ unit data ============ */
 const UNITS={
- length:{label:'Lengde',ico:'📏',units:{
+ length:{label:'Lengde',ico:'<rect x="2.4" y="7.4" width="19.2" height="9.2" rx="1.6"/><line x1="7.2" y1="7.4" x2="7.2" y2="11.4"/><line x1="12" y1="7.4" x2="12" y2="12.6"/><line x1="16.8" y1="7.4" x2="16.8" y2="11.4"/>',units:{
    meter:{l:'Meter',s:'m',f:1},kilometer:{l:'Kilometer',s:'km',f:1000},desimeter:{l:'Desimeter',s:'dm',f:.1},
    centimeter:{l:'Centimeter',s:'cm',f:.01},millimeter:{l:'Millimeter',s:'mm',f:.001},mikrometer:{l:'Mikrometer',s:'µm',f:1e-6},
    nanometer:{l:'Nanometer',s:'nm',f:1e-9},mil:{l:'Norsk mil',s:'mil',f:10000},nautical:{l:'Nautisk mil',s:'nmi',f:1852},
    mile:{l:'Engelsk mil',s:'mi',f:1609.344},yard:{l:'Yard',s:'yd',f:.9144},foot:{l:'Fot',s:'ft',f:.3048},
    inch:{l:'Tomme',s:'in',f:.0254},lightyear:{l:'Lysår',s:'ly',f:9.4607304725808e15}}},
- weight:{label:'Vekt',ico:'⚖️',units:{
+ weight:{label:'Vekt',ico:'<line x1="12" y1="5.5" x2="12" y2="20"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="4" y1="7.5" x2="20" y2="7.5"/><path d="M4 7.5l-2.2 5.4a2.9 2.9 0 0 0 4.4 0z"/><path d="M20 7.5l2.2 5.4a2.9 2.9 0 0 1-4.4 0z"/>',units:{
    kilogram:{l:'Kilogram',s:'kg',f:1},hektogram:{l:'Hektogram',s:'hg',f:.1},gram:{l:'Gram',s:'g',f:.001},
    milligram:{l:'Milligram',s:'mg',f:1e-6},mikrogram:{l:'Mikrogram',s:'µg',f:1e-9},tonn:{l:'Tonn',s:'t',f:1000},
    carat:{l:'Karat',s:'ct',f:.0002},pound:{l:'Pund',s:'lb',f:.45359237},ounce:{l:'Unse',s:'oz',f:.028349523125},
    stone:{l:'Stone',s:'st',f:6.35029318}}},
- temperature:{label:'Temperatur',ico:'🌡️',special:'temp',units:{
+ temperature:{label:'Temperatur',ico:'<path d="M14 14.6V5.2a2 2 0 0 0-4 0v9.4a3.9 3.9 0 1 0 4 0z"/><line x1="12" y1="8.5" x2="12" y2="15.5"/>',special:'temp',units:{
    celsius:{l:'Celsius',s:'°C'},fahrenheit:{l:'Fahrenheit',s:'°F'},kelvin:{l:'Kelvin',s:'K'},rankine:{l:'Rankine',s:'°R'}}},
- area:{label:'Areal',ico:'📐',units:{
+ area:{label:'Areal',ico:'<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="1.8"/><rect x="3.4" y="12" width="8.6" height="8.6" rx="1.2"/>',units:{
    sqm:{l:'Kvadratmeter',s:'m²',f:1},sqkm:{l:'Kvadratkilometer',s:'km²',f:1e6},sqcm:{l:'Kvadratcentimeter',s:'cm²',f:1e-4},
    sqmm:{l:'Kvadratmillimeter',s:'mm²',f:1e-6},dekar:{l:'Dekar (mål)',s:'daa',f:1000},hectare:{l:'Hektar',s:'ha',f:10000},
    acre:{l:'Acre',s:'ac',f:4046.8564224},sqft:{l:'Kvadratfot',s:'ft²',f:.09290304},sqin:{l:'Kvadrattomme',s:'in²',f:6.4516e-4}}},
- volume:{label:'Volum',ico:'🧊',units:{
+ volume:{label:'Volum',ico:'<path d="M12 2.8l8.4 4.8v9.6L12 22l-8.4-4.8V7.6z"/><polyline points="3.6 7.6 12 12.4 20.4 7.6"/><line x1="12" y1="12.4" x2="12" y2="22"/>',units:{
    liter:{l:'Liter',s:'L',f:1},desiliter:{l:'Desiliter',s:'dL',f:.1},centiliter:{l:'Centiliter',s:'cL',f:.01},
    milliliter:{l:'Milliliter',s:'mL',f:.001},cbm:{l:'Kubikkmeter',s:'m³',f:1000},cbcm:{l:'Kubikkcentimeter',s:'cm³',f:.001},
    galus:{l:'Gallon (US)',s:'gal',f:3.785411784},galuk:{l:'Gallon (UK)',s:'gal UK',f:4.54609},
    quart:{l:'Quart (US)',s:'qt',f:.946352946},pint:{l:'Pint (US)',s:'pt',f:.473176473},cup:{l:'Cup (US)',s:'cup',f:.2365882365},
    floz:{l:'Fluid ounce (US)',s:'fl oz',f:.0295735295625},tbsp:{l:'Spiseskje',s:'ss',f:.015},tsp:{l:'Teskje',s:'ts',f:.005}}},
- speed:{label:'Fart',ico:'🚀',units:{
+ speed:{label:'Fart',ico:'<path d="M3.4 17.5a9 9 0 1 1 17.2 0"/><line x1="12" y1="17.5" x2="16.6" y2="10.8"/><circle cx="12" cy="17.5" r="1.4"/>',units:{
    mps:{l:'Meter per sekund',s:'m/s',f:1},kmh:{l:'Kilometer i timen',s:'km/t',f:1/3.6},mph:{l:'Miles per hour',s:'mph',f:.44704},
    knot:{l:'Knop',s:'kn',f:1852/3600},fps:{l:'Fot per sekund',s:'ft/s',f:.3048},mach:{l:'Mach (havnivå)',s:'Ma',f:340.29}}},
- time:{label:'Tid',ico:'⏱️',units:{
+ time:{label:'Tid',ico:'<circle cx="12" cy="12" r="8.6"/><polyline points="12 6.6 12 12 16 14"/>',units:{
    second:{l:'Sekund',s:'s',f:1},millisecond:{l:'Millisekund',s:'ms',f:.001},microsecond:{l:'Mikrosekund',s:'µs',f:1e-6},
    minute:{l:'Minutt',s:'min',f:60},hour:{l:'Time',s:'t',f:3600},day:{l:'Døgn',s:'d',f:86400},week:{l:'Uke',s:'uke',f:604800},
    month:{l:'Måned (30 d)',s:'mnd',f:2592000},year:{l:'År (365 d)',s:'år',f:31536000}}},
- energy:{label:'Energi',ico:'⚡',units:{
+ energy:{label:'Energi',ico:'<path d="M13.6 2.4L4.8 13.6h5.9L10.4 21.6l8.8-11.2h-5.9z"/>',units:{
    joule:{l:'Joule',s:'J',f:1},kilojoule:{l:'Kilojoule',s:'kJ',f:1000},megajoule:{l:'Megajoule',s:'MJ',f:1e6},
    calorie:{l:'Kalori',s:'cal',f:4.184},kcal:{l:'Kilokalori',s:'kcal',f:4184},wh:{l:'Watt-time',s:'Wh',f:3600},
    kwh:{l:'Kilowatt-time',s:'kWh',f:3.6e6},mwh:{l:'Megawatt-time',s:'MWh',f:3.6e9},
    ev:{l:'Elektronvolt',s:'eV',f:1.602176634e-19},btu:{l:'BTU',s:'BTU',f:1055.05585262}}},
- power:{label:'Effekt',ico:'🔌',units:{
+ power:{label:'Effekt',ico:'<line x1="12" y1="3" x2="12" y2="12"/><path d="M7.6 6.3a7.6 7.6 0 1 0 8.8 0"/>',units:{
    watt:{l:'Watt',s:'W',f:1},milliwatt:{l:'Milliwatt',s:'mW',f:.001},kilowatt:{l:'Kilowatt',s:'kW',f:1000},
    megawatt:{l:'Megawatt',s:'MW',f:1e6},gigawatt:{l:'Gigawatt',s:'GW',f:1e9},
    hkm:{l:'Hestekrefter (metrisk)',s:'hk',f:735.49875},hpm:{l:'Horsepower (mek.)',s:'hp',f:745.6998715823},
    btuh:{l:'BTU per time',s:'BTU/t',f:.29307107}}},
- pressure:{label:'Trykk',ico:'🎈',units:{
+ pressure:{label:'Trykk',ico:'<line x1="3.8" y1="4.6" x2="20.2" y2="4.6"/><line x1="3.8" y1="19.4" x2="20.2" y2="19.4"/><polyline points="8.4 8.2 12 11.8 15.6 8.2"/><polyline points="8.4 15.8 12 12.2 15.6 15.8"/>',units:{
    pascal:{l:'Pascal',s:'Pa',f:1},kilopascal:{l:'Kilopascal',s:'kPa',f:1000},megapascal:{l:'Megapascal',s:'MPa',f:1e6},
    bar:{l:'Bar',s:'bar',f:1e5},millibar:{l:'Millibar',s:'mbar',f:100},psi:{l:'PSI',s:'psi',f:6894.757293168},
    atm:{l:'Atmosfære',s:'atm',f:101325},torr:{l:'Torr (mmHg)',s:'Torr',f:101325/760},mvs:{l:'Meter vannsøyle',s:'mVs',f:9806.65}}},
- force:{label:'Kraft',ico:'🏋️',units:{
+ force:{label:'Kraft',ico:'<line x1="2.8" y1="12" x2="14.5" y2="12"/><polyline points="10.8 8 14.8 12 10.8 16"/><line x1="19" y1="4.6" x2="19" y2="19.4"/>',units:{
    newton:{l:'Newton',s:'N',f:1},kilonewton:{l:'Kilonewton',s:'kN',f:1000},meganewton:{l:'Meganewton',s:'MN',f:1e6},
    kp:{l:'Kilopond',s:'kp',f:9.80665},dyn:{l:'Dyn',s:'dyn',f:1e-5},lbf:{l:'Pound-force',s:'lbf',f:4.4482216152605}}},
- torque:{label:'Moment',ico:'🔧',units:{
+ torque:{label:'Moment',ico:'<path d="M20 12a8 8 0 1 1-2.3-5.6"/><polyline points="20.2 4.4 20.2 8.4 16.2 8.4"/><circle cx="12" cy="12" r="1.9"/>',units:{
    nm:{l:'Newtonmeter',s:'Nm',f:1},ncm:{l:'Newtoncentimeter',s:'Ncm',f:.01},knm:{l:'Kilonewtonmeter',s:'kNm',f:1000},
    kpm:{l:'Kilopondmeter',s:'kpm',f:9.80665},lbft:{l:'Pound-foot',s:'lbf·ft',f:1.3558179483314},
    lbin:{l:'Pound-inch',s:'lbf·in',f:.1129848290276}}},
- frequency:{label:'Frekvens',ico:'📡',units:{
+ frequency:{label:'Frekvens',ico:'<path d="M2.2 12c2-6.6 4.4-6.6 6.4 0s4.4 6.6 6.4 0c1.2-3.9 2.6-4.5 4.2-1.8"/>',units:{
    hz:{l:'Hertz',s:'Hz',f:1},khz:{l:'Kilohertz',s:'kHz',f:1000},mhz:{l:'Megahertz',s:'MHz',f:1e6},
    ghz:{l:'Gigahertz',s:'GHz',f:1e9},rpm:{l:'Omdreininger per minutt',s:'o/min',f:1/60},
    bpm:{l:'Slag per minutt',s:'bpm',f:1/60}}},
- angle:{label:'Vinkel',ico:'📐',units:{
+ angle:{label:'Vinkel',ico:'<line x1="3.6" y1="19.6" x2="20.4" y2="19.6"/><line x1="3.6" y1="19.6" x2="18.6" y2="5.4"/><path d="M9.4 19.6a6.2 6.2 0 0 0 1.8-4.4"/>',units:{
    deg:{l:'Grader',s:'°',f:1},rad:{l:'Radianer',s:'rad',f:180/Math.PI},grad:{l:'Gon (nygrader)',s:'gon',f:.9},
    arcmin:{l:'Bueminutt',s:'′',f:1/60},arcsec:{l:'Buesekund',s:'″',f:1/3600},turn:{l:'Omdreining',s:'omdr',f:360},
    mil:{l:'Streker (NATO)',s:'mil',f:360/6400}}},
- data:{label:'Datamengde',ico:'💾',units:{
+ data:{label:'Datamengde',ico:'<ellipse cx="12" cy="6" rx="7.8" ry="3"/><path d="M4.2 6v12c0 1.65 3.5 3 7.8 3s7.8-1.35 7.8-3V6"/><path d="M4.2 12c0 1.65 3.5 3 7.8 3s7.8-1.35 7.8-3"/>',units:{
    byte:{l:'Byte',s:'B',f:1},bit:{l:'Bit',s:'b',f:.125},
    kb:{l:'Kilobyte (1000)',s:'kB',f:1e3},mb:{l:'Megabyte (1000)',s:'MB',f:1e6},gb:{l:'Gigabyte (1000)',s:'GB',f:1e9},
    tb:{l:'Terabyte (1000)',s:'TB',f:1e12},pb:{l:'Petabyte (1000)',s:'PB',f:1e15},
    kib:{l:'Kibibyte (1024)',s:'KiB',f:1024},mib:{l:'Mebibyte (1024)',s:'MiB',f:1048576},
    gib:{l:'Gibibyte (1024)',s:'GiB',f:1073741824},tib:{l:'Tebibyte (1024)',s:'TiB',f:1099511627776}}},
- fuel:{label:'Drivstoff',ico:'⛽',special:'fuel',units:{
+ fuel:{label:'Drivstoff',ico:'<path d="M4 21V5.2A2.2 2.2 0 0 1 6.2 3h5.6A2.2 2.2 0 0 1 14 5.2V21"/><line x1="2.6" y1="21" x2="15.4" y2="21"/><line x1="7" y1="7.4" x2="11" y2="7.4"/><path d="M14 10h3.2a1.8 1.8 0 0 1 1.8 1.8v5.4a1.5 1.5 0 0 0 3 0V9.4l-2.6-2.6"/>',special:'fuel',units:{
    l100:{l:'Liter per 100 km',s:'L/100km'},kml:{l:'Kilometer per liter',s:'km/L'},
    mpgus:{l:'MPG (US)',s:'mpg US'},mpguk:{l:'MPG (UK)',s:'mpg UK'}}},
- numbers:{label:'Tallsystem',ico:'🔢',special:'base',units:{
+ numbers:{label:'Tallsystem',ico:'<line x1="9.4" y1="3.4" x2="7.4" y2="20.6"/><line x1="16.6" y1="3.4" x2="14.6" y2="20.6"/><line x1="3.6" y1="9.2" x2="20.4" y2="9.2"/><line x1="3.6" y1="14.8" x2="20.4" y2="14.8"/>',special:'base',units:{
    bin:{l:'Binær',s:'BIN',base:2},oct:{l:'Oktal',s:'OCT',base:8},
    dec:{l:'Desimal',s:'DEC',base:10},hex:{l:'Heksadesimal',s:'HEX',base:16}}},
- dates:{label:'Dato',ico:'📅',special:'dates',units:{day:{l:'Dag',s:'d'}}},
- currency:{label:'Valuta',ico:'💱',live:true,units:{
+ dates:{label:'Dato',ico:'<rect x="3.4" y="5" width="17.2" height="16" rx="2"/><line x1="3.4" y1="10" x2="20.6" y2="10"/><line x1="8.2" y1="2.8" x2="8.2" y2="7"/><line x1="15.8" y1="2.8" x2="15.8" y2="7"/>',special:'dates',units:{day:{l:'Dag',s:'d'}}},
+ currency:{label:'Valuta',ico:'<rect x="2.4" y="5.6" width="19.2" height="12.8" rx="2"/><circle cx="12" cy="12" r="2.9"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/>',live:true,units:{
    nok:{l:'Norske kroner',s:'NOK',f:1},usd:{l:'Amerikanske dollar',s:'USD',f:9.45},
    eur:{l:'Euro',s:'EUR',f:10.93},gbp:{l:'Britiske pund',s:'GBP',f:12.79},
    sek:{l:'Svenske kroner',s:'SEK',f:.994},dkk:{l:'Danske kroner',s:'DKK',f:1.462},
@@ -1768,7 +1770,7 @@ function renderCatChips(){
   Object.keys(UNITS).forEach(k=>{
     const b=document.createElement('button');
     b.className='chip'+(state.conv.cat===k?' active':'');
-    b.innerHTML='<span>'+UNITS[k].ico+'</span>'+escapeHtml(UNITS[k].label);
+    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS[k].ico+'</svg><span>'+escapeHtml(UNITS[k].label)+'</span>';
     b.addEventListener('click',()=>{ setCategory(k); buzz(); if(b.scrollIntoView)b.scrollIntoView({block:'nearest',inline:'center'}); });
     el.catChips.appendChild(b);
   });
