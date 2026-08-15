@@ -102,19 +102,24 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ---------- Header ---------- */
-.app-header{display:flex;align-items:center;justify-content:space-between;height:var(--header-height);padding:0 10px 0 14px;flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border)}
-.brand{display:flex;align-items:center;gap:9px;min-width:0}
-.logo-icon{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--transition)}
-.logo-icon svg{width:17px;height:17px;fill:none;stroke:var(--accent-text);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.brand-text{min-width:0}
-.app-name{font-size:15px;font-weight:700;letter-spacing:-.3px;color:var(--text);white-space:nowrap}
-.app-version{font-size:9px;font-weight:600;color:var(--text-dim);letter-spacing:.6px}
-.header-actions{display:flex;align-items:center;gap:2px}
-.header-btn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background var(--transition-fast),color var(--transition-fast),transform var(--transition-fast)}
+.app-header{display:flex;align-items:center;justify-content:space-between;height:var(--header-height);padding:0 8px 0 12px;flex-shrink:0;background:var(--bg);position:relative;gap:8px}
+/* A hairline in the mode colour, so the header carries the identity the old chip did. */
+.app-header::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 22%,transparent) 62%,transparent);transition:background var(--transition)}
+.brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.logo-icon{width:29px;height:29px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--transition)}
+.logo-icon svg{width:16px;height:16px;fill:none;stroke:var(--accent-text);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.app-name{font-size:14.5px;font-weight:700;letter-spacing:-.3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.header-pill{border:1px solid var(--border);background:var(--surface-light);color:var(--text-secondary);border-radius:20px;height:28px;padding:0 10px;font-size:10.5px;font-weight:800;letter-spacing:.7px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all var(--transition-fast);font-family:var(--font-sans)}
+.header-pill:active{transform:scale(.93)}
+.header-pill.on{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
+.header-pill .pv{font-family:var(--font-mono);font-weight:700;letter-spacing:0;max-width:62px;overflow:hidden;text-overflow:ellipsis}
+.header-btn{width:38px;height:38px;border-radius:50%;border:none;background:transparent;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0;transition:background var(--transition-fast),color var(--transition-fast),transform var(--transition-fast)}
 .header-btn:hover{background:var(--surface-light);color:var(--text)}
 .header-btn:active{background:var(--surface-lighter);transform:scale(.92)}
 .header-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.header-btn .badge{position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--accent-text);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
+.header-btn .badge{position:absolute;top:1px;right:1px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--accent-text);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
+@media (max-width:379px){.app-name{display:none}}
 
 /* ---------- Display ---------- */
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0}
@@ -132,6 +137,10 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .result::-webkit-scrollbar{display:none}
 .result span{direction:ltr;display:inline-block}
 .result.shrink{font-size:calc(var(--result-font-size)*.72);letter-spacing:-.8px}
+.result.answer-red{color:#ff5364}
+[data-theme="light"] .result.answer-red,[data-theme="pastel"] .result.answer-red{color:#c4172f}
+[data-theme="contrast"] .result.answer-red{color:#ff6b6b}
+.result.answer-accent{color:var(--accent)}
 .result.error{color:var(--danger);font-size:calc(var(--result-font-size)*.5);letter-spacing:0;white-space:normal;line-height:1.3}
 .display-area.copied::after{content:'Kopiert';position:absolute;right:16px;bottom:10px;font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--accent);animation:fadeUp 1.1s ease forwards}
 @keyframes fadeUp{0%{opacity:0;transform:translateY(4px)}25%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
@@ -397,9 +406,11 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <header class="app-header">
   <div class="brand">
     <div class="logo-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="7.5" x2="15" y2="7.5"/><line x1="9" y1="12" x2="12" y2="12"/><line x1="9" y1="16.5" x2="15" y2="16.5"/></svg></div>
-    <div class="brand-text"><div class="app-name">Pro Kalkulator Ultra</div><div class="app-version" id="appVersion">v5.0</div></div>
+    <div class="app-name">Kalkulator</div>
   </div>
   <div class="header-actions">
+    <button class="header-pill" id="memPill" style="display:none" aria-label="Hent fra minnet">M<span class="pv" id="memValue"></span></button>
+    <button class="header-pill" id="trigPill" style="display:none" aria-label="Bytt mellom grader og radianer">GRADER</button>
     <button class="header-btn" id="historyBtn" aria-label="Åpne historikk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span class="badge" id="historyBadge" style="display:none">0</span></button>
     <button class="header-btn" id="settingsBtn" aria-label="Åpne innstillinger"><svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7"/><circle cx="9" cy="7" r="2.5"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="15" cy="12" r="2.5"/><line x1="5" y1="17" x2="19" y2="17"/><circle cx="7" cy="17" r="2.5"/></svg></button>
   </div>
@@ -408,9 +419,6 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <main class="main-content">
   <div class="display-area" id="displayArea" role="button" tabindex="0" aria-label="Trykk for å kopiere resultatet">
     <div class="display-chips">
-      <span class="mode-chip" id="modeChip">Standard</span>
-      <span class="status-chip" id="trigChip" style="display:none">DEG</span>
-      <span class="status-chip" id="memChip" style="display:none">M</span>
       <span class="spacer"></span>
       <span class="live-result" id="liveResult"></span>
     </div>
@@ -585,6 +593,12 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       </div>
     </section>
     <section class="settings-section">
+      <div class="settings-label">Farge på svaret</div>
+      <div class="seg seg-3" id="answerColorOptions">
+        <button class="seg-btn" data-ac="red">Rød</button><button class="seg-btn" data-ac="accent">Modusfarge</button><button class="seg-btn" data-ac="neutral">Nøytral</button>
+      </div>
+    </section>
+    <section class="settings-section">
       <div class="settings-label">Vinkelmåte</div>
       <div class="seg seg-2" id="trigOptions"><button class="seg-btn" data-trig="deg">Grader</button><button class="seg-btn" data-trig="rad">Radianer</button></div>
     </section>
@@ -608,6 +622,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       </div>
       <input type="file" id="importFile" accept="application/json,.json" style="display:none">
       <button class="action-btn" id="runTestsBtn">Kjør testene</button>
+      <div class="hint" id="appVersion" style="text-align:center"></div>
       <div class="hint" id="testSummary" style="text-align:center"></div>
       <div class="test-out" id="testOut" style="display:none"></div>
     </section>
@@ -636,7 +651,7 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
 const MODES=['standard','professional','rpn','tape','percent','converter'];
 const MODE_LABEL={standard:'Standard',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
@@ -650,7 +665,7 @@ function jSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
 
 const state={
   mode:'standard', theme:'dark', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
-  haptic:true, livePreview:true, kbd:true, rateSrc:'both',
+  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red',
   expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
   history:[], historyOpen:false, stack:[], rpnEntry:'',
   conv:{cat:'length',from:'meter',to:'kilometer',value:''},
@@ -663,7 +678,7 @@ const state={
 
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const el={};
-['displayArea','modeChip','trigChip','memChip','liveResult','expressionDisplay','resultDisplay','rpnStack',
+['displayArea','memPill','memValue','trigPill','liveResult','expressionDisplay','resultDisplay','rpnStack',
  'buttonsContainer','percentPanel','converterPanel','bottomNav','historyBtn','historyBadge','settingsBtn',
  'pctChips','pctFields','pctResult','pctSentence','pctBreakdown','pctUseBtn','pctCopyBtn',
  'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
@@ -1393,17 +1408,30 @@ function fallbackCopy(t){
 }
 
 /* ============ display ============ */
+/* The answer only takes on its colour once it is committed, so a half-typed
+   expression never looks like a finished result. */
+function resultClass(text,isError,committed){
+  if(isError)return 'result error';
+  let c='result';
+  if(text.length>11)c+=' shrink';
+  if(committed&&state.answerColor!=='neutral')c+=' answer-'+state.answerColor;
+  return c;
+}
+function paintMemPill(){
+  const on=state.memory!==0;
+  el.memPill.style.display=on?'flex':'none';
+  el.memPill.classList.toggle('on',on);
+  if(on)el.memValue.textContent=formatNumber(state.memory,Math.min(state.decimals,2));
+}
 function updateDisplay(){
   const expr=state.expression;
   el.expressionDisplay.innerHTML='<span>'+escapeHtml(formatExpression(expr)||'')+'</span>';
   el.expressionDisplay.scrollLeft=0;
   const r=state.result;
   el.resultDisplay.innerHTML='<span>'+escapeHtml(r)+'</span>';
-  el.resultDisplay.className='result'+(state.error?' error':(r.length>11?' shrink':''));
+  el.resultDisplay.className=resultClass(r,state.error,state.justEvaluated);
   el.resultDisplay.scrollLeft=0;
-  el.memChip.style.display=state.memory!==0?'':'none';
-  el.memChip.textContent='M '+formatNumber(state.memory,Math.min(state.decimals,3));
-  el.memChip.classList.add('on');
+  paintMemPill();
   updateLive();
   $$('.btn.mem-active').forEach(b=>b.classList.remove('mem-active'));
   if(state.memory!==0)$$('.btn[data-a="mRecall"],.btn[data-a="mAdd"]').forEach(b=>b.classList.add('mem-active'));
@@ -1541,7 +1569,7 @@ function rpnRender(){
   state.error=false;
   el.expressionDisplay.innerHTML='<span>'+(state.rpnEntry!==''?'skriver …':(st.length?st.length+' på stakken':'stakken er tom'))+'</span>';
   el.resultDisplay.innerHTML='<span>'+escapeHtml(state.result)+'</span>';
-  el.resultDisplay.className='result'+(state.result.length>11?' shrink':'');
+  el.resultDisplay.className=resultClass(state.result,false,state.rpnEntry===''&&st.length>0);
   el.liveResult.textContent='';
 }
 function rpnPush(v){ state.stack.push(v); if(state.stack.length>64)state.stack.shift(); }
@@ -2367,7 +2395,7 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars];
+const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor];
 function exportSettings(){
   const data={app:'Pro Kalkulator Ultra',version:VERSION,exported:new Date().toISOString(),values:{}};
   BACKUP_KEYS.forEach(k=>{ const v=lsGet(k,null); if(v!==null)data.values[k]=v; });
@@ -2478,9 +2506,9 @@ function toggleTrig(){
 }
 function paintTrigChip(){
   const show=state.mode==='professional'||state.mode==='standard';
-  el.trigChip.style.display=show?'':'none';
-  el.trigChip.textContent=state.trig==='deg'?'GRADER':'RADIANER';
-  el.trigChip.classList.toggle('on',state.trig==='rad');
+  el.trigPill.style.display=show?'flex':'none';
+  el.trigPill.textContent=state.trig==='deg'?'GRADER':'RADIANER';
+  el.trigPill.classList.toggle('on',state.trig==='rad');
 }
 
 /* ============ mode switching ============ */
@@ -2488,7 +2516,6 @@ function switchMode(mode,skipSave){
   if(MODES.indexOf(mode)<0)return;
   state.mode=mode;
   document.body.dataset.mode=mode;
-  el.modeChip.textContent=MODE_LABEL[mode];
   $$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
   const isPanel=mode==='percent'||mode==='converter';
   const isTape=mode==='tape';
@@ -2527,6 +2554,7 @@ function syncSettings(){
   $$('#formatOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.format===state.fmt));
   $$('#decimalOptions .seg-btn').forEach(b=>b.classList.toggle('active',+b.dataset.decimals===state.decimals));
   $$('#trigOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.trig===state.trig));
+  $$('#answerColorOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.ac===state.answerColor));
   $$('#rateSrcOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.src===state.rateSrc));
   setSwitch(el.hapticSwitch,state.haptic); setSwitch(el.liveSwitch,state.livePreview); setSwitch(el.kbdSwitch,state.kbd);
 }
@@ -2869,6 +2897,20 @@ function runTests(){
   ok('uten fortegn',((-1)>>>0)===4294967295);
   ok('bit 31 vises binært',toBaseString((1<<31)>>>0,2).replace(/ /g,'').length===32);
 
+
+  /* answer colouring */
+  const saveAC=state.answerColor;
+  state.answerColor='red';
+  ok('svaret blir rødt når det er regnet ut',resultClass('3025',false,true)==='result answer-red',resultClass('3025',false,true));
+  ok('uferdig uttrykk får ikke svarfarge',resultClass('3025',false,false)==='result');
+  ok('feil overstyrer svarfargen',resultClass('Kan ikke dele på null',true,true)==='result error');
+  ok('lange svar krymper og farges',resultClass('123456789012',false,true)==='result shrink answer-red',resultClass('123456789012',false,true));
+  state.answerColor='accent';
+  ok('modusfarge kan velges',resultClass('42',false,true)==='result answer-accent');
+  state.answerColor='neutral';
+  ok('nøytral gir ingen farge',resultClass('42',false,true)==='result');
+  state.answerColor=saveAC;
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -2878,6 +2920,8 @@ function runTests(){
 el.bottomNav.addEventListener('click',e=>{ const b=e.target.closest('.nav-item'); if(!b)return; switchMode(b.dataset.mode); buzz(); });
 el.historyBtn.addEventListener('click',()=>{ state.historyOpen?closeHistory():openHistory(); buzz(); });
 el.historyOverlay.addEventListener('click',closeHistory);
+el.trigPill.addEventListener('click',()=>{ toggleTrig(); buzz(); });
+el.memPill.addEventListener('click',()=>{ memRecall(); buzz(); });
 el.settingsBtn.addEventListener('click',()=>{ openSettings(); buzz(); });
 el.closeSettingsBtn.addEventListener('click',closeSettings);
 el.modalOverlay.addEventListener('click',()=>{ closeSettings(); closeInfo(); });
@@ -2957,6 +3001,11 @@ $$('#decimalOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   if(state.mode==='converter')renderConverter();
   buzz();
 }));
+$$('#answerColorOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  state.answerColor=b.dataset.ac; lsSet(LS.answerColor,state.answerColor); syncSettings();
+  if(state.mode==='rpn')rpnRender(); else updateDisplay();
+  buzz();
+}));
 $$('#trigOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   state.trig=b.dataset.trig; lsSet(LS.trig,state.trig);
   $$('[data-trig-btn]').forEach(x=>x.textContent=state.trig.toUpperCase());
@@ -3032,7 +3081,7 @@ window.addEventListener('online',()=>{ if(state.mode==='converter'&&cat().live)l
 
 /* ============ init ============ */
 function init(){
-  el.appVersion.textContent='v'+VERSION;
+  el.appVersion.textContent='Pro Kalkulator Ultra v'+VERSION;
   /* settings */
   const t=lsGet(LS.theme,null);
   state.theme=t||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');
@@ -3045,6 +3094,7 @@ function init(){
   state.livePreview=lsGet(LS.live,'1')==='1';
   state.kbd=lsGet(LS.kbd,'1')==='1';
   state.rateSrc=lsGet(LS.src,'both');
+  state.answerColor=lsGet(LS.answerColor,'red');
   state.history=jGet(LS.hist,[]);
   state.favs=jGet(LS.fav,[]);
   state.tape=jGet(LS.tape,[]);
