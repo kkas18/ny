@@ -124,9 +124,6 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0}
 .display-area{padding:26px 16px 12px;flex:1 1 auto;min-height:118px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;background:var(--bg);cursor:pointer;user-select:none}
 .display-chips{position:absolute;top:8px;left:14px;right:14px;display:flex;align-items:center;gap:6px}
-.mode-chip{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:20px;border:1px solid var(--accent-line)}
-.status-chip{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text-dim);background:var(--surface-light);padding:3px 8px;border-radius:20px;border:1px solid var(--border)}
-.status-chip.on{color:var(--text);border-color:var(--text-dim)}
 .spacer{flex:1}
 .live-result{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
 .expression{font-size:16px;color:var(--text-secondary);font-family:var(--font-mono);white-space:nowrap;overflow-x:auto;overflow-y:hidden;direction:rtl;text-align:right;min-height:22px;scrollbar-width:none;letter-spacing:.2px}
@@ -292,7 +289,10 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .drawer-head .title{font-size:17px;font-weight:800}
 .text-btn{border:none;background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;padding:6px 4px}
 .text-btn.danger{color:var(--danger)}
-.search-wrap{padding:10px 14px;border-bottom:1px solid var(--border)}
+.search-wrap{padding:10px 14px}
+.drawer-tools{display:flex;gap:7px;padding:0 14px 11px;border-bottom:1px solid var(--border)}
+.drawer-tools .pill-btn{flex:1;justify-content:center}
+.pill-btn.danger{color:var(--danger);border-color:var(--key-clear-border);background:var(--key-clear-bg)}
 .search-wrap input{width:100%;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;padding:10px 13px;color:var(--text);font-size:14px;outline:none;font-family:var(--font-sans)}
 .search-wrap input:focus{border-color:var(--accent-line)}
 .history-list{flex:1;overflow-y:auto;padding:8px 12px 16px;scrollbar-width:none;overscroll-behavior:contain}
@@ -319,16 +319,11 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .unit-opt .os{font-weight:800;font-size:13px;color:var(--text);min-width:42px;flex-shrink:0}
 .unit-opt .on{font-size:12px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .unit-opt .ov{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);flex-shrink:0}
-.unit-opt .fav{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--text-dim);border-radius:50%}
-.unit-opt .fav.on{color:var(--accent)}
-.unit-opt .fav svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.9;fill:none}
-.unit-opt .fav.on svg{fill:currentColor}
-.grp-label{font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-dim);padding:12px 4px 5px}
 .settings-section{margin-bottom:20px}
 .settings-label{font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
 .seg{display:grid;gap:5px;background:var(--surface-light);padding:4px;border-radius:14px;border:1px solid var(--border)}
 .seg-2{grid-template-columns:repeat(2,1fr)}.seg-3{grid-template-columns:repeat(3,1fr)}
-.seg-4{grid-template-columns:repeat(4,1fr)}.seg-5{grid-template-columns:repeat(5,1fr)}
+.seg-5{grid-template-columns:repeat(5,1fr)}
 .seg-btn{padding:10px 3px;border-radius:11px;border:none;background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all var(--transition-fast)}
 .seg-btn.active{background:var(--accent);color:var(--accent-text)}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;background:var(--surface-light);border:1px solid var(--border);border-radius:14px;margin-bottom:6px}
@@ -338,10 +333,6 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .switch::after{content:'';position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:var(--text-dim);transition:transform var(--transition),background var(--transition)}
 .switch.on{background:var(--accent);border-color:transparent}
 .switch.on::after{transform:translateX(19px);background:var(--accent-text)}
-.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.95);width:min(90%,400px);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px;z-index:120;opacity:0;pointer-events:none;transition:all var(--transition);max-height:76vh;overflow-y:auto;box-shadow:var(--shadow)}
-.modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
-.modal h3{font-size:17px;font-weight:800;margin-bottom:9px}
-.modal p{font-size:13px;color:var(--text-secondary);line-height:1.6}
 .ex{margin-top:11px;padding:11px 13px;background:var(--surface-light);border:1px solid var(--border);border-radius:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6}
 .toast{position:fixed;bottom:calc(var(--nav-height) + 18px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(14px);background:var(--surface-lighter);color:var(--text);padding:11px 19px;border-radius:22px;font-size:13px;font-weight:600;z-index:200;opacity:0;pointer-events:none;transition:all var(--transition);border:1px solid var(--border);box-shadow:var(--shadow);max-width:88%;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
@@ -442,7 +433,6 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 .date-row{display:flex;gap:8px;align-items:center}
 .date-row .date-input{flex:1;min-width:0}
 .date-row select{background:var(--surface-lighter);border:1px solid var(--border);border-radius:12px;padding:11px 9px;color:var(--text);font-size:14px;outline:none;flex-shrink:0;font-family:var(--font-sans)}
-.holiday-tag{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:12px;padding:3px 9px}
 
 /* ---------- Variables ---------- */
 .btn.var-set::after{content:'';position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:14px;height:2px;border-radius:1px;background:var(--accent)}
@@ -628,9 +618,13 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <div class="overlay" id="historyOverlay"></div>
 <aside class="history-drawer" id="historyDrawer" aria-label="Historikk">
   <div class="drawer-head"><span class="title">Historikk</span>
-    <div><button class="text-btn" id="exportHistBtn">Eksporter</button><button class="text-btn danger" id="clearHistBtn">Tøm</button></div>
+    <button class="text-btn" id="closeHistBtn">Lukk</button>
   </div>
   <div class="search-wrap"><input type="text" id="histSearch" placeholder="Søk i historikken" autocomplete="off"></div>
+  <div class="drawer-tools">
+    <button class="pill-btn" id="exportHistBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier alle</button>
+    <button class="pill-btn danger" id="clearHistBtn"><svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>Tøm</button>
+  </div>
   <div class="history-list" id="historyList"></div>
 </aside>
 
@@ -734,7 +728,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.6.1';
+const VERSION='5.7.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -779,7 +773,7 @@ const el={};
  'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
  'convCopyBtn','convFavBtn','convSendBtn','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
  'sparkFrom','sparkTo','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
- 'histSearch','clearHistBtn','exportHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
+ 'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
  'testSummary','testOut','modalOverlay','keySheet','keyGlyph','keyName','keyDesc','keyExample',
  'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
@@ -2022,6 +2016,7 @@ function toggleFav(){
 
 /* ============ unit picker sheet ============ */
 function openUnitSheet(side){
+  overlayOpened();
   state.sheetFor=side;
   const d=cat();
   el.sheetTitle.textContent=(side==='from'?'Fra: ':'Til: ')+d.label;
@@ -2032,12 +2027,29 @@ function openUnitSheet(side){
   el.sheetOverlay.classList.add('open'); el.unitSheet.classList.add('open');
   if(many)setTimeout(()=>el.sheetSearch.focus(),260);
 }
-function closeUnitSheet(){ el.sheetOverlay.classList.remove('open'); el.unitSheet.classList.remove('open'); state.sheetFor=null; }
+function closeUnitSheet(){ el.sheetOverlay.classList.remove('open'); el.unitSheet.classList.remove('open'); state.sheetFor=null; overlayClosed(); }
+/* Rank matches so an exact symbol wins over a word that merely contains the term:
+   searching "mil" should offer Norsk mil before Millimeter, and "usd" the dollar. */
+function rankUnits(list,term){
+  const scored=[];
+  list.forEach((u,i)=>{
+    const sym=(u.s||'').toLowerCase(), name=(u.l||'').toLowerCase(), key=(u.key||'').toLowerCase();
+    let score=-1;
+    if(sym===term||key===term)score=0;
+    else if(sym.indexOf(term)===0)score=1;
+    else if(name.indexOf(term)===0)score=2;
+    else if(name.split(/[\s(]+/).some(w=>w.indexOf(term)===0))score=3;
+    else if(name.indexOf(term)>-1||sym.indexOf(term)>-1||key.indexOf(term)>-1)score=4;
+    if(score>=0)scored.push({u,score,i});
+  });
+  scored.sort((a,b)=>a.score-b.score||a.i-b.i);
+  return scored.map(x=>x.u);
+}
 function renderUnitGrid(q){
   const d=cat(), side=state.sheetFor, cur=side==='from'?state.conv.from:state.conv.to;
   const term=(q||'').trim().toLowerCase();
   let list=unitList(state.conv.cat);
-  if(term)list=list.filter(u=>(u.l+' '+u.s+' '+u.key).toLowerCase().indexOf(term)>-1);
+  if(term)list=rankUnits(list,term);
   el.unitGrid.innerHTML='';
   if(!list.length){ el.unitGrid.innerHTML='<div class="empty">Ingen treff på «'+escapeHtml(q)+'».</div>'; return; }
   const frag=document.createDocumentFragment();
@@ -2112,8 +2124,8 @@ function renderHistory(q){
   });
   el.historyList.appendChild(frag);
 }
-function openHistory(){ state.historyOpen=true; el.historyOverlay.classList.add('open'); el.historyDrawer.classList.add('open'); renderHistory(el.histSearch.value); }
-function closeHistory(){ state.historyOpen=false; el.historyOverlay.classList.remove('open'); el.historyDrawer.classList.remove('open'); }
+function openHistory(){ overlayOpened(); state.historyOpen=true; el.historyOverlay.classList.add('open'); el.historyDrawer.classList.add('open'); renderHistory(el.histSearch.value); }
+function closeHistory(){ state.historyOpen=false; el.historyOverlay.classList.remove('open'); el.historyDrawer.classList.remove('open'); overlayClosed(); }
 function exportHistory(){
   if(!state.history.length){ toastMsg('Historikken er tom'); return; }
   const txt=state.history.map(h=>new Date(h.t).toLocaleString('nb-NO')+'\t'+h.e+' = '+h.r).join('\n');
@@ -2356,10 +2368,6 @@ function renderBits(){
     '<div class="r"><span>BIN</span><span>'+escapeHtml(toBaseString(u,2))+'</span></div>'+
     '<div class="r"><span>Uten fortegn</span><span>'+escapeHtml(formatNumber(u,0))+'</span></div>';
 }
-function bitApply(){
-  const txt=el.bitResult.querySelector('.r span:last-child');
-  if(!txt||txt.textContent==='—'){ toastMsg('Ingen verdi å bruke'); return; }
-}
 
 /* ============ date tools ============ */
 const DATE_TYPES=[
@@ -2479,7 +2487,31 @@ function dateCalc(){
 
 /* ============ backup ============ */
 const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen];
+/* Settings are only written when changed, so an untouched preference would be
+   missing from a backup and a restore would leave the old value in place.
+   Flush the live state first so the copy is complete rather than partial. */
+function persistAll(){
+  lsSet(LS.theme,state.theme);
+  lsSet(LS.dec,String(state.decimals));
+  lsSet(LS.trig,state.trig);
+  lsSet(LS.fmt,state.fmt);
+  lsSet(LS.src,state.rateSrc);
+  lsSet(LS.answerColor,state.answerColor);
+  lsSet(LS.haptic,state.haptic?'1':'0');
+  lsSet(LS.live,state.livePreview?'1':'0');
+  lsSet(LS.kbd,state.kbd?'1':'0');
+  lsSet(LS.sci,state.sci?'1':'0');
+  lsSet(LS.allOpen,state.allOpen?'1':'0');
+  lsSet(LS.mode,state.mode);
+  lsSet(LS.tapeVat,String(state.tapeVat));
+  jSet(LS.hist,state.history);
+  jSet(LS.fav,state.favs);
+  jSet(LS.conv,state.conv);
+  jSet(LS.tape,state.tape);
+  jSet(LS.vars,state.vars);
+}
 function exportSettings(){
+  persistAll();
   const data={app:'Pro Kalkulator Ultra',version:VERSION,exported:new Date().toISOString(),values:{}};
   BACKUP_KEYS.forEach(k=>{ const v=lsGet(k,null); if(v!==null)data.values[k]=v; });
   const json=JSON.stringify(data,null,2);
@@ -2792,6 +2824,7 @@ let currentHelp=null;
 function openKeyHelp(k){
   const h=KEY_HELP[k];
   if(!h)return;
+  overlayOpened();
   currentHelp=h;
   el.keyGlyph.innerHTML=h.g||escapeHtml(k);
   el.keyName.textContent=h.n||'';
@@ -2837,6 +2870,7 @@ function closeKeyHelp(){
   el.sheetOverlay.classList.remove('open');
   el.keySheet.classList.remove('open');
   currentHelp=null;
+  overlayClosed();
 }
 
 /* ============ keypad rendering ============ */
@@ -3074,8 +3108,8 @@ function syncSettings(){
   $$('#rateSrcOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.src===state.rateSrc));
   setSwitch(el.hapticSwitch,state.haptic); setSwitch(el.liveSwitch,state.livePreview); setSwitch(el.kbdSwitch,state.kbd);
 }
-function openSettings(){ el.modalOverlay.classList.add('open'); el.settingsSheet.classList.add('open'); syncSettings(); }
-function closeSettings(){ el.modalOverlay.classList.remove('open'); el.settingsSheet.classList.remove('open'); }
+function openSettings(){ overlayOpened(); el.modalOverlay.classList.add('open'); el.settingsSheet.classList.add('open'); syncSettings(); }
+function closeSettings(){ el.modalOverlay.classList.remove('open'); el.settingsSheet.classList.remove('open'); overlayClosed(); }
 
 /* ============ physical keyboard ============ */
 const KEYMAP={'*':'×','x':'×','/':'÷','X':'×'};
@@ -3152,6 +3186,30 @@ document.addEventListener('touchend',e=>{
   const n=dx<0?i+1:i-1;
   if(n>=0&&n<MODES.length){ switchMode(MODES[n]); buzz(); }
 },{passive:true});
+
+/* ============ back gesture closes overlays ============ */
+/* Without this, the Android back button leaves the app while a sheet is open,
+   which reads as losing your work rather than closing a panel. */
+function anyOverlayOpen(){
+  return state.historyOpen
+    || el.settingsSheet.classList.contains('open')
+    || el.unitSheet.classList.contains('open')
+    || el.keySheet.classList.contains('open');
+}
+let overlayPushed=false;
+function overlayOpened(){
+  if(overlayPushed)return;
+  try{ history.pushState({pkuOverlay:1},''); overlayPushed=true; }catch(e){}
+}
+function overlayClosed(){
+  if(!overlayPushed||anyOverlayOpen())return;
+  overlayPushed=false;
+  try{ if(history.state&&history.state.pkuOverlay)history.back(); }catch(e){}
+}
+window.addEventListener('popstate',()=>{
+  overlayPushed=false;
+  if(anyOverlayOpen()){ closeHistory(); closeSettings(); closeUnitSheet(); closeKeyHelp(); }
+});
 
 /* ============ test suite ============ */
 function runTests(){
@@ -3619,6 +3677,38 @@ function runTests(){
   })();
   ok('vitenskapelig gulv er lavere enn vanlig',SCI_FLOOR<DISPLAY_FLOOR.standard,SCI_FLOOR);
 
+
+  /* a backup must be complete, not just the settings that happen to be touched */
+  ok('sikkerhetskopien dekker alle nøklene',BACKUP_KEYS.length>=15,BACKUP_KEYS.length);
+  persistAll();
+  const missing=BACKUP_KEYS.filter(k=>lsGet(k,null)===null);
+  ok('alle nøkler skrives ved kopiering',missing.length===0,missing.join(','));
+
+
+  /* search ranking in the unit picker */
+  const lenUnits=Object.keys(UNITS.length.units).map(k=>Object.assign({key:k},UNITS.length.units[k]));
+  const curUnits=Object.keys(UNITS.currency.units).map(k=>Object.assign({key:k},UNITS.currency.units[k]));
+  ok('«mil» gir Norsk mil først',rankUnits(lenUnits,'mil')[0].s==='mil',rankUnits(lenUnits,'mil')[0].s);
+  ok('«mm» gir millimeter først',rankUnits(lenUnits,'mm')[0].s==='mm',rankUnits(lenUnits,'mm')[0].s);
+  ok('«kilo» gir kilometer først',rankUnits(lenUnits,'kilo')[0].s==='km',rankUnits(lenUnits,'kilo')[0].s);
+  ok('«tomme» finner tommen',rankUnits(lenUnits,'tomme')[0].s==='in',rankUnits(lenUnits,'tomme')[0].s);
+  ok('«usd» gir dollar først',rankUnits(curUnits,'usd')[0].s==='USD',(rankUnits(curUnits,'usd')[0]||{}).s);
+  ok('«nok» gir kroner først',rankUnits(curUnits,'nok')[0].s==='NOK',(rankUnits(curUnits,'nok')[0]||{}).s);
+  ok('«norske» finner norske kroner',rankUnits(curUnits,'norske')[0].s==='NOK',(rankUnits(curUnits,'norske')[0]||{}).s);
+  ok('uten treff gir tom liste',rankUnits(lenUnits,'zzzz').length===0);
+  ok('rangering mister ingen treff',rankUnits(lenUnits,'meter').length===lenUnits.filter(u=>(u.l+' '+u.s+' '+u.key).toLowerCase().indexOf('meter')>-1).length);
+
+
+  /* overlays and the back gesture */
+  ok('historikk har lukkeknapp',!!el.closeHistBtn);
+  ok('ingen overlegg åpne fra start',!anyOverlayOpen());
+  openHistory(); ok('historikk åpner',anyOverlayOpen()&&state.historyOpen);
+  closeHistory(); ok('historikk lukker',!anyOverlayOpen());
+  openSettings(); ok('innstillinger åpner',anyOverlayOpen());
+  closeSettings(); ok('innstillinger lukker',!anyOverlayOpen());
+  openKeyHelp('²'); ok('hjelpeark åpner',anyOverlayOpen());
+  closeKeyHelp(); ok('hjelpeark lukker',!anyOverlayOpen());
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -3628,6 +3718,7 @@ function runTests(){
 el.bottomNav.addEventListener('click',e=>{ const b=e.target.closest('.nav-item'); if(!b)return; switchMode(b.dataset.mode); buzz(); });
 el.historyBtn.addEventListener('click',()=>{ state.historyOpen?closeHistory():openHistory(); buzz(); });
 el.historyOverlay.addEventListener('click',closeHistory);
+el.closeHistBtn.addEventListener('click',closeHistory);
 el.zoneToggle.addEventListener('click',()=>{ setSci(!state.sci,true); buzz(); });
 el.trigPill.addEventListener('click',()=>{ toggleTrig(); buzz(); });
 el.memPill.addEventListener('click',()=>{ memRecall(); buzz(); });
