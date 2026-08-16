@@ -717,7 +717,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     </section>
     <section class="settings-section">
       <div class="settings-label">Vekslingsgebyr</div>
-      <p class="settings-note">Norges Bank noterer midtkurs. Kort og vekslingskontor legger vanligvis på 1,5–2 %. Slår du dette på, regner konverteren med påslaget og viser midtkursen ved siden av.</p>
+      <p class="settings-note">Norges Bank noterer midtkurs. Kort og vekslingskontor legger vanligvis på 1,5–2 %. Påslaget gjør den utenlandske valutaen tilsvarende dyrere: velger du 1,5 %, koster 1 USD 1,5 % mer i kroner. Midtkursen vises fortsatt under resultatet.</p>
       <div class="seg seg-4" id="feeOptions">
         <button class="seg-btn" data-fee="0">Av</button><button class="seg-btn" data-fee="1.5">1,5 %</button>
         <button class="seg-btn" data-fee="1.75">1,75 %</button><button class="seg-btn" data-fee="2">2 %</button>
@@ -772,7 +772,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.1.0';
+const VERSION='6.1.1';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -1862,15 +1862,8 @@ function pctCalc(){
 /* ============ converter UI ============ */
 function cat(){ return UNITS[state.conv.cat]||UNITS.length; }
 /* Norges Bank publishes the mid rate, which nobody is ever offered. A card or a
-   bureau adds a markup, so the panel can apply one and still show the mid rate. */
-function feeFactor(){
-  return (state.conv.cat==='currency'&&state.fxFee>0)?(1+state.fxFee/100):1;
-}
-function convertHere(v,from,to){
-  const base=convert(v,state.conv.cat,from,to);
-  if(!Number.isFinite(base)||from===to)return base;
-  return base/feeFactor();
-}
+   bureau marks the foreign currency up, so the price of one unit goes UP by the
+   chosen percent — and every number the panel shows uses that raised price. */
 /* Money wants two decimals; eight just makes the number hard to read. */
 function convDecimals(catKey,v){
   if(catKey!=='currency')return Math.min(state.decimals,6);
@@ -1878,6 +1871,19 @@ function convDecimals(catKey,v){
   if(a===0||a>=1)return 2;
   if(a>=0.01)return 4;
   return 6;
+}
+function feeRate(unitKey){
+  const u=(UNITS.currency.units||{})[unitKey];
+  if(!u)return NaN;
+  if(!state.fxFee||unitKey==='nok')return u.f;
+  return u.f*(1+state.fxFee/100);
+}
+function feeActive(){ return state.conv.cat==='currency'&&state.fxFee>0; }
+function convertHere(v,from,to){
+  if(!feeActive()||from===to)return convert(v,state.conv.cat,from,to);
+  const a=feeRate(from), b=feeRate(to);
+  if(!Number.isFinite(a)||!Number.isFinite(b)||!b)return NaN;
+  return v*a/b;
 }
 function unitList(c){ const d=UNITS[c]; return Object.keys(d.units).map(k=>Object.assign({key:k},d.units[k])); }
 /* Ordered once per session, not while you are tapping: chips that reshuffle
@@ -1993,9 +1999,9 @@ function renderConverter(){
       :(wasExpr?('Regnet ut til '+formatNumber(raw,6)+' '+d.units[c.from].s):'');
     const notes=[];
     if(c.cat==='currency'&&(d.units[c.to]||{}).src==='fill')notes.push('Denne kursen kommer fra reservekilden, ikke Norges Bank.');
-    if(feeFactor()>1){
+    if(feeActive()){
       const mid=convert(raw,c.cat,c.from,c.to);
-      notes.push('Inkludert '+formatNumber(state.fxFee,2)+' % vekslingsgebyr. Midtkurs gir '+formatNumber(mid,convDecimals(c.cat,mid))+' '+d.units[c.to].s+'.');
+      notes.push('Valutaen er priset '+formatNumber(state.fxFee,2)+' % over midtkurs. Til ren midtkurs: '+formatNumber(mid,convDecimals(c.cat,mid))+' '+d.units[c.to].s+'.');
     }
     el.toHint.textContent=notes.join(' ');
   }
@@ -2020,7 +2026,7 @@ function paintRate(){
   const a=useFwd?uf:ut, bU=useFwd?ut:uf, v=useFwd?fwd:back;
   const dec=convDecimals(c.cat,v)===2?4:6;
   el.convRate.textContent='1 '+a.s+' = '+formatNumber(v,dec)+' '+bU.s
-    +(feeFactor()>1?'  ·  +'+formatNumber(state.fxFee,2)+' %':'');
+    +(feeActive()?'  ·  inkl. '+formatNumber(state.fxFee,2)+' %':'');
 }
 function renderAllUnits(raw){
   const c=state.conv,d=cat();
@@ -2118,9 +2124,9 @@ function swapUnits(){
     /* An untouched 1 means the user is checking a rate, so keep the 1 and
        simply reverse the direction: 1 NOK → USD becomes 1 USD → NOK. */
   }else if(Number.isFinite(c.lastOut)){
-    /* Carry the exact result across, not the rounded text, or a swap and a
-       swap back would drift away from the number you started with. */
-    c.value=formatNumber(c.lastOut,10,{raw:true});
+    /* Carry more precision than the display shows, so a swap and a swap back
+       land where you started — but not so much that the field turns into noise. */
+    c.value=formatNumber(c.lastOut,c.cat==='currency'?6:10,{raw:true});
   }
   el.fromInput.value=c.value;
   renderConverter(); saveConv(); buzz(14);
@@ -4104,16 +4110,21 @@ function runTests(){
 
   state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd';
   const mid=convertHere(1000,'nok','usd');
+  const midPrice=convert(1,'currency','usd','nok');
   state.fxFee=1.75;
   const withFee=convertHere(1000,'nok','usd');
-  ok('gebyr gir mindre valuta',withFee<mid,withFee+' < '+mid);
-  near('gebyret er nøyaktig 1,75 %',mid/withFee,1.0175,1e-12);
-  const backFee=convertHere(1,'usd','nok');
-  ok('gebyret rammer begge veier',backFee<convert(1,'currency','usd','nok'),backFee);
-  ok('samme enhet er upåvirket',convertHere(5,'nok','nok')===5);
+  /* The percent is added to the PRICE of the foreign currency, so a dollar costs
+     more kroner and the same kroner buy fewer dollars. Both follow from one rule. */
+  near('påslaget legges til prisen på valutaen',convertHere(1,'usd','nok'),midPrice*1.0175,1e-9);
+  ok('dyrere dollar gir færre dollar for pengene',withFee<mid,withFee+' < '+mid);
+  near('og nøyaktig 1,75 % færre',mid/withFee,1.0175,1e-12);
+  ok('påslaget gjør ikke valutaen billigere',convertHere(1,'usd','nok')>midPrice,convertHere(1,'usd','nok')+' > '+midPrice);
+  near('kryssrate dobbeltbelastes ikke',convertHere(1,'usd','eur'),convert(1,'currency','usd','eur'),1e-9);
+  ok('kroner mot kroner er upåvirket',convertHere(5,'nok','nok')===5);
+  ok('kronekursen er alltid én',feeRate('nok')===1);
   state.fxFee=0;
-  ok('uten gebyr er det ren midtkurs',Math.abs(convertHere(1000,'nok','usd')-convert(1000,'currency','nok','usd'))<1e-12);
-  ok('gebyret gjelder ikke andre kategorier',(()=>{state.conv.cat='length';state.fxFee=2;
+  ok('uten påslag er det ren midtkurs',Math.abs(convertHere(1000,'nok','usd')-convert(1000,'currency','nok','usd'))<1e-12);
+  ok('påslaget gjelder ikke andre kategorier',(()=>{state.conv.cat='length';state.fxFee=2;
     const r=Math.abs(convertHere(1000,'meter','kilometer')-1)<1e-12;state.fxFee=0;return r;})());
 
   state.favUnits={};
