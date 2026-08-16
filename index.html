@@ -759,6 +759,12 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       <div class="seg seg-2" id="trigOptions"><button class="seg-btn" data-trig="deg">Grader</button><button class="seg-btn" data-trig="rad">Radianer</button></div>
     </section>
     <section class="settings-section">
+      <div class="settings-label">Faner</div>
+      <p class="settings-note">RPN og Tape er spesialverktøy. Bruker du dem ikke, kan du slå dem av her — innholdet forsvinner ikke, fanen blir bare borte fra menyen.</p>
+      <div class="toggle-row"><div><div class="tl">RPN</div><div class="td">Omvendt polsk notasjon: du taster tallene først og operatoren til slutt, uten parenteser.</div></div><div class="switch" id="tabRpnSwitch" role="switch" tabindex="0"></div></div>
+      <div class="toggle-row"><div><div class="tl">Tape</div><div class="td">En kvitteringsstrimmel der hver linje står igjen og summeres, med MVA-splitt.</div></div><div class="switch" id="tabTapeSwitch" role="switch" tabindex="0"></div></div>
+    </section>
+    <section class="settings-section">
       <div class="settings-label">Oppførsel</div>
       <div class="toggle-row"><div><div class="tl">Vibrasjon</div><div class="td">Kort haptisk puls når du trykker på en tast.</div></div><div class="switch" id="hapticSwitch" role="switch" tabindex="0"></div></div>
       <div class="toggle-row"><div><div class="tl">Forhåndsvis svaret</div><div class="td">Viser resultatet mens du skriver uttrykket.</div></div><div class="switch" id="liveSwitch" role="switch" tabindex="0"></div></div>
@@ -826,7 +832,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.2.0';
+const VERSION='6.3.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -837,7 +843,7 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',fx:'pku_fx',allOpen:'pku_allopen',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',fx:'pku_fx',tabs:'pku_tabs',allOpen:'pku_allopen',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
 const MODES=['standard','rpn','tape','percent','currency','converter'];
 const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',currency:'Valuta',converter:'Konverter'};
@@ -857,7 +863,7 @@ const state={
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
-  fx:{base:'nok',value:'1000',auto:true},
+  fx:{base:'nok',value:'1000',auto:true}, tabs:{rpn:true,tape:true},
   vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{}, favUnits:{}, fxFee:0, catUse:{}, catOrder:null, sparkDays:30,
   tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
   dateType:'between', dateVals:{}
@@ -880,7 +886,7 @@ const el={};
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
  'testSummary','testOut','modalOverlay','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
  'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
- 'toast','appVersion','hapticSwitch','liveSwitch','kbdSwitch',
+ 'toast','appVersion','hapticSwitch','liveSwitch','kbdSwitch','tabRpnSwitch','tabTapeSwitch',
  'tapePanel','tapeList','tapeSum','tapeSumLabel','tapeSplit','tapeCur','tapePrev','tapeVatBtn','tapeVatLabel',
  'tapeNoteBtn','tapeCopyBtn','tapeClearBtn','convStandard','convDates','dateChips','dateFields','dateResult',
  'dateSentence','dateBreakdown','dateCopyBtn','bitCard','bitGrid','bitOps','bitOperand','bitOperandRow','bitResult',
@@ -1963,12 +1969,6 @@ function renderCatChips(){
     b.addEventListener('click',()=>{ setCategory(k); buzz(); if(b.scrollIntoView)b.scrollIntoView({block:'nearest',inline:'center'}); });
     el.catChips.appendChild(b);
   });
-  /* Currency lives in its own tab now; leave a signpost so nobody hunts for it. */
-  const sign=document.createElement('button');
-  sign.className='chip';
-  sign.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS.currency.ico+'</svg><span>Valuta →</span>';
-  sign.addEventListener('click',()=>{ switchMode('currency'); buzz(); });
-  el.catChips.appendChild(sign);
 }
 const DEFAULT_PAIR={length:['meter','kilometer'],weight:['kilogram','pound'],temperature:['celsius','fahrenheit'],
  area:['sqm','dekar'],volume:['liter','galus'],speed:['kmh','mph'],time:['hour','minute'],
@@ -2278,7 +2278,7 @@ function sheetContext(){
   if(side==='fxBase')return {cat:'currency',current:state.fx.base,title:'Regn fra',
     pick:u=>{ const carry=fxConvert(fxAmount(),state.fx.base,u.key);
       state.fx.base=u.key;
-      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,6,{raw:true}); state.fx.auto=false; el.fxInput.value=state.fx.value; }
+      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,fxDecimals(carry)); state.fx.auto=false; el.fxInput.value=state.fx.value; }
       noteRecent('currency',u.key); fxRender(); fxSave(); }};
   if(side==='fxAdd')return {cat:'currency',current:null,title:'Legg til valuta',keepOpen:true,
     pick:u=>{ if(!isFavUnit('currency',u.key))toggleFavUnit('currency',u.key);
@@ -2815,7 +2815,7 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays,LS.fx];
+const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays,LS.fx,LS.tabs];
 /* Settings are only written when changed, so an untouched preference would be
    missing from a backup and a restore would leave the old value in place.
    Flush the live state first so the copy is complete rather than partial. */
@@ -2844,6 +2844,7 @@ function persistAll(){
   lsSet(LS.fxFee,String(state.fxFee));
   lsSet(LS.sparkDays,String(state.sparkDays));
   jSet(LS.fx,{base:state.fx.base,value:state.fx.value});
+  jSet(LS.tabs,state.tabs);
 }
 function exportSettings(){
   persistAll();
@@ -3313,7 +3314,9 @@ function fxRenderBoard(){
     const rebase=()=>{
       const carry=fxConvert(fxAmount(),state.fx.base,k);
       state.fx.base=k;
-      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,6,{raw:true}); state.fx.auto=false; }
+      /* The amount is money now, so show it as money. Six raw decimals in the
+         big field was precision nobody asked for and could not read. */
+      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,fxDecimals(carry)); state.fx.auto=false; }
       el.fxInput.value=state.fx.value;
       fxRender(); fxSave(); buzz(12);
     };
@@ -3544,8 +3547,17 @@ function paintTrigChip(){
 }
 
 /* ============ mode switching ============ */
+/* Tabs the user has switched off are gone from the nav and from the swipe order,
+   but nothing they hold is deleted. */
+function visibleModes(){ return MODES.filter(m=>state.tabs[m]!==false); }
+function paintTabs(){
+  $$('.nav-item').forEach(b=>{ b.style.display=state.tabs[b.dataset.mode]===false?'none':''; });
+  setSwitch(el.tabRpnSwitch,state.tabs.rpn!==false);
+  setSwitch(el.tabTapeSwitch,state.tabs.tape!==false);
+}
 function switchMode(mode,skipSave){
   if(MODES.indexOf(mode)<0)return;
+  if(state.tabs[mode]===false)mode='standard';
   state.mode=mode;
   document.body.dataset.mode=mode;
   $$('.nav-item').forEach(b=>{
@@ -3605,6 +3617,7 @@ function syncSettings(){
   $$('#answerColorOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.ac===state.answerColor));
   $$('#rateSrcOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.src===state.rateSrc));
   $$('#feeOptions .seg-btn').forEach(b=>b.classList.toggle('active',Math.abs(+b.dataset.fee-state.fxFee)<1e-9));
+  paintTabs();
   setSwitch(el.hapticSwitch,state.haptic); setSwitch(el.liveSwitch,state.livePreview); setSwitch(el.kbdSwitch,state.kbd);
 }
 function openSettings(){ overlayOpened(); el.modalOverlay.classList.add('open'); el.settingsSheet.classList.add('open'); syncSettings(); }
@@ -3681,9 +3694,10 @@ document.addEventListener('touchend',e=>{
   const t=e.changedTouches[0];
   const dx=t.clientX-tx, dy=t.clientY-ty;
   if(Math.abs(dx)<70||Math.abs(dy)>60)return;
-  const i=MODES.indexOf(state.mode);
+  const list=visibleModes();
+  const i=list.indexOf(state.mode);
   const n=dx<0?i+1:i-1;
-  if(n>=0&&n<MODES.length){ switchMode(MODES[n]); buzz(); }
+  if(i>-1&&n>=0&&n<list.length){ switchMode(list[n]); buzz(); }
 },{passive:true});
 
 /* ============ back gesture closes overlays ============ */
@@ -4458,6 +4472,35 @@ function runTests(){
   state.fx.value='abc';   ok('sprøyt gir ingen verdi',Number.isNaN(fxAmount()));
   state.fx=saveFx; state.favUnits=JSON.parse(saveFU2); state.fxFee=saveFee2;
 
+
+  /* optional tabs */
+  const saveTabs=Object.assign({},state.tabs), saveModeT=state.mode;
+  state.tabs={rpn:true,tape:true};
+  ok('alle faner synlige som standard',visibleModes().length===MODES.length,visibleModes().length);
+  setTab('rpn',false);
+  ok('avslått fane forsvinner fra menyen',visibleModes().indexOf('rpn')<0,visibleModes().join(','));
+  ok('valget lagres',jGet(LS.tabs,{}).rpn===false);
+  ok('resten står igjen',visibleModes().length===MODES.length-1);
+  ok('valuta kan ikke slås av',visibleModes().indexOf('currency')>-1);
+  ok('kalkulatoren kan ikke slås av',visibleModes().indexOf('standard')>-1);
+  state.mode='rpn'; switchMode('rpn');
+  ok('avslått fane kan ikke åpnes',state.mode==='standard',state.mode);
+  setTab('rpn',true);
+  ok('fanen kommer tilbake',visibleModes().indexOf('rpn')>-1);
+  ok('tastaturet er urørt',LAYOUTS.rpn.length===28);
+  state.tabs=saveTabs; state.mode=saveModeT; paintTabs();
+
+  /* a rebased amount is money, not raw precision */
+  const saveFx2=Object.assign({},state.fx), saveFU3=JSON.stringify(state.favUnits);
+  state.favUnits.currency=['usd','eur']; state.fx.base='nok'; state.fx.value='1000';
+  const moved=formatNumber(fxConvert(1000,'nok','eur'),fxDecimals(fxConvert(1000,'nok','eur')));
+  ok('overført beløp har høyst to desimaler',(moved.split(',')[1]||'').length<=2,moved);
+  ok('overført beløp har bare ett skilletegn',moved.replace(/[^,.]/g,'').length<=1,moved);
+  state.fx=saveFx2; state.favUnits=JSON.parse(saveFU3);
+
+  /* currency is gone from the converter, with no lookalike left behind */
+  ok('valuta er ute av konverteren',categoryOrder().filter(k=>k!=='currency').indexOf('currency')<0);
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -4669,6 +4712,14 @@ function bindSwitch(node,key,setter){
   node.addEventListener('click',fire);
   node.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fire();} });
 }
+function setTab(name,on){
+  state.tabs[name]=!!on;
+  jSet(LS.tabs,state.tabs);
+  paintTabs();
+  if(!on&&state.mode===name)switchMode('standard');
+}
+bindSwitch(el.tabRpnSwitch,LS.tabs,v=>setTab('rpn',v));
+bindSwitch(el.tabTapeSwitch,LS.tabs,v=>setTab('tape',v));
 bindSwitch(el.hapticSwitch,LS.haptic,v=>{ state.haptic=v; lsSet(LS.haptic,v?'1':'0'); syncSettings(); });
 bindSwitch(el.liveSwitch,LS.live,v=>{ state.livePreview=v; lsSet(LS.live,v?'1':'0'); syncSettings(); updateLive(); });
 bindSwitch(el.kbdSwitch,LS.kbd,v=>{ state.kbd=v; lsSet(LS.kbd,v?'1':'0'); syncSettings(); });
@@ -4754,6 +4805,8 @@ function init(){
   const fx=jGet(LS.fx,null);
   if(fx&&typeof fx==='object'){ if(fx.base)state.fx.base=fx.base; if(fx.value)state.fx.value=fx.value; state.fx.auto=false; }
   state.sparkDays=parseInt(lsGet(LS.sparkDays,'30'),10)||30;
+  const tabs=jGet(LS.tabs,null);
+  if(tabs&&typeof tabs==='object')['rpn','tape'].forEach(k=>{ if(typeof tabs[k]==='boolean')state.tabs[k]=tabs[k]; });
   state.tape=jGet(LS.tape,[]);
   state.tapeVat=parseInt(lsGet(LS.tapeVat,'0'),10)||0;
   const sv=jGet(LS.vars,null);
@@ -4764,6 +4817,7 @@ function init(){
   const cachedRates=loadCachedRates();
   if(cachedRates){ applyRates(cachedRates); setRateState(cachedRates); }
   paintSciToggle();
+  paintTabs();
   el.allUnits.classList.toggle('open',state.allOpen);
   updateBadge(); syncSettings();
   /* App shortcuts and deep links: ?mode=converter or #converter */
@@ -4850,7 +4904,7 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
