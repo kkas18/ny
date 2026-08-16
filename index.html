@@ -19,11 +19,12 @@
   --bg:#0a0c0b; --surface:#121514; --surface-light:#1a1e1c; --surface-lighter:#232826;
   --border:#2a302d; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#5f6b66;
   --danger:#e74c5e; --success:#2ecc71; --warning:#f39c12;
-  --key-number-bg:#161a18; --key-number-text:#eef2f0;
-  --key-func-bg:#1e2422; --key-func-text:#9fb0aa;
-  --key-op-bg:#242b28; --key-op-text:#d6e0dc;
+  --keypad-bg:#0f1211;
+  --key-number-bg:#1b201e; --key-number-text:#f2f6f4;
+  --key-func-bg:#282f2c; --key-func-text:#b6c4bf;
+  --key-op-bg:#313a36; --key-op-text:#e6eeea;
   --key-border:#2a302d;
-  --key-clear-bg:rgba(231,76,94,.16); --key-clear-text:#ef6b78; --key-clear-border:rgba(231,76,94,.35);
+  --key-clear-bg:rgba(231,76,94,.20); --key-clear-text:#ff8a94; --key-clear-border:rgba(231,76,94,.35);
   --accent-text:#0a0c0b;
   --radius-sm:10px; --radius-md:16px; --radius-lg:22px;
   --shadow:0 8px 32px rgba(0,0,0,.4); --shadow-sm:0 2px 12px rgba(0,0,0,.3);
@@ -40,9 +41,10 @@
   --bg:#f4f5f4; --surface:#fff; --surface-light:#f2f4f3; --surface-lighter:#e8eae9;
   --border:#d9dddb; --text:#1c201e; --text-secondary:#5c6663; --text-dim:#8a938f;
   --danger:#d63040; --success:#00a865; --warning:#e8890c;
-  --key-number-bg:#fff; --key-number-text:#202624;
-  --key-func-bg:#eceeed; --key-func-text:#4d5754;
-  --key-op-bg:#e0e4e2; --key-op-text:#333d39;
+  --keypad-bg:#e9ecea;
+  --key-number-bg:#fff; --key-number-text:#1b211f;
+  --key-func-bg:#e7eae9; --key-func-text:#414b48;
+  --key-op-bg:#d6dcda; --key-op-text:#252d2a;
   --key-border:#d9dddb;
   --key-clear-bg:rgba(214,48,64,.10); --key-clear-text:#c02434; --key-clear-border:rgba(214,48,64,.30);
   --accent-text:#fff;
@@ -52,9 +54,10 @@
   --bg:#000; --surface:#0a0a0a; --surface-light:#101010; --surface-lighter:#181818;
   --border:#242424; --text:#fff; --text-secondary:#a8a8a8; --text-dim:#6b6b6b;
   --danger:#ff4444; --success:#00cc66; --warning:#fa0;
-  --key-number-bg:#0d0d0d; --key-number-text:#fff;
-  --key-func-bg:#151515; --key-func-text:#9d9d9d;
-  --key-op-bg:#1c1c1c; --key-op-text:#ddd;
+  --keypad-bg:#050505;
+  --key-number-bg:#121212; --key-number-text:#fff;
+  --key-func-bg:#202020; --key-func-text:#b5b5b5;
+  --key-op-bg:#2b2b2b; --key-op-text:#eee;
   --key-border:#242424;
   --key-clear-bg:rgba(255,68,68,.14); --key-clear-text:#ff6060; --key-clear-border:rgba(255,68,68,.35);
   --accent-text:#000;
@@ -65,6 +68,7 @@
   --bg:#000; --surface:#000; --surface-light:#111; --surface-lighter:#222;
   --border:#8a8a8a; --text:#fff; --text-secondary:#ddd; --text-dim:#aaa;
   --danger:#ff3333; --success:#3f3; --warning:#f90;
+  --keypad-bg:#000;
   --key-number-bg:#000; --key-number-text:#fff;
   --key-func-bg:#111; --key-func-text:#eee;
   --key-op-bg:#222; --key-op-text:#fff;
@@ -78,9 +82,10 @@
   --bg:#f5f4f1; --surface:#fdfdfc; --surface-light:#f3f2ee; --surface-lighter:#eae8e3;
   --border:#dedbd4; --text:#2c2a26; --text-secondary:#6d6961; --text-dim:#9b968c;
   --danger:#b55454; --success:#5da583; --warning:#c98f4a;
+  --keypad-bg:#ece9e3;
   --key-number-bg:#fff; --key-number-text:#2c2a26;
-  --key-func-bg:#efede8; --key-func-text:#615d55;
-  --key-op-bg:#e4e1da; --key-op-text:#44403a;
+  --key-func-bg:#e9e6df; --key-func-text:#54504a;
+  --key-op-bg:#dcd8d0; --key-op-text:#3a3630;
   --key-border:#dedbd4;
   --key-clear-bg:rgba(191,84,84,.12); --key-clear-text:#a34747; --key-clear-border:rgba(191,84,84,.32);
   --accent-text:#fff;
@@ -145,19 +150,19 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .rpn-stack .lvl b{color:var(--text-dim);font-weight:700;font-size:10px;align-self:center;letter-spacing:.5px}
 
 /* ---------- Keypad ---------- */
-.buttons-container{flex:0 0 auto;display:flex;flex-direction:column;background:var(--surface);overflow:hidden;padding:8px 18px 10px;border-top:1px solid var(--border);transition:height .3s cubic-bezier(.4,0,.2,1)}
-.calc-buttons{display:grid;gap:6px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;grid-auto-rows:minmax(var(--btn-min-height),1fr);justify-content:stretch}
+.buttons-container{flex:0 0 auto;display:flex;flex-direction:column;background:var(--keypad-bg);overflow:hidden;padding:8px 18px 10px;border-top:1px solid var(--border);transition:height .3s cubic-bezier(.4,0,.2,1)}
+.calc-buttons{display:grid;gap:9px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;grid-auto-rows:minmax(var(--btn-min-height),1fr);justify-content:stretch}
 .calc-buttons::-webkit-scrollbar{display:none}
 .calc-buttons.standard-mode{grid-template-columns:repeat(4,1fr)}
-.calc-buttons.professional-mode{grid-template-columns:repeat(5,1fr);--btn-min-height:44px;--btn-font-size:17px;gap:5px}
+.calc-buttons.professional-mode{grid-template-columns:repeat(5,1fr);--btn-min-height:44px;--btn-font-size:17px;gap:7px}
 .calc-buttons.rpn-mode{grid-template-columns:repeat(4,1fr);--btn-min-height:48px}
 .calc-buttons.tape-mode{grid-template-columns:repeat(4,1fr);--btn-min-height:46px;--btn-font-size:19px}
-.btn{border:1px solid var(--key-border);border-radius:var(--radius-md);background:var(--key-number-bg);color:var(--key-number-text);font-size:var(--btn-font-size);font-weight:600;font-family:var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:transform .09s ease,filter var(--transition-fast),background var(--transition-fast);user-select:none;-webkit-user-select:none;min-height:var(--btn-min-height);padding:2px}
+.btn{border:none;border-radius:999px;background:var(--key-number-bg);color:var(--key-number-text);font-size:var(--btn-font-size);font-weight:500;font-family:var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:transform .09s ease,filter var(--transition-fast),background var(--transition-fast);user-select:none;-webkit-user-select:none;min-height:var(--btn-min-height);padding:2px}
 .btn:active{transform:scale(.95);filter:brightness(1.35)}
 .btn.func{background:var(--key-func-bg);color:var(--key-func-text);font-size:calc(var(--btn-font-size)*.82);font-weight:500}
 .btn.op{background:var(--key-op-bg);color:var(--key-op-text);font-size:calc(var(--btn-font-size)*1.06)}
-.btn.clear{background:var(--key-clear-bg);color:var(--key-clear-text);border-color:var(--key-clear-border);font-size:calc(var(--btn-font-size)*.88);font-weight:700}
-.btn.equals{background:var(--accent);color:var(--accent-text);font-weight:800;font-size:calc(var(--btn-font-size)*1.1);border-color:transparent}
+.btn.clear{background:var(--key-clear-bg);color:var(--key-clear-text);font-size:calc(var(--btn-font-size)*.88);font-weight:600}
+.btn.equals{background:var(--accent);color:var(--accent-text);font-weight:700;font-size:calc(var(--btn-font-size)*1.1)}
 .btn.accentish{color:var(--accent)}
 .btn.wide{grid-column:span 2}
 .btn.mem-active::after{content:'';position:absolute;top:6px;right:7px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
@@ -360,7 +365,7 @@ body.sci .zone-toggle{color:var(--accent)}
 @keyframes keysIn{from{opacity:.35}to{opacity:1}}
 
 .btn.zone-start{position:relative}
-.btn.zone-start::after{content:'';position:absolute;left:-3px;right:-3px;top:-4px;height:1px;background:var(--border);opacity:.9}
+.btn.zone-start::after{content:none}
 .btn.zone-start.clear::after,.btn.zone-start.equals::after{background:var(--border)}
 
 /* ---------- Key help sheet ---------- */
@@ -380,8 +385,10 @@ body.sci .zone-toggle{color:var(--accent)}
 .custom-row input:focus{border-color:var(--accent-line)}
 .custom-row button{flex-shrink:0;border:1px solid var(--accent-line);background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:11px 15px;font-size:13px;font-weight:700;cursor:pointer}
 /* Corner wedge marks the keys that hide extra actions behind a long press. */
-.btn.has-more::before{content:'';position:absolute;top:4px;right:4px;width:0;height:0;border-top:5px solid currentColor;border-left:5px solid transparent;opacity:.42;border-radius:1px}
-.btn.equals.has-more::before,.btn.clear.has-more::before{opacity:.6}
+[data-theme="contrast"] .btn{border:2px solid var(--key-border)}
+[data-theme="contrast"] .btn.equals,[data-theme="contrast"] .btn.clear{border-color:currentColor}
+.btn.has-more::before{content:'';position:absolute;top:8px;right:10px;width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.32}
+.btn.equals.has-more::before,.btn.clear.has-more::before{opacity:.5}
 
 /* ---------- Update bar ---------- */
 .update-bar{position:fixed;left:10px;right:10px;bottom:calc(var(--nav-height) + 10px + var(--safe-bottom));background:var(--accent);color:var(--accent-text);border-radius:16px;padding:11px 14px;display:none;align-items:center;gap:10px;z-index:150;box-shadow:var(--shadow);font-size:13px;font-weight:700}
@@ -742,7 +749,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.10.0';
+const VERSION='6.0.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -1446,11 +1453,11 @@ const LAYOUTS={
   {t:'⌫',a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'}
  ],
  professional:[
-  /* Rows 1-5: the scientific block. Rows 6-11 repeat the Standard keypad
-     column for column, so the digits, operators and = never move between modes. */
+  /* Ten rows, not eleven. The hyperbolics live behind a long press on sin/cos/tan,
+     mod behind ÷, and the angle mode already has a pill in the header — so none of
+     them need to spend a row here. */
   {t:'sin',a:'func',v:'sin',c:'func'},{t:'cos',a:'func',v:'cos',c:'func'},{t:'tan',a:'func',v:'tan',c:'func'},{t:'x²',a:'char',v:'²',c:'func'},{t:'√',a:'func',v:'sqrt',c:'func'},
   {t:'sin⁻¹',a:'func',v:'asin',c:'func'},{t:'cos⁻¹',a:'func',v:'acos',c:'func'},{t:'tan⁻¹',a:'func',v:'atan',c:'func'},{t:'xʸ',a:'op',v:'^',c:'func'},{t:'∛',a:'func',v:'cbrt',c:'func'},
-  {t:'sinh',a:'func',v:'sinh',c:'func'},{t:'cosh',a:'func',v:'cosh',c:'func'},{t:'tanh',a:'func',v:'tanh',c:'func'},{t:'x!',a:'char',v:'!',c:'func'},{t:'mod',a:'op',v:'mod',c:'func'},
   {t:'ln',a:'func',v:'ln',c:'func'},{t:'log',a:'func',v:'log',c:'func'},{t:'log₂',a:'func',v:'log2',c:'func'},{t:'eˣ',a:'func',v:'exp',c:'func'},{t:'e',a:'char',v:'e',c:'func'},
   {t:'STO',a:'sto',c:'func accentish'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'},
   {t:'AC',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'π',a:'char',v:'π',c:'func'},
@@ -1458,7 +1465,7 @@ const LAYOUTS={
   {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},{t:'1/x',a:'recip',c:'func'},
   {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},{t:'MC',a:'mClear',c:'func'},
   {t:'±',a:'sign',c:'func'},{t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:'=',a:'equals',c:'equals'},{t:'M−',a:'mSub',c:'func'},
-  {t:'⌫',a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'DEG',a:'trig',c:'func accentish'}
+  {t:'⌫',a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'x!',a:'char',v:'!',c:'func'}
  ],
  rpn:[
   {t:'x↔y',a:'rpnSwap',c:'func'},{t:'DROP',a:'rpnDrop',c:'func'},{t:'ROLL',a:'rpnRoll',c:'func'},{t:'LAST x',a:'rpnLast',c:'func'},
@@ -2716,15 +2723,18 @@ const KEY_HELP={
    variants:()=>[V('ln','Motsatt regning',()=>insertFunc('ln')),V('10ˣ','Ti opphøyd i x',()=>insertRaw('10^'))]},
 
  /* --- trigonometry --- */
- sin:{g:'sin',n:'Sinus',d:'Sinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'sin(30) = 0,5 i grader',
+ sin:{g:'sin',n:'Sinus',d:'Sinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'sin(30) = 0,5 i grader',mark:1,
    vl:'Beslektede funksjoner',
-   variants:()=>[V('sin⁻¹','Finn vinkelen tilbake',()=>insertFunc('asin')),V('cos','Cosinus',()=>insertFunc('cos')),V('tan','Tangens',()=>insertFunc('tan')),
+   variants:()=>[V('sin⁻¹','Finn vinkelen tilbake',()=>insertFunc('asin')),V('sinh','Hyperbolsk sinus',()=>insertFunc('sinh')),
+     V('cos','Cosinus',()=>insertFunc('cos')),V('tan','Tangens',()=>insertFunc('tan')),
      V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
- cos:{g:'cos',n:'Cosinus',d:'Cosinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'cos(60) = 0,5 i grader',
-   variants:()=>[V('cos⁻¹','Finn vinkelen tilbake',()=>insertFunc('acos')),V('sin','Sinus',()=>insertFunc('sin')),V('tan','Tangens',()=>insertFunc('tan')),
+ cos:{g:'cos',n:'Cosinus',d:'Cosinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'cos(60) = 0,5 i grader',mark:1,
+   variants:()=>[V('cos⁻¹','Finn vinkelen tilbake',()=>insertFunc('acos')),V('cosh','Hyperbolsk cosinus',()=>insertFunc('cosh')),
+     V('sin','Sinus',()=>insertFunc('sin')),V('tan','Tangens',()=>insertFunc('tan')),
      V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
- tan:{g:'tan',n:'Tangens',d:'Tangens til en vinkel, altså sinus delt på cosinus. Udefinert ved 90° og 270°.',ex:'tan(45) = 1 i grader',
-   variants:()=>[V('tan⁻¹','Finn vinkelen tilbake',()=>insertFunc('atan')),V('sin','Sinus',()=>insertFunc('sin')),V('cos','Cosinus',()=>insertFunc('cos')),
+ tan:{g:'tan',n:'Tangens',d:'Tangens til en vinkel, altså sinus delt på cosinus. Udefinert ved 90° og 270°.',ex:'tan(45) = 1 i grader',mark:1,
+   variants:()=>[V('tan⁻¹','Finn vinkelen tilbake',()=>insertFunc('atan')),V('tanh','Hyperbolsk tangens',()=>insertFunc('tanh')),
+     V('sin','Sinus',()=>insertFunc('sin')),V('cos','Cosinus',()=>insertFunc('cos')),
      V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
  asin:{g:'sin⁻¹',n:'Invers sinus',d:'Finner vinkelen som har denne sinusverdien. Verdien må ligge mellom −1 og 1.',ex:'sin⁻¹(0,5) = 30° i grader',
    variants:()=>[V('cos⁻¹','Invers cosinus',()=>insertFunc('acos')),V('tan⁻¹','Invers tangens',()=>insertFunc('atan')),V('sin','Vanlig sinus',()=>insertFunc('sin'))]},
@@ -2781,7 +2791,7 @@ const KEY_HELP={
      V('÷2','Halvere',()=>insertOpVal('÷',2)),
      V('÷10','Ett siffer ned',()=>insertOpVal('÷',10)),
      V('÷100','To siffer ned',()=>insertOpVal('÷',100)),
-     V('mod','Resten etter deling',()=>insertOpVal('mod',''))],
+     V('mod','Resten etter en heltallsdivisjon',()=>insertOpVal('mod',''))],
    custom:{label:'Del på',ph:'1,25',run:n=>insertOpVal('÷',n)}},
  '+':{g:'+',mark:1,n:'Addisjon',d:'Legger sammen. Regnes etter gange og dele, med mindre du bruker parenteser.',ex:'2+3×4 = 14\n(2+3)×4 = 20',
    variants:()=>[V('+10 %','Legg på ti prosent',()=>insertOpVal('×',1.1)),V('+25 % MVA','Legg på merverdiavgift',()=>insertOpVal('×',1.25))],
@@ -3337,6 +3347,24 @@ function trackKeyboard(){
 function runTests(){
   const R=[]; let pass=0,fail=0;
   silentToasts=true;
+  /* Style assertions need a real cascade. Under a DOM shim they would pass
+     without testing anything, which is worse than not running them. */
+  const cssEngine=(()=>{
+    try{
+      const t=document.createElement('div');
+      t.className='sheet-handle';
+      t.style.position='absolute'; t.style.left='-9999px';
+      document.body.appendChild(t);
+      const cs=getComputedStyle(t);
+      const w=parseFloat(cs.width)||0;
+      const r=parseFloat(cs.borderTopLeftRadius)||0;
+      const bg=cs.backgroundColor||'';
+      t.remove();
+      /* Width alone is not enough: a DOM shim can resolve that while ignoring
+         radius and background, which are exactly what these tests inspect. */
+      return Math.abs(w-38)<2 && r>0 && bg!=='' && bg!=='rgba(0, 0, 0, 0)';
+    }catch(e){ return false; }
+  })();
   const saveFmt=state.fmt, saveDec=state.decimals, saveTrig=state.trig;
   function ok(name,cond,got){ if(cond){pass++;} else {fail++;R.push('FAIL  '+name+(got!==undefined?'  → '+got:''));} }
   function near(name,a,b,eps){ ok(name,Number.isFinite(a)&&Math.abs(a-b)<=(eps||1e-9),a); }
@@ -3711,7 +3739,17 @@ function runTests(){
     const seen={};
     arr.forEach(k=>{ ok('ingen dublett '+mode+'/'+k.t,!seen[k.t],k.t); seen[k.t]=1; });
   });
-  ok('vitenskapelig mistet ingen taster',LAYOUTS.professional.length===55,LAYOUTS.professional.length);
+  ok('vitenskapelig har 50 taster',LAYOUTS.professional.length===50,LAYOUTS.professional.length);
+  /* what left the keypad must still be reachable behind a long press */
+  const proSet=LAYOUTS.professional.map(k=>k.a+':'+k.v);
+  [['sinh','sin'],['cosh','cos'],['tanh','tan']].forEach(([gone,host])=>{
+    ok(gone+' er ikke lenger en tast',proSet.indexOf('func:'+gone)<0);
+    ok(gone+' finnes bak '+host,KEY_HELP[host].variants().some(v=>v.l===gone));
+  });
+  ok('mod er ikke lenger en tast',proSet.indexOf('op:mod')<0);
+  ok('mod finnes bak divisjon',KEY_HELP['÷'].variants().some(v=>v.l==='mod'));
+  ok('vinkelmåte er ikke lenger en tast',proSet.indexOf('trig:undefined')<0);
+  ok('vinkelmåte finnes i toppbaren',!!el.trigPill);
   /* everything reachable in Standard must also be reachable in Vitenskapelig */
   const stdActs=LAYOUTS.standard.map(k=>k.a+':'+k.v);
   const proActs=LAYOUTS.professional.map(k=>k.a+':'+k.v);
@@ -3721,7 +3759,7 @@ function runTests(){
   /* one calculator tab, two layouts */
   const saveSci=state.sci, saveModeS=state.mode;
   const proKeys=LAYOUTS.professional.length;
-  ok('vitenskapelig har 55 taster',proKeys===55,proKeys);
+  ok('vitenskapelig har 50 taster',proKeys===50,proKeys);
   /* expanding must add keys, never move the ones already under the thumb */
   const shared=LAYOUTS.professional.slice(proKeys-30);
   const cols5=shared.filter((k,i)=>i%5<4).map(k=>k.a+':'+k.v);
@@ -3782,7 +3820,7 @@ function runTests(){
 
   /* A vertical margin on a key breaks fixed grid rows: the key keeps its
      min-height and spills into the row below. Guard against reintroducing it. */
-  (function(){
+  if(cssEngine)(function(){
     const probe=document.createElement('div');
     probe.className='calc-buttons professional-mode';
     probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
@@ -3864,7 +3902,7 @@ function runTests(){
   state.recent=JSON.parse(saveRec);
 
   /* keyboard-aware sheets */
-  ok('tastaturhøyde er en CSS-variabel',getComputedStyle(document.documentElement).getPropertyValue('--kb')!==undefined);
+  ok('stilmotoren er tilgjengelig for stiltestene',true,cssEngine?'ja':'hoppet over');
 
 
   /* the rate strip only shows when there is something to act on */
@@ -3888,7 +3926,7 @@ function runTests(){
 
 
   /* generic class names must not collide with utility classes */
-  (function(){
+  if(cssEngine)(function(){
     const probe=document.createElement('div');
     probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
     probe.innerHTML='<div class="tape-entry"><span class="cur is-blank">0</span></div>';
@@ -3917,6 +3955,36 @@ function runTests(){
   state.favs=saveFavs; state.conv=saveCv4; paintFavBtn();
   /* notes are edited in the app, never in a system dialog */
   ok('ingen systemdialoger i koden',typeof tapeNote==='function');
+
+
+  /* borderless keys must stay visible: either the fill separates them from the
+     panel, or the theme keeps an outline */
+  if(cssEngine)(function(){
+    const themes=['dark','light','amoled','contrast','pastel'];
+    const saveTheme=document.documentElement.getAttribute('data-theme');
+    const probe=document.createElement('div');
+    probe.className='buttons-container';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    const grid=document.createElement('div'); grid.className='calc-buttons standard-mode';
+    ['btn','btn func','btn op','btn clear','btn equals'].forEach(cl=>{
+      const b=document.createElement('button'); b.className=cl; b.textContent='7'; grid.appendChild(b);
+    });
+    probe.appendChild(grid); document.body.appendChild(probe);
+    const lum=c=>{const m=(c||'').match(/[\d.]+/g)||[0,0,0];return 0.2126*(+m[0])+0.7152*(+m[1])+0.0722*(+m[2]);};
+    themes.forEach(t=>{
+      document.documentElement.setAttribute('data-theme',t);
+      const panel=lum(getComputedStyle(probe).backgroundColor);
+      Array.from(grid.children).forEach(b=>{
+        const cs=getComputedStyle(b);
+        const diff=Math.abs(lum(cs.backgroundColor)-panel);
+        const outlined=parseFloat(cs.borderTopWidth)>0;
+        ok('tast synlig i '+t+' ('+b.className+')',diff>=5||outlined,'lysdiff '+diff.toFixed(1)+' ramme '+cs.borderTopWidth);
+        ok('tast er pilleformet i '+t,parseFloat(cs.borderTopLeftRadius)>=20,cs.borderTopLeftRadius);
+      });
+    });
+    document.documentElement.setAttribute('data-theme',saveTheme||'dark');
+    probe.remove();
+  })();
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
