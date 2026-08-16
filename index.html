@@ -211,11 +211,11 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .pair-input{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-size:31px;font-weight:700;font-family:var(--font-mono);outline:none;padding:0;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
 .pair-input::placeholder{color:var(--text-dim);opacity:.4}
 .pair-input.readonly{color:var(--accent)}
-.pair-picker{display:flex;align-items:center;gap:8px;background:transparent;border:none;padding:6px 2px 6px 8px;cursor:pointer;color:var(--text);flex-shrink:0;transition:opacity var(--transition-fast)}
+.pair-picker{display:flex;align-items:center;gap:10px;background:transparent;border:none;padding:8px 2px 8px 8px;cursor:pointer;color:var(--text);flex-shrink:0;transition:opacity var(--transition-fast)}
 .pair-picker:active{opacity:.55}
-.pair-picker .pf{width:27px;height:27px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--border)}
-.pair-picker .pc{font-weight:800;font-size:17px;letter-spacing:.3px;white-space:nowrap}
-.pair-picker .chev{width:16px;height:16px;stroke:var(--text-dim);stroke-width:2.4;fill:none;flex-shrink:0}
+.pair-picker .pf{width:40px;height:30px;border-radius:6px;object-fit:cover;flex-shrink:0;background:var(--border);box-shadow:0 0 0 1px rgba(128,128,128,.28)}
+.pair-picker .pc{font-weight:800;font-size:20px;letter-spacing:.3px;white-space:nowrap}
+.pair-picker .chev{width:18px;height:18px;stroke:var(--text-dim);stroke-width:2.4;fill:none;flex-shrink:0}
 .pair-sub{font-size:12px;color:var(--text-secondary);margin-top:2px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pair-sub:empty{display:none}
 .pair-swap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:transform var(--transition),border-color var(--transition-fast)}
@@ -297,14 +297,14 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .all-body::-webkit-scrollbar{display:none}
 .all-units.open .all-body{display:block}
 .all-units:not(.open){flex:0 0 auto}
-.all-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 15px;border-bottom:1px solid var(--border);cursor:pointer}
+.all-row{display:flex;align-items:center;justify-content:space-between;gap:11px;padding:11px 15px;border-bottom:1px solid var(--border);cursor:pointer}
 .all-row:last-child{border-bottom:none}
 .all-row:active{background:var(--surface-lighter)}
 .all-row.is-to{background:var(--accent-soft)}
 .all-row .u{display:flex;align-items:center;gap:8px;min-width:0}
-.all-row .u img{width:19px;height:14px;border-radius:2px;object-fit:cover;background:var(--border);flex-shrink:0}
-.all-row .un{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.all-row .us{font-size:11px;color:var(--text-dim);font-weight:700;flex-shrink:0}
+.all-row .u img{width:30px;height:22px;border-radius:4px;object-fit:cover;background:var(--border);flex-shrink:0;box-shadow:0 0 0 1px rgba(128,128,128,.25)}
+.all-row .un{font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.all-row .us{font-size:12px;color:var(--text-dim);font-weight:800;flex-shrink:0}
 .fx-row{gap:8px}
 .fx-del{width:30px;height:30px;flex-shrink:0;border:none;background:transparent;color:var(--text-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:-4px -6px -4px 0}
 .fx-del:active{background:var(--surface-lighter)}
@@ -363,12 +363,12 @@ body.kb-open .sheet-body{padding-bottom:14px}
 .unit-grid{display:grid;grid-template-columns:1fr;gap:6px}
 .grp-label{font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-dim);padding:10px 4px 2px}
 .grp-label:first-child{padding-top:2px}
-.unit-opt{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:14px;border:1px solid var(--border);background:var(--surface-light);cursor:pointer;text-align:left;transition:all var(--transition-fast)}
+.unit-opt{display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:14px;border:1px solid var(--border);background:var(--surface-light);cursor:pointer;text-align:left;transition:all var(--transition-fast)}
 .unit-opt:active{transform:scale(.98)}
 .unit-opt.active{border-color:var(--accent);background:var(--accent-soft)}
-.unit-opt img{width:26px;height:19px;border-radius:3px;object-fit:cover;background:var(--border);flex-shrink:0}
-.unit-opt .os{font-weight:800;font-size:13px;color:var(--text);min-width:42px;flex-shrink:0}
-.unit-opt .on{font-size:12px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unit-opt img{width:38px;height:28px;border-radius:5px;object-fit:cover;background:var(--border);flex-shrink:0;box-shadow:0 0 0 1px rgba(128,128,128,.28)}
+.unit-opt .os{font-weight:800;font-size:16px;color:var(--text);min-width:48px;flex-shrink:0}
+.unit-opt .on{font-size:14px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .unit-opt .ov{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);flex-shrink:0}
 .unit-opt .fav{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--text-dim);border-radius:50%;margin:-6px -6px -6px 0}
 .unit-opt .fav:active{background:var(--surface-lighter)}
@@ -870,7 +870,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.5.0';
+const VERSION='6.5.1';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -4622,6 +4622,30 @@ function runTests(){
   ok('alle symboler er korte',Object.keys(FX_SYMBOL).every(k=>FX_SYMBOL[k].length<=4),
      Object.keys(FX_SYMBOL).filter(k=>FX_SYMBOL[k].length>4).join(','));
   ok('symbolene dekker de vanligste',['NOK','USD','EUR','GBP','SEK','DKK','JPY','CHF','PLN','THB'].every(k=>FX_SYMBOL[k]));
+
+
+  /* flags and codes must stay large enough to read at a glance */
+  if(cssEngine)(function(){
+    const probe=document.createElement('div');
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:360px';
+    probe.innerHTML='<div class="pair"><div class="pair-card"><div class="pair-row">'+
+      '<button class="pair-picker"><img class="pf"><span class="pc">NOK</span></button></div></div></div>'+
+      '<div class="unit-grid"><div class="unit-opt"><img><span class="os">NOK</span><span class="on">Norske kroner</span></div></div>'+
+      '<div class="all-units"><div class="all-body"><div class="all-row"><div class="u"><img><span class="un">Euro</span></div></div></div></div>';
+    document.body.appendChild(probe);
+    const px=s=>parseFloat(getComputedStyle(probe.querySelector(s)).width)||0;
+    const fs=s=>parseFloat(getComputedStyle(probe.querySelector(s)).fontSize)||0;
+    ok('flagg i paret er minst 36 px',px('.pair-picker .pf')>=36,px('.pair-picker .pf'));
+    ok('valutakoden i paret er minst 18 px',fs('.pair-picker .pc')>=18,fs('.pair-picker .pc'));
+    ok('flagg i lista er minst 34 px',px('.unit-opt img')>=34,px('.unit-opt img'));
+    ok('koden i lista er minst 15 px',fs('.unit-opt .os')>=15,fs('.unit-opt .os'));
+    ok('navnet i lista er minst 13 px',fs('.unit-opt .on')>=13,fs('.unit-opt .on'));
+    ok('flagg i bordet er minst 28 px',px('.all-row .u img')>=28,px('.all-row .u img'));
+    ok('trykkflaten i velgeren er minst 44 px',
+       (probe.querySelector('.pair-picker').getBoundingClientRect().height||0)>=44,
+       probe.querySelector('.pair-picker').getBoundingClientRect().height);
+    probe.remove();
+  })();
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
