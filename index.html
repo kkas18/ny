@@ -198,6 +198,33 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 #convStandard,#convDates{display:flex;flex-direction:column;gap:9px;flex:1 1 auto;min-height:0}
 .all-body{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 18px),transparent)}
 
+/* Two framed rows with the label sitting in the border and the swap floating on
+   the seam between them. The pair reads as two things you can act on, not one block. */
+.pair{position:relative;display:flex;flex-direction:column;gap:14px;flex-shrink:0}
+.pair-card{position:relative;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface-light);padding:16px 15px 15px}
+.pair-card.to{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.pair-legend{position:absolute;top:-8px;left:14px;padding:0 7px;background:var(--surface);font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--text-dim);border-radius:6px}
+.pair-row{display:flex;align-items:center;gap:10px;min-height:44px}
+.pair-amount{flex:1;display:flex;align-items:baseline;gap:6px;min-width:0}
+.pair-affix{font-size:23px;font-weight:700;color:var(--text-dim);font-family:var(--font-mono);flex-shrink:0}
+.pair-card.to .pair-affix{color:color-mix(in srgb,var(--accent) 70%,var(--text-dim))}
+.pair-input{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-size:31px;font-weight:700;font-family:var(--font-mono);outline:none;padding:0;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.pair-input::placeholder{color:var(--text-dim);opacity:.4}
+.pair-input.readonly{color:var(--accent)}
+.pair-picker{display:flex;align-items:center;gap:8px;background:transparent;border:none;padding:6px 2px 6px 8px;cursor:pointer;color:var(--text);flex-shrink:0;transition:opacity var(--transition-fast)}
+.pair-picker:active{opacity:.55}
+.pair-picker .pf{width:27px;height:27px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--border)}
+.pair-picker .pc{font-weight:800;font-size:17px;letter-spacing:.3px;white-space:nowrap}
+.pair-picker .chev{width:16px;height:16px;stroke:var(--text-dim);stroke-width:2.4;fill:none;flex-shrink:0}
+.pair-sub{font-size:12px;color:var(--text-secondary);margin-top:2px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pair-sub:empty{display:none}
+.pair-swap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:transform var(--transition),border-color var(--transition-fast)}
+.pair-swap svg{width:19px;height:19px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.pair-swap:active{transform:translate(-50%,-50%) rotate(180deg) scale(.9);border-color:var(--accent)}
+.pair-rate{display:flex;align-items:center;gap:8px;border:none;background:transparent;padding:8px 6px;margin:-2px 0 0;border-radius:12px;cursor:pointer;text-align:left;font-family:inherit;flex-shrink:0;width:100%}
+.pair-rate:active{background:var(--surface-light)}
+.pair-rate .conv-rate{flex:1}
+
 /* One card for the whole conversion: two halves split by a hairline strip that
    carries the rate on the left and the swap control on the right. */
 .conv-card{background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;flex-shrink:0}
@@ -568,38 +595,37 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       <span id="fxRateText">Henter kurser …</span>
       <button class="rate-refresh" id="fxRefreshBtn" aria-label="Hent kurser på nytt"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     </div>
-    <div class="conv-card">
-      <div class="conv-side">
-        <div class="conv-head">
-          <span class="card-label">Fra</span>
-          <button class="unit-picker" id="fxFromPicker" aria-label="Velg valuta du regner fra">
-            <img class="u-flag" id="fxFromFlag" alt="">
-            <span class="u-symbol" id="fxFromSymbol">NOK</span><span class="u-name" id="fxFromName">Norske kroner</span>
+    <div class="pair">
+      <div class="pair-card">
+        <span class="pair-legend">Fra</span>
+        <div class="pair-row">
+          <span class="pair-amount"><span class="pair-affix" id="fxFromAffix"></span><input type="text" class="pair-input" id="fxInput" placeholder="0" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Beløp"></span>
+          <button class="pair-picker" id="fxFromPicker" aria-label="Velg valuta du regner fra">
+            <img class="pf" id="fxFromFlag" alt="">
+            <span class="pc" id="fxFromSymbol">NOK</span>
             <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
-        <input type="text" class="value-input" id="fxInput" placeholder="0" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Beløp">
       </div>
-      <div class="conv-mid">
-        <button class="rate-info" id="fxRateInfo" aria-label="Om kursen">
-          <span class="rate-dot mini" id="fxDotMini"></span>
-          <span class="conv-rate" id="fxRate"></span>
-        </button>
-        <button class="swap-btn" id="fxSwapBtn" aria-label="Bytt om valutaene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
-      </div>
-      <div class="conv-side to">
-        <div class="conv-head">
-          <span class="card-label">Til</span>
-          <button class="unit-picker" id="fxToPicker" aria-label="Velg valuta du regner til">
-            <img class="u-flag" id="fxToFlag" alt="">
-            <span class="u-symbol" id="fxToSymbol">USD</span><span class="u-name" id="fxToName">Amerikanske dollar</span>
+      <button class="pair-swap" id="fxSwapBtn" aria-label="Bytt om valutaene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
+      <div class="pair-card to">
+        <span class="pair-legend">Til</span>
+        <div class="pair-row">
+          <span class="pair-amount"><span class="pair-affix" id="fxToAffix"></span><input type="text" class="pair-input readonly" id="fxOutput" placeholder="—" readonly aria-label="Resultat"></span>
+          <button class="pair-picker" id="fxToPicker" aria-label="Velg valuta du regner til">
+            <img class="pf" id="fxToFlag" alt="">
+            <span class="pc" id="fxToSymbol">USD</span>
             <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
-        <input type="text" class="value-input readonly" id="fxOutput" placeholder="—" readonly aria-label="Resultat">
       </div>
     </div>
+    <button class="pair-rate" id="fxRateInfo" aria-label="Om kursen">
+      <span class="rate-dot mini" id="fxDotMini"></span>
+      <span class="conv-rate" id="fxRate"></span>
+    </button>
     <div class="conv-notes"><span id="fxNote"></span></div>
+    <span id="fxFromName" hidden></span><span id="fxToName" hidden></span>
     <div class="row">
       <button class="pill-btn" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Legg til</span></button>
       <button class="pill-btn" id="fxFeeBtn"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span id="fxFeeLabel">Midtkurs</span></button>
@@ -627,37 +653,37 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       <span id="rateText">Henter kurser …</span>
       <button class="rate-refresh" id="rateRefreshBtn" aria-label="Hent kurser på nytt"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     </div>
-    <div class="conv-card">
-      <div class="conv-side">
-        <div class="conv-head">
-          <span class="card-label">Fra</span>
-          <button class="unit-picker" id="fromPicker" aria-label="Velg fra-enhet">
-            <img class="u-flag" id="fromFlag" alt="" style="display:none">
-            <span class="u-symbol" id="fromSymbol">m</span><span class="u-name" id="fromName">Meter</span>
+    <div class="pair">
+      <div class="pair-card">
+        <span class="pair-legend">Fra</span>
+        <div class="pair-row">
+          <span class="pair-amount"><input type="text" class="pair-input" id="fromInput" placeholder="0" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Verdi å konvertere"></span>
+          <button class="pair-picker" id="fromPicker" aria-label="Velg fra-enhet">
+            <img class="pf" id="fromFlag" alt="" style="display:none">
+            <span class="pc" id="fromSymbol">m</span>
             <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
-        <input type="text" class="value-input" id="fromInput" placeholder="0" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Verdi å konvertere">
+        <div class="pair-sub" id="fromName">Meter</div>
       </div>
-      <div class="conv-mid">
-        <button class="rate-info" id="rateInfoBtn" aria-label="Om kursen">
-          <span class="rate-dot mini" id="rateDotMini" style="display:none"></span>
-          <span class="conv-rate" id="convRate"></span>
-        </button>
-        <button class="swap-btn" id="swapBtn" aria-label="Bytt om enhetene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
-      </div>
-      <div class="conv-side to">
-        <div class="conv-head">
-          <span class="card-label">Til</span>
-          <button class="unit-picker" id="toPicker" aria-label="Velg til-enhet">
-            <img class="u-flag" id="toFlag" alt="" style="display:none">
-            <span class="u-symbol" id="toSymbol">km</span><span class="u-name" id="toName">Kilometer</span>
+      <button class="pair-swap" id="swapBtn" aria-label="Bytt om enhetene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
+      <div class="pair-card to">
+        <span class="pair-legend">Til</span>
+        <div class="pair-row">
+          <span class="pair-amount"><input type="text" class="pair-input readonly" id="toInput" placeholder="—" readonly aria-label="Resultat"></span>
+          <button class="pair-picker" id="toPicker" aria-label="Velg til-enhet">
+            <img class="pf" id="toFlag" alt="" style="display:none">
+            <span class="pc" id="toSymbol">km</span>
             <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
-        <input type="text" class="value-input readonly" id="toInput" placeholder="—" readonly aria-label="Resultat">
+        <div class="pair-sub" id="toName">Kilometer</div>
       </div>
     </div>
+    <button class="pair-rate" id="rateInfoBtn" aria-label="Om kursen">
+      <span class="rate-dot mini" id="rateDotMini" style="display:none"></span>
+      <span class="conv-rate" id="convRate"></span>
+    </button>
     <div class="conv-notes"><span id="fromHint"></span><span id="toHint"></span></div>
     <div class="row">
       <button class="pill-btn" id="convCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier</button>
@@ -844,7 +870,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.4.0';
+const VERSION='6.5.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -891,7 +917,7 @@ const el={};
  'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
  'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange',
  'currencyPanel','fxRateBar','fxRateDot','fxRateText','fxRefreshBtn','fxFromPicker','fxFromFlag','fxFromSymbol','fxFromName','fxToPicker','fxToFlag','fxToSymbol','fxToName',
- 'fxOutput','fxSwapBtn','fxInput','fxRateInfo','fxDotMini','fxRate','fxNote','fxAddBtn','fxFeeBtn','fxFeeLabel','fxSendBtn',
+ 'fxOutput','fxSwapBtn','fxInput','fxRateInfo','fxFromAffix','fxToAffix','fxDotMini','fxRate','fxNote','fxAddBtn','fxFeeBtn','fxFeeLabel','fxSendBtn',
  'fxBoard','fxBoardHint','fxBoardBody','fxSparkCard','fxSparkTitle','fxSparkChange','fxSparkRange','fxSparkSvg',
  'fxSparkFrom','fxSparkTo','fxSparkLow','fxSparkHigh','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
@@ -2021,7 +2047,7 @@ function paintPicker(side){
   const c=state.conv, key=side==='from'?c.from:c.to, u=cat().units[key]||{};
   const sym=side==='from'?el.fromSymbol:el.toSymbol, nm=side==='from'?el.fromName:el.toName, fl=side==='from'?el.fromFlag:el.toFlag;
   sym.textContent=u.s||''; nm.textContent=u.l||'';
-  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.display='none';}; }
+  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.visibility='hidden';}; fl.style.visibility=''; }
   else fl.style.display='none';
 }
 /* "3×250" in the amount field is a common way to think about a conversion,
@@ -3234,6 +3260,16 @@ function closeKeyHelp(){
 /* ============ currency mode ============ */
 /* Money got its own tab because a generic from/to shell fits it badly: it wants a
    board of several currencies at once, a live rate, and a markup — not two boxes. */
+/* A price reads faster with its symbol in front. Codes stay as the fallback so
+   all 166 currencies get something sensible rather than only the famous ones. */
+const FX_SYMBOL={NOK:'kr',SEK:'kr',DKK:'kr',ISK:'kr',USD:'$',EUR:'\u20ac',GBP:'\u00a3',JPY:'\u00a5',CNY:'\u00a5',
+ CHF:'CHF',PLN:'z\u0142',CZK:'K\u010d',HUF:'Ft',RON:'lei',BGN:'\u043b\u0432',TRY:'\u20ba',RUB:'\u20bd',UAH:'\u20b4',
+ INR:'\u20b9',PKR:'Rs',BDT:'\u09f3',LKR:'Rs',NPR:'Rs',KRW:'\u20a9',THB:'\u0e3f',VND:'\u20ab',PHP:'\u20b1',
+ IDR:'Rp',MYR:'RM',SGD:'S$',HKD:'HK$',TWD:'NT$',AUD:'A$',NZD:'NZ$',CAD:'C$',MXN:'$',BRL:'R$',ARS:'$',CLP:'$',
+ COP:'$',PEN:'S/',ZAR:'R',NGN:'\u20a6',KES:'KSh',EGP:'E\u00a3',ILS:'\u20aa',AED:'AED',SAR:'SAR',QAR:'QAR',
+ KWD:'KD',BHD:'BD',OMR:'OMR',JOD:'JD',MAD:'MAD',TND:'DT'};
+function fxSymbol(code){ return FX_SYMBOL[code]||code||''; }
+
 const FX_DEFAULT_BOARD=['usd','eur','sek','dkk','gbp'];
 
 function fxUnits(){ return UNITS.currency.units||{}; }
@@ -3290,10 +3326,13 @@ function fxPaintPicker(side){
   const key=side==='from'?state.fx.from:state.fx.to;
   const u=fxUnit(key)||{};
   const sym=side==='from'?el.fxFromSymbol:el.fxToSymbol;
-  const nm=side==='from'?el.fxFromName:el.fxToName;
   const fl=side==='from'?el.fxFromFlag:el.fxToFlag;
-  sym.textContent=u.s||''; nm.textContent=u.l||'';
-  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.display='none';}; }
+  const af=side==='from'?el.fxFromAffix:el.fxToAffix;
+  sym.textContent=u.s||'';
+  af.textContent=fxSymbol(u.s);
+  (side==='from'?el.fxFromName:el.fxToName).textContent=u.l||'';
+  (side==='from'?el.fxFromPicker:el.fxToPicker).setAttribute('title',u.l||'');
+  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.visibility='hidden';}; fl.style.visibility=''; }
   else fl.style.display='none';
 }
 function fxPaintRate(){
@@ -4571,6 +4610,18 @@ function runTests(){
   state.fx.from='usd'; state.fx.to='usd'; fxEnsurePair();
   ok('paret kan ikke bli to like',state.fx.from!==state.fx.to,state.fx.from+'/'+state.fx.to);
   state.fx=saveFx3; state.favUnits=JSON.parse(saveFU4); state.fxFee=saveFee3;
+
+
+  /* currency symbols in front of the amount */
+  ok('kroner viser kr',fxSymbol('NOK')==='kr',fxSymbol('NOK'));
+  ok('dollar viser dollartegn',fxSymbol('USD')==='$');
+  ok('euro viser eurotegn',fxSymbol('EUR')==='\u20ac');
+  ok('pund viser pundtegn',fxSymbol('GBP')==='\u00a3');
+  ok('ukjent valuta faller tilbake på koden',fxSymbol('XYZ')==='XYZ');
+  ok('tom kode gir tom streng',fxSymbol('')==='');
+  ok('alle symboler er korte',Object.keys(FX_SYMBOL).every(k=>FX_SYMBOL[k].length<=4),
+     Object.keys(FX_SYMBOL).filter(k=>FX_SYMBOL[k].length>4).join(','));
+  ok('symbolene dekker de vanligste',['NOK','USD','EUR','GBP','SEK','DKK','JPY','CHF','PLN','THB'].every(k=>FX_SYMBOL[k]));
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
