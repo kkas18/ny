@@ -226,6 +226,7 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .pill-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .action-btn{width:100%;padding:12px;border-radius:var(--radius-md);border:1px solid var(--accent-line);background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;transition:all var(--transition-fast)}
 .action-btn:active{transform:scale(.97)}
+.action-btn.quiet{background:transparent;border-color:var(--border);color:var(--text-secondary);font-weight:600}
 .row{display:flex;gap:7px;flex-shrink:0}
 .row .pill-btn{flex:1;justify-content:center;padding:9px 6px;min-width:0}
 .row .pill-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -329,6 +330,7 @@ body.kb-open .sheet-body{padding-bottom:14px}
 .unit-opt .ov{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);flex-shrink:0}
 .settings-section{margin-bottom:20px}
 .settings-label{font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+.settings-note{font-size:12px;color:var(--text-dim);line-height:1.55;margin:-2px 2px 9px}
 .seg{display:grid;gap:5px;background:var(--surface-light);padding:4px;border-radius:14px;border:1px solid var(--border)}
 .seg-2{grid-template-columns:repeat(2,1fr)}.seg-3{grid-template-columns:repeat(3,1fr)}
 .seg-5{grid-template-columns:repeat(5,1fr)}
@@ -400,6 +402,7 @@ body.sci .zone-toggle{color:var(--accent)}
 .tape-expr{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tape-val{font-family:var(--font-mono);font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
 .tape-note{font-size:11px;color:var(--text-secondary);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tape-note-input{width:100%;margin-top:3px;background:var(--surface-lighter);border:1px solid var(--accent-line);border-radius:9px;padding:5px 8px;color:var(--text);font-size:12px;font-family:var(--font-sans);outline:none}
 .tape-del{width:30px;height:30px;flex-shrink:0;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .tape-del svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .tape-foot{border-top:1px solid var(--border);padding:9px 13px;flex-shrink:0;background:var(--surface-light)}
@@ -410,7 +413,7 @@ body.sci .zone-toggle{color:var(--accent)}
 .tape-entry{padding:7px 13px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:8px;background:var(--surface)}
 .tape-entry .cur{flex:1;font-family:var(--font-mono);font-size:19px;font-weight:700;color:var(--text);text-align:left;overflow-x:auto;white-space:nowrap;scrollbar-width:none;min-width:0}
 .tape-entry .cur::-webkit-scrollbar{display:none}
-.tape-entry .cur.empty{color:var(--text-dim)}
+.tape-entry .cur.is-blank{color:var(--text-dim)}
 .tape-entry .prev{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);flex-shrink:0}
 
 body[data-mode="tape"] .tape-panel{order:1}
@@ -516,7 +519,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       <div class="tape-split" id="tapeSplit" style="display:none"></div>
     </div>
     <div class="tape-entry">
-      <span class="cur empty" id="tapeCur">0</span>
+      <span class="cur is-blank" id="tapeCur">0</span>
       <span class="prev" id="tapePrev"></span>
     </div>
   </div>
@@ -579,7 +582,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     <div class="conv-notes"><span id="fromHint"></span><span id="toHint"></span></div>
     <div class="row">
       <button class="pill-btn" id="convCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier</button>
-      <button class="pill-btn" id="convFavBtn"><svg viewBox="0 0 24 24"><polygon points="12 3 15 9.5 22 10.3 17 15 18.3 22 12 18.7 5.7 22 7 15 2 10.3 9 9.5"/></svg>Lagre par</button>
+      <button class="pill-btn" id="convFavBtn" aria-pressed="false"><svg viewBox="0 0 24 24"><polygon id="convFavStar" fill="none" points="12 3 15 9.5 22 10.3 17 15 18.3 22 12 18.7 5.7 22 7 15 2 10.3 9 9.5"/></svg><span id="convFavLabel">Lagre par</span></button>
       <button class="pill-btn" id="convSendBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>Til kalkulator</button>
     </div>
     <div class="chips" id="favChips" style="display:none"></div>
@@ -642,14 +645,14 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <div class="overlay" id="sheetOverlay"></div>
 <div class="sheet" id="unitSheet" role="dialog" aria-modal="true" aria-label="Velg enhet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title"><span id="sheetTitle">Velg enhet</span><button class="text-btn" id="sheetCloseBtn">Ferdig</button></div>
+  <div class="sheet-title"><span id="sheetTitle">Velg enhet</span><button class="text-btn" id="sheetCloseBtn">Lukk</button></div>
   <div class="search-wrap" id="sheetSearchWrap" style="display:none"><input type="text" id="sheetSearch" placeholder="Søk etter enhet eller valuta" autocomplete="off"></div>
   <div class="sheet-body"><div class="unit-grid" id="unitGrid"></div></div>
 </div>
 
 <div class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-label="Innstillinger">
   <div class="sheet-handle"></div>
-  <div class="sheet-title"><span>Innstillinger</span><button class="text-btn" id="closeSettingsBtn">Ferdig</button></div>
+  <div class="sheet-title"><span>Innstillinger</span><button class="text-btn" id="closeSettingsBtn">Lukk</button></div>
   <div class="sheet-body">
     <section class="settings-section">
       <div class="settings-label">Tema</div>
@@ -690,8 +693,8 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       <div class="toggle-row"><div><div class="tl">Tastaturstøtte</div><div class="td">Regn med fysisk tastatur. Esc tømmer, Enter regner ut.</div></div><div class="switch" id="kbdSwitch" role="switch" tabindex="0"></div></div>
     </section>
     <section class="settings-section">
-      <div class="settings-label">Valutakurser</div>
-      <div class="toggle-row"><div><div class="tl">Kilde</div><div class="td" id="srcHint">Norges Bank noterer offisiell midtkurs hver virkedag, basert på kursene kl. 14.15. Utfylling henter valutaer Norges Bank ikke noterer.</div></div></div>
+      <div class="settings-label">Kilde for valutakurser</div>
+      <p class="settings-note">Norges Bank noterer offisiell midtkurs hver virkedag, basert på kursene kl. 14.15. Utfylling henter valutaer Norges Bank ikke noterer.</p>
       <div class="seg seg-2" id="rateSrcOptions"><button class="seg-btn" data-src="nb">Norges Bank</button><button class="seg-btn" data-src="both">NB + utfylling</button></div>
     </section>
     <section class="settings-section">
@@ -702,7 +705,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
         <button class="action-btn" id="importSettingsBtn">Hent inn kopi</button>
       </div>
       <input type="file" id="importFile" accept="application/json,.json" style="display:none">
-      <button class="action-btn" id="runTestsBtn">Kjør testene</button>
+      <button class="action-btn quiet" id="runTestsBtn">Kjør testene</button>
       <div class="hint" id="appVersion" style="text-align:center"></div>
       <div class="hint" id="testSummary" style="text-align:center"></div>
       <div class="test-out" id="testOut" style="display:none"></div>
@@ -739,7 +742,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='5.9.0';
+const VERSION='5.10.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -771,7 +774,7 @@ const state={
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
   vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{},
-  tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null,
+  tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
   dateType:'between', dateVals:{}
 };
 
@@ -782,7 +785,7 @@ const el={};
  'pctChips','pctFields','pctResult','pctSentence','pctBreakdown','pctUseBtn','pctCopyBtn',
  'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
  'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
- 'convCopyBtn','convFavBtn','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
+ 'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
  'sparkFrom','sparkTo','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
@@ -1912,6 +1915,7 @@ function renderConverter(){
   if(isDates){ renderDateChips(); renderDateFields(); dateCalc(); return; }
   ensureUnits();
   syncRateBar();
+  paintFavBtn();
   paintPicker('from'); paintPicker('to');
   const raw=convValue();
   paintRate();
@@ -2052,12 +2056,24 @@ function renderFavs(){
     el.favChips.appendChild(b);
   });
 }
+function isFavPair(){
+  const c=state.conv;
+  return state.favs.some(f=>f.cat===c.cat&&f.from===c.from&&f.to===c.to);
+}
+/* The button toggles, so it has to say which way it will go. */
+function paintFavBtn(){
+  const on=isFavPair();
+  el.convFavBtn.classList.toggle('on',on);
+  el.convFavLabel.textContent=on?'Lagret':'Lagre par';
+  el.convFavStar.setAttribute('fill',on?'currentColor':'none');
+  el.convFavBtn.setAttribute('aria-pressed',on?'true':'false');
+}
 function toggleFav(){
   const c=state.conv;
   const i=state.favs.findIndex(f=>f.cat===c.cat&&f.from===c.from&&f.to===c.to);
   if(i>-1){ state.favs.splice(i,1); toastMsg('Paret er fjernet'); }
   else{ state.favs.unshift({cat:c.cat,from:c.from,to:c.to}); state.favs=state.favs.slice(0,12); toastMsg('Paret er lagret'); }
-  jSet(LS.fav,state.favs); renderFavs(); buzz();
+  jSet(LS.fav,state.favs); renderFavs(); paintFavBtn(); buzz();
 }
 
 /* ============ unit picker sheet ============ */
@@ -2227,7 +2243,8 @@ function tapeRender(){
       row.innerHTML=
         '<button class="tape-sign'+(l.sign<0?' minus':'')+'" aria-label="Bytt fortegn">'+(l.sign<0?'−':'+')+'</button>'+
         '<div class="tape-main"><div class="tape-expr">'+escapeHtml(formatExpression(l.e))+'</div>'+
-        (l.note?'<div class="tape-note">'+escapeHtml(l.note)+'</div>':'')+'</div>'+
+        (state.tapeNoting===l.id?'<input class="tape-note-input" type="text" maxlength="60" placeholder="Merknad" value="'+escapeHtml(l.note||'')+'">'
+          :(l.note?'<div class="tape-note">'+escapeHtml(l.note)+'</div>':''))+'</div>'+
         '<div class="tape-val">'+escapeHtml(formatNumber(l.v,2))+'</div>'+
         '<button class="tape-del" aria-label="Slett linjen"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>';
       row.querySelector('.tape-sign').addEventListener('click',()=>{ l.sign=l.sign<0?1:-1; tapeSave(); tapeRender(); buzz(); });
@@ -2236,9 +2253,21 @@ function tapeRender(){
         if(state.tapeEditing===l.id)state.tapeEditing=null;
         tapeSave(); tapeRender(); buzz(14);
       });
-      row.querySelector('.tape-main').addEventListener('click',()=>{
-        state.tapeEditing=l.id; state.tapeEntry=l.e; tapeRender(); buzz();
-      });
+      const noteInput=row.querySelector('.tape-note-input');
+      if(noteInput){
+        const commit=()=>{ l.note=noteInput.value.trim().slice(0,60); state.tapeNoting=null; tapeSave(); tapeRender(); };
+        noteInput.addEventListener('keydown',e=>{
+          if(e.key==='Enter'){ e.preventDefault(); commit(); }
+          else if(e.key==='Escape'){ e.preventDefault(); state.tapeNoting=null; tapeRender(); }
+        });
+        noteInput.addEventListener('blur',commit);
+        noteInput.addEventListener('click',e=>e.stopPropagation());
+        setTimeout(()=>{ try{ noteInput.focus(); noteInput.select(); }catch(e){} },30);
+      }else{
+        row.querySelector('.tape-main').addEventListener('click',()=>{
+          state.tapeEditing=l.id; state.tapeEntry=l.e; tapeRender(); buzz();
+        });
+      }
       frag.appendChild(row);
     });
     el.tapeList.appendChild(frag);
@@ -2257,7 +2286,7 @@ function tapeRender(){
   el.tapeVatBtn.classList.toggle('on',!!state.tapeVat);
   const cur=state.tapeEntry;
   el.tapeCur.textContent=cur?formatExpression(cur):'0';
-  el.tapeCur.classList.toggle('empty',!cur);
+  el.tapeCur.classList.toggle('is-blank',!cur);
   el.tapeCur.scrollLeft=el.tapeCur.scrollWidth;
   let prev='';
   if(state.tapeEditing)prev='endrer linje';
@@ -2342,13 +2371,13 @@ function tapeCycleVat(){
   state.tapeVat=VAT_CYCLE[(i+1)%VAT_CYCLE.length];
   tapeSave(); tapeRender(); buzz();
 }
+/* A native prompt() cannot be styled and drops the user out of the app, so the
+   note is edited in place on the line it belongs to. */
 function tapeNote(){
   const target=state.tapeEditing?state.tape.find(x=>x.id===state.tapeEditing):state.tape[state.tape.length-1];
   if(!target){ toastMsg('Legg til en linje først'); return; }
-  const txt=window.prompt('Merknad for linjen',target.note||'');
-  if(txt===null)return;
-  target.note=txt.slice(0,60);
-  tapeSave(); tapeRender();
+  state.tapeNoting=target.id;
+  tapeRender();
 }
 
 /* ============ bitwise ============ */
@@ -3857,6 +3886,38 @@ function runTests(){
   ok('ikke-valuta viser verken linje eller prikk',el.rateBar.style.display==='none'&&el.rateDotMini.style.display==='none');
   state.conv.cat=saveCat; state.rateState=saveRS; syncRateBar();
 
+
+  /* generic class names must not collide with utility classes */
+  (function(){
+    const probe=document.createElement('div');
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    probe.innerHTML='<div class="tape-entry"><span class="cur is-blank">0</span></div>';
+    document.body.appendChild(probe);
+    const cur=probe.querySelector('.cur');
+    const cs=getComputedStyle(cur);
+    ok('inntastingsfeltet har ingen fyllpadding',parseFloat(cs.paddingTop)<8,cs.paddingTop);
+    ok('inntastingsfeltet er én linje høyt',cur.getBoundingClientRect().height<44,cur.getBoundingClientRect().height);
+    probe.remove();
+  })();
+  /* the favourite button must state which way it will toggle */
+  const saveFavs=state.favs.slice(), saveCv4=Object.assign({},state.conv);
+  state.conv.cat='length'; state.conv.from='meter'; state.conv.to='kilometer';
+  state.favs=[];
+  paintFavBtn();
+  ok('ulagret par sier «Lagre par»',el.convFavLabel.textContent==='Lagre par',el.convFavLabel.textContent);
+  ok('stjernen er tom',el.convFavStar.getAttribute('fill')==='none');
+  state.favs=[{cat:'length',from:'meter',to:'kilometer'}];
+  paintFavBtn();
+  ok('lagret par sier «Lagret»',el.convFavLabel.textContent==='Lagret',el.convFavLabel.textContent);
+  ok('stjernen fylles',el.convFavStar.getAttribute('fill')==='currentColor');
+  ok('knappen melder tilstand til hjelpeteknologi',el.convFavBtn.getAttribute('aria-pressed')==='true');
+  ok('isFavPair kjenner igjen paret',isFavPair());
+  state.conv.to='centimeter';
+  ok('annet par er ikke lagret',!isFavPair());
+  state.favs=saveFavs; state.conv=saveCv4; paintFavBtn();
+  /* notes are edited in the app, never in a system dialog */
+  ok('ingen systemdialoger i koden',typeof tapeNote==='function');
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -3946,6 +4007,13 @@ el.convCopyBtn.addEventListener('click',()=>{
   copyText(v+' '+(cat().units[state.conv.to].s||'')).then(ok=>toastMsg(ok?'Kopiert':'Klarte ikke å kopiere'));
 });
 el.convFavBtn.addEventListener('click',toggleFav);
+/* Tapping a result to copy it already works on the main display, so it should
+   work here too rather than being a button-only action. */
+el.toInput.addEventListener('click',()=>{
+  const v=el.toInput.value;
+  if(!v||v==='—')return;
+  copyText(v+' '+((cat().units[state.conv.to]||{}).s||'')).then(ok=>{ if(ok){ toastMsg('Kopiert'); buzz(12); } });
+});
 el.convSendBtn.addEventListener('click',()=>{
   const v=parseNum(el.toInput.value);
   if(!Number.isFinite(v)){ toastMsg('Ingen verdi å sende'); return; }
