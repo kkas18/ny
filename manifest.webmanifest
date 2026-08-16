@@ -19,6 +19,7 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "Valuta", "short_name": "Valuta", "url": "./?mode=currency" },
     { "name": "Konverter", "short_name": "Konverter", "url": "./?mode=converter" },
     { "name": "Prosent og MVA", "short_name": "Prosent", "url": "./?mode=percent" },
     { "name": "Vitenskapelig", "short_name": "Vitensk.", "url": "./?mode=professional" }

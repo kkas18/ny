@@ -15,7 +15,7 @@
 <title>Pro Kalkulator Ultra</title>
 <style>
 :root{
-  --acc-standard:#ff9f0a; --acc-professional:#5aa9ff; --acc-rpn:#b18cff; --acc-tape:#f4739b; --acc-percent:#3ddc97; --acc-converter:#2ed3e8;
+  --acc-standard:#ff9f0a; --acc-professional:#5aa9ff; --acc-rpn:#b18cff; --acc-tape:#f4739b; --acc-percent:#3ddc97; --acc-currency:#efb034; --acc-converter:#2ed3e8;
   --bg:#0a0c0b; --surface:#121514; --surface-light:#1a1e1c; --surface-lighter:#232826;
   --border:#2a302d; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#5f6b66;
   --danger:#e74c5e; --success:#2ecc71; --warning:#f39c12;
@@ -37,7 +37,7 @@
   --btn-min-height:52px; --btn-font-size:21px; --result-font-size:44px;
 }
 [data-theme="light"]{
-  --acc-standard:#c2740a; --acc-professional:#1d6fd0; --acc-rpn:#7c4ddb; --acc-tape:#c93268; --acc-percent:#0e9b6a; --acc-converter:#0d92a8;
+  --acc-standard:#c2740a; --acc-professional:#1d6fd0; --acc-rpn:#7c4ddb; --acc-tape:#c93268; --acc-percent:#0e9b6a; --acc-currency:#8f6407; --acc-converter:#0d92a8;
   --bg:#f4f5f4; --surface:#fff; --surface-light:#f2f4f3; --surface-lighter:#e8eae9;
   --border:#d9dddb; --text:#1c201e; --text-secondary:#5c6663; --text-dim:#8a938f;
   --danger:#d63040; --success:#00a865; --warning:#e8890c;
@@ -64,7 +64,7 @@
   --shadow:0 8px 32px rgba(0,0,0,.6); --shadow-sm:0 2px 12px rgba(0,0,0,.5);
 }
 [data-theme="contrast"]{
-  --acc-standard:#ff0; --acc-professional:#ff0; --acc-rpn:#ff0; --acc-tape:#ff0; --acc-percent:#ff0; --acc-converter:#ff0;
+  --acc-standard:#ff0; --acc-professional:#ff0; --acc-rpn:#ff0; --acc-tape:#ff0; --acc-percent:#ff0; --acc-currency:#ff0; --acc-converter:#ff0;
   --bg:#000; --surface:#000; --surface-light:#111; --surface-lighter:#222;
   --border:#8a8a8a; --text:#fff; --text-secondary:#ddd; --text-dim:#aaa;
   --danger:#ff3333; --success:#3f3; --warning:#f90;
@@ -78,7 +78,7 @@
   --shadow:0 8px 32px rgba(0,0,0,.8); --shadow-sm:0 2px 12px rgba(0,0,0,.8);
 }
 [data-theme="pastel"]{
-  --acc-standard:#c06a15; --acc-professional:#3f72a4; --acc-rpn:#7b6bb0; --acc-tape:#a85579; --acc-percent:#3f8b68; --acc-converter:#2f7f8c;
+  --acc-standard:#c06a15; --acc-professional:#3f72a4; --acc-rpn:#7b6bb0; --acc-tape:#a85579; --acc-percent:#3f8b68; --acc-currency:#8a6a24; --acc-converter:#2f7f8c;
   --bg:#f5f4f1; --surface:#fdfdfc; --surface-light:#f3f2ee; --surface-lighter:#eae8e3;
   --border:#dedbd4; --text:#2c2a26; --text-secondary:#6d6961; --text-dim:#9b968c;
   --danger:#b55454; --success:#5da583; --warning:#c98f4a;
@@ -96,6 +96,7 @@ body.sci[data-mode="standard"]{--accent:var(--acc-professional)}
 body[data-mode="rpn"]{--accent:var(--acc-rpn)}
 body[data-mode="tape"]{--accent:var(--acc-tape)}
 body[data-mode="percent"]{--accent:var(--acc-percent)}
+body[data-mode="currency"]{--accent:var(--acc-currency)}
 body[data-mode="converter"]{--accent:var(--acc-converter)}
 body{--accent-soft:color-mix(in srgb,var(--accent) 14%,transparent);--accent-line:color-mix(in srgb,var(--accent) 38%,transparent)}
 
@@ -277,6 +278,13 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .all-row .u img{width:19px;height:14px;border-radius:2px;object-fit:cover;background:var(--border);flex-shrink:0}
 .all-row .un{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .all-row .us{font-size:11px;color:var(--text-dim);font-weight:700;flex-shrink:0}
+.fx-row{gap:8px}
+.fx-del{width:30px;height:30px;flex-shrink:0;border:none;background:transparent;color:var(--text-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:-4px -6px -4px 0}
+.fx-del:active{background:var(--surface-lighter)}
+.fx-del svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+#fxBoard{flex:1 1 auto;min-height:64px}
+#fxSparkRange{margin:0 0 8px}
+#fxSparkRange button{padding:4px 11px;font-size:11px}
 .all-row .uv{font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* ---------- Percent ---------- */
@@ -553,6 +561,51 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     </div>
   </div>
 
+  <!-- VALUTA -->
+  <div class="panel" id="currencyPanel" style="display:none">
+    <div class="rate-bar" id="fxRateBar" style="display:none">
+      <span class="rate-dot" id="fxRateDot"></span>
+      <span id="fxRateText">Henter kurser …</span>
+      <button class="rate-refresh" id="fxRefreshBtn" aria-label="Hent kurser på nytt"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+    </div>
+    <div class="conv-card">
+      <div class="conv-side">
+        <div class="conv-head">
+          <span class="card-label">Beløp</span>
+          <button class="unit-picker" id="fxBasePicker" aria-label="Velg valuta">
+            <img class="u-flag" id="fxBaseFlag" alt="">
+            <span class="u-symbol" id="fxBaseSymbol">NOK</span><span class="u-name" id="fxBaseName">Norske kroner</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <input type="text" class="value-input" id="fxInput" placeholder="0" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Beløp">
+      </div>
+      <div class="conv-mid">
+        <button class="rate-info" id="fxRateInfo" aria-label="Om kursen">
+          <span class="rate-dot mini" id="fxDotMini"></span>
+          <span class="conv-rate" id="fxRate"></span>
+        </button>
+      </div>
+    </div>
+    <div class="conv-notes"><span id="fxNote"></span></div>
+    <div class="row">
+      <button class="pill-btn" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Legg til</span></button>
+      <button class="pill-btn" id="fxFeeBtn"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span id="fxFeeLabel">Midtkurs</span></button>
+      <button class="pill-btn" id="fxSendBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg><span>Til kalk.</span></button>
+    </div>
+    <div class="all-units open" id="fxBoard">
+      <div class="all-head"><span class="card-label">Mine valutaer</span><span class="hint" id="fxBoardHint" style="margin:0"></span></div>
+      <div class="all-body" id="fxBoardBody"></div>
+    </div>
+    <div class="spark-card" id="fxSparkCard" style="display:none">
+      <div class="spark-head"><span class="spark-title" id="fxSparkTitle"></span><span class="spark-change" id="fxSparkChange"></span></div>
+      <div class="mini-seg" id="fxSparkRange"><button data-days="7">7 d</button><button data-days="30">30 d</button><button data-days="90">90 d</button></div>
+      <svg class="spark-svg" id="fxSparkSvg" viewBox="0 0 300 52" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="spark-foot"><span id="fxSparkFrom"></span><span id="fxSparkTo"></span></div>
+      <div class="spark-foot"><span id="fxSparkLow"></span><span id="fxSparkHigh"></span></div>
+    </div>
+  </div>
+
   <!-- KONVERTER -->
   <div class="panel" id="converterPanel" style="display:none">
     <div class="chips" id="catChips"></div>
@@ -644,6 +697,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
   <button class="nav-item" data-mode="rpn" aria-label="RPN"><svg viewBox="0 0 24 24"><rect x="3" y="14" width="18" height="6" rx="1.6"/><rect x="6" y="8" width="12" height="4" rx="1.4"/><rect x="9" y="3" width="6" height="3" rx="1.2"/></svg><span class="nav-label">RPN</span></button>
   <button class="nav-item" data-mode="tape" aria-label="Tape"><svg viewBox="0 0 24 24"><path d="M6 3h12v16l-2.5-1.6L13 19l-2.5-1.6L8 19l-2-1.3z"/><line x1="9" y1="7.5" x2="15" y2="7.5"/><line x1="9" y1="11.5" x2="15" y2="11.5"/></svg><span class="nav-label">Tape</span></button>
   <button class="nav-item" data-mode="percent" aria-label="Prosent og MVA"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span class="nav-label">Prosent</span></button>
+  <button class="nav-item" data-mode="currency" aria-label="Valuta"><svg viewBox="0 0 24 24"><rect x="2.4" y="5.6" width="19.2" height="12.8" rx="2"/><circle cx="12" cy="12" r="2.9"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg><span class="nav-label">Valuta</span></button>
   <button class="nav-item" data-mode="converter" aria-label="Konverter"><svg viewBox="0 0 24 24"><polyline points="17 3 21 7 17 11"/><line x1="21" y1="7" x2="9" y2="7"/><polyline points="7 13 3 17 7 21"/><line x1="3" y1="17" x2="15" y2="17"/></svg><span class="nav-label">Konverter</span></button>
 </nav>
 
@@ -772,7 +826,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.1.1';
+const VERSION='6.2.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -783,10 +837,10 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',allOpen:'pku_allopen',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',fx:'pku_fx',allOpen:'pku_allopen',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
-const MODES=['standard','rpn','tape','percent','converter'];
-const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
+const MODES=['standard','rpn','tape','percent','currency','converter'];
+const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',currency:'Valuta',converter:'Konverter'};
 const THEME_BG={dark:'#0a0c0b',light:'#f4f5f4',amoled:'#000000',contrast:'#000000',pastel:'#f5f4f1'};
 
 /* ============ storage helpers ============ */
@@ -803,6 +857,7 @@ const state={
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
+  fx:{base:'nok',value:'1000',auto:true},
   vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{}, favUnits:{}, fxFee:0, catUse:{}, catOrder:null, sparkDays:30,
   tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
   dateType:'between', dateVals:{}
@@ -816,7 +871,11 @@ const el={};
  'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
  'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
  'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
- 'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
+ 'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange',
+ 'currencyPanel','fxRateBar','fxRateDot','fxRateText','fxRefreshBtn','fxBasePicker','fxBaseFlag','fxBaseSymbol',
+ 'fxBaseName','fxInput','fxRateInfo','fxDotMini','fxRate','fxNote','fxAddBtn','fxFeeBtn','fxFeeLabel','fxSendBtn',
+ 'fxBoard','fxBoardHint','fxBoardBody','fxSparkCard','fxSparkTitle','fxSparkChange','fxSparkRange','fxSparkSvg',
+ 'fxSparkFrom','fxSparkTo','fxSparkLow','fxSparkHigh','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
  'testSummary','testOut','modalOverlay','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
@@ -1389,7 +1448,7 @@ function loadRates(force){
     }
     const payload={rates,date:nbDate||todayISO(),fetched:Date.now(),nbCount,fillCount,hadNb:!!nb};
     applyRates(payload); cacheRates(payload); setRateState(payload);
-    renderConverter();
+    if(state.mode==='currency')fxRender(); else renderConverter();
   }).finally(()=>{ ratesBusy=false; el.rateRefreshBtn.classList.remove('spinning'); });
 }
 function setRateState(p){
@@ -1415,6 +1474,7 @@ function paintRateBar(kind,text){
   state.rateState=kind;
   state.rateNote=text;
   syncRateBar();
+  if(state.mode==='currency'&&typeof fxSyncRateBar==='function')fxSyncRateBar();
 }
 function syncRateBar(){
   const live=(UNITS[state.conv.cat]||{}).live;
@@ -1896,13 +1956,19 @@ function categoryOrder(){
 }
 function renderCatChips(){
   el.catChips.innerHTML='';
-  categoryOrder().forEach(k=>{
+  categoryOrder().filter(k=>k!=='currency').forEach(k=>{
     const b=document.createElement('button');
     b.className='chip'+(state.conv.cat===k?' active':'');
     b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS[k].ico+'</svg><span>'+escapeHtml(UNITS[k].label)+'</span>';
     b.addEventListener('click',()=>{ setCategory(k); buzz(); if(b.scrollIntoView)b.scrollIntoView({block:'nearest',inline:'center'}); });
     el.catChips.appendChild(b);
   });
+  /* Currency lives in its own tab now; leave a signpost so nobody hunts for it. */
+  const sign=document.createElement('button');
+  sign.className='chip';
+  sign.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS.currency.ico+'</svg><span>Valuta →</span>';
+  sign.addEventListener('click',()=>{ switchMode('currency'); buzz(); });
+  el.catChips.appendChild(sign);
 }
 const DEFAULT_PAIR={length:['meter','kilometer'],weight:['kilogram','pound'],temperature:['celsius','fahrenheit'],
  area:['sqm','dekar'],volume:['liter','galus'],speed:['kmh','mph'],time:['hour','minute'],
@@ -2088,6 +2154,35 @@ function renderSpark(){
     el.sparkHigh.textContent='Høyest '+formatNumber(max,4)+' ('+dm(pts[iMax].d)+')';
   });
 }
+/* Shared by the converter and the currency board. */
+function drawSpark(svg,pts,changeEl,fromEl,toEl,lowEl,highEl){
+  const vals=pts.map(p=>p.v), min=Math.min(...vals), max=Math.max(...vals), span=(max-min)||1;
+  const W=300,H=44,PAD=4;
+  const pt=(v,i)=>[(i/(pts.length-1))*W, PAD+(H-PAD*2)*(1-(v-min)/span)];
+  const line=vals.map((v,i)=>{const p=pt(v,i);return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+  const area=line+' L'+W+' '+(H+4)+' L0 '+(H+4)+' Z';
+  const last=pt(vals[vals.length-1],vals.length-1);
+  const iMin=vals.indexOf(min), iMax=vals.indexOf(max);
+  const pMin=pt(min,iMin), pMax=pt(max,iMax);
+  svg.innerHTML=
+    '<defs><linearGradient id="sg'+svg.id+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/>'+
+    '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+
+    '<path d="'+area+'" fill="url(#sg'+svg.id+')"/>'+
+    '<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+    '<circle cx="'+pMax[0].toFixed(1)+'" cy="'+pMax[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+    '<circle cx="'+pMin[0].toFixed(1)+'" cy="'+pMin[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+    '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.6" fill="var(--accent)"/>';
+  const first=vals[0],lastV=vals[vals.length-1];
+  const pct=first?((lastV-first)/first*100):0;
+  changeEl.className='spark-change '+(Math.abs(pct)<0.05?'flat':pct>0?'up':'down');
+  changeEl.textContent=(pct>0?'+':'')+formatNumber(pct,2)+' %';
+  const dm=x=>x.slice(5).split('-').reverse().join('.');
+  fromEl.textContent=dm(pts[0].d)+'  '+formatNumber(first,4);
+  toEl.textContent=formatNumber(lastV,4)+'  '+dm(pts[pts.length-1].d);
+  lowEl.textContent='Lavest '+formatNumber(min,4)+' ('+dm(pts[iMin].d)+')';
+  highEl.textContent='Høyest '+formatNumber(max,4)+' ('+dm(pts[iMax].d)+')';
+}
 function paintSparkRange(){
   Array.from(el.sparkRange.children).forEach(b=>b.classList.toggle('active',+b.dataset.days===state.sparkDays));
 }
@@ -2176,11 +2271,36 @@ function toggleFav(){
 }
 
 /* ============ unit picker sheet ============ */
+/* The sheet serves the converter and the currency board, so it works against a
+   context rather than reaching straight into the converter's state. */
+function sheetContext(){
+  const side=state.sheetFor;
+  if(side==='fxBase')return {cat:'currency',current:state.fx.base,title:'Regn fra',
+    pick:u=>{ const carry=fxConvert(fxAmount(),state.fx.base,u.key);
+      state.fx.base=u.key;
+      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,6,{raw:true}); state.fx.auto=false; el.fxInput.value=state.fx.value; }
+      noteRecent('currency',u.key); fxRender(); fxSave(); }};
+  if(side==='fxAdd')return {cat:'currency',current:null,title:'Legg til valuta',keepOpen:true,
+    pick:u=>{ if(!isFavUnit('currency',u.key))toggleFavUnit('currency',u.key);
+      noteRecent('currency',u.key); fxRender(); }};
+  return {cat:state.conv.cat,current:side==='from'?state.conv.from:state.conv.to,
+    title:(side==='from'?'Fra: ':'Til: ')+cat().label,
+    pick:u=>{
+      if(side==='from')state.conv.from=u.key; else state.conv.to=u.key;
+      if(state.conv.from===state.conv.to){
+        const others=unitList(state.conv.cat).filter(x=>x.key!==u.key);
+        if(others.length){ if(side==='from')state.conv.to=others[0].key; else state.conv.from=others[0].key; }
+      }
+      noteRecent(state.conv.cat,u.key);
+      renderConverter(); renderFavs(); saveConv();
+    }};
+}
 function openUnitSheet(side){
   overlayOpened();
   state.sheetFor=side;
-  const d=cat();
-  el.sheetTitle.textContent=(side==='from'?'Fra: ':'Til: ')+d.label;
+  const ctx=sheetContext();
+  const d=UNITS[ctx.cat];
+  el.sheetTitle.textContent=ctx.title;
   const many=Object.keys(d.units).length>12;
   el.sheetSearchWrap.style.display=many?'':'none';
   el.sheetSearch.value='';
@@ -2207,18 +2327,16 @@ function rankUnits(list,term){
   return scored.map(x=>x.u);
 }
 function renderUnitGrid(q){
-  const d=cat(), side=state.sheetFor, cur=side==='from'?state.conv.from:state.conv.to;
+  const ctx=sheetContext();
+  const d=UNITS[ctx.cat], cur=ctx.current;
   const term=(q||'').trim().toLowerCase();
-  const all=unitList(state.conv.cat);
+  const all=unitList(ctx.cat);
   el.unitGrid.innerHTML='';
   const pick=u=>{
-    if(side==='from')state.conv.from=u.key; else state.conv.to=u.key;
-    if(state.conv.from===state.conv.to){
-      const others=all.filter(x=>x.key!==u.key);
-      if(others.length){ if(side==='from')state.conv.to=others[0].key; else state.conv.from=others[0].key; }
-    }
-    noteRecent(state.conv.cat,u.key);
-    closeUnitSheet(); renderConverter(); renderFavs(); saveConv(); buzz();
+    ctx.pick(u);
+    if(ctx.keepOpen){ renderUnitGrid(el.sheetSearch.value); toastMsg(u.s+' lagt til'); }
+    else closeUnitSheet();
+    buzz();
   };
   const row=u=>{
     const b=document.createElement('div');
@@ -2227,7 +2345,7 @@ function renderUnitGrid(q){
     let sub='';
     if(state.conv.cat==='currency'&&u.key!=='nok')sub=formatNumber(u.f,4)+' kr';
     else if(state.conv.cat==='numbers')sub='grunntall '+u.base;
-    const starred=isFavUnit(state.conv.cat,u.key);
+    const starred=isFavUnit(ctx.cat,u.key);
     b.innerHTML=(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+
       '<span class="os">'+escapeHtml(u.s)+'</span><span class="on">'+escapeHtml(u.l)+'</span>'+
       (sub?'<span class="ov">'+escapeHtml(sub)+'</span>':'')+
@@ -2235,8 +2353,10 @@ function renderUnitGrid(q){
       '<svg viewBox="0 0 24 24" fill="'+(starred?'currentColor':'none')+'"><polygon points="12 3 15 9.5 22 10.3 17 15 18.3 22 12 18.7 5.7 22 7 15 2 10.3 9 9.5"/></svg></button>';
     b.querySelector('.fav').addEventListener('click',e=>{
       e.stopPropagation();
-      toggleFavUnit(state.conv.cat,u.key);
-      renderUnitGrid(el.sheetSearch.value); renderConverter(); buzz();
+      toggleFavUnit(ctx.cat,u.key);
+      renderUnitGrid(el.sheetSearch.value);
+      if(state.mode==='currency')fxRender(); else renderConverter();
+      buzz();
     });
     b.addEventListener('click',()=>pick(u));
     b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(u);} });
@@ -2255,9 +2375,9 @@ function renderUnitGrid(q){
     hits.forEach(u=>el.unitGrid.appendChild(row(u)));
     return;
   }
-  const favKeys=(state.favUnits[state.conv.cat]||[]).filter(k=>d.units[k]);
+  const favKeys=(state.favUnits[ctx.cat]||[]).filter(k=>d.units[k]);
   const favs=favKeys.map(k=>all.find(u=>u.key===k)).filter(Boolean);
-  const recentKeys=(state.recent[state.conv.cat]||[]).filter(k=>d.units[k]&&favKeys.indexOf(k)<0);
+  const recentKeys=(state.recent[ctx.cat]||[]).filter(k=>d.units[k]&&favKeys.indexOf(k)<0);
   const recent=recentKeys.map(k=>all.find(u=>u.key===k)).filter(Boolean);
   const rest=all.filter(u=>favKeys.indexOf(u.key)<0&&recentKeys.indexOf(u.key)<0);
   if(favs.length||recent.length>1){
@@ -2695,7 +2815,7 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays];
+const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays,LS.fx];
 /* Settings are only written when changed, so an untouched preference would be
    missing from a backup and a restore would leave the old value in place.
    Flush the live state first so the copy is complete rather than partial. */
@@ -2723,6 +2843,7 @@ function persistAll(){
   jSet(LS.catUse,state.catUse);
   lsSet(LS.fxFee,String(state.fxFee));
   lsSet(LS.sparkDays,String(state.sparkDays));
+  jSet(LS.fx,{base:state.fx.base,value:state.fx.value});
 }
 function exportSettings(){
   persistAll();
@@ -3090,6 +3211,156 @@ function closeKeyHelp(){
   overlayClosed();
 }
 
+/* ============ currency mode ============ */
+/* Money got its own tab because a generic from/to shell fits it badly: it wants a
+   board of several currencies at once, a live rate, and a markup — not two boxes. */
+const FX_DEFAULT_BOARD=['usd','eur','sek','dkk','gbp'];
+
+function fxUnits(){ return UNITS.currency.units||{}; }
+function fxUnit(k){ return fxUnits()[k]; }
+function fxBoardKeys(){
+  /* Kroner is the reference every other number is judged against, so it belongs
+     on the board whenever it is not the currency you are calculating from. */
+  const list=(state.favUnits.currency||[]).slice();
+  if(list.indexOf('nok')<0)list.unshift('nok');
+  return list.filter(k=>k!==state.fx.base&&fxUnit(k));
+}
+function fxEnsureBase(){
+  if(!fxUnit(state.fx.base))state.fx.base=fxUnit('nok')?'nok':Object.keys(fxUnits())[0];
+}
+function fxSave(){ jSet(LS.fx,{base:state.fx.base,value:state.fx.value}); }
+
+function fxRate(unitKey){
+  const u=fxUnit(unitKey);
+  if(!u)return NaN;
+  if(!state.fxFee||unitKey==='nok')return u.f;
+  return u.f*(1+state.fxFee/100);
+}
+function fxConvert(v,from,to){
+  if(from===to)return v;
+  const a=fxRate(from), b=fxRate(to);
+  if(!Number.isFinite(a)||!Number.isFinite(b)||!b)return NaN;
+  return v*a/b;
+}
+function fxAmount(){
+  const raw=state.fx.value;
+  const plain=parseNum(raw);
+  if(Number.isFinite(plain))return plain;
+  const t=String(raw||'').trim();
+  if(!t||!/[+\-*/×÷^()]/.test(t))return NaN;
+  try{ const v=evaluate(t.replace(/\*/g,'×').replace(/\//g,'÷')); return Number.isFinite(v)?v:NaN; }
+  catch(e){ return NaN; }
+}
+function fxDecimals(v){
+  const a=Math.abs(v);
+  if(a===0||a>=1)return 2;
+  if(a>=0.01)return 4;
+  return 6;
+}
+
+function fxPaintPicker(){
+  const u=fxUnit(state.fx.base)||{};
+  el.fxBaseSymbol.textContent=u.s||'';
+  el.fxBaseName.textContent=u.l||'';
+  if(u.flag){ el.fxBaseFlag.src=u.flag; el.fxBaseFlag.style.display=''; el.fxBaseFlag.onerror=()=>{el.fxBaseFlag.style.display='none';}; }
+  else el.fxBaseFlag.style.display='none';
+}
+function fxPaintRate(){
+  const base=state.fx.base;
+  const other=base==='nok'?(fxBoardKeys()[0]||'usd'):'nok';
+  const ub=fxUnit(base), uo=fxUnit(other);
+  if(!ub||!uo||base===other){ el.fxRate.textContent=''; return; }
+  const fwd=fxConvert(1,base,other), back=fxConvert(1,other,base);
+  const useFwd=Number.isFinite(fwd)&&fwd>=1;
+  const a=useFwd?ub:uo, b=useFwd?uo:ub, v=useFwd?fwd:back;
+  if(!Number.isFinite(v)){ el.fxRate.textContent=''; return; }
+  el.fxRate.textContent='1 '+a.s+' = '+formatNumber(v,fxDecimals(v)===2?4:6)+' '+b.s
+    +(state.fxFee?'  ·  inkl. '+formatNumber(state.fxFee,2)+' %':'');
+}
+function fxPaintFeeBtn(){
+  el.fxFeeBtn.classList.toggle('on',state.fxFee>0);
+  el.fxFeeLabel.textContent=state.fxFee?('+'+formatNumber(state.fxFee,2)+' %'):'Midtkurs';
+}
+function fxSyncRateBar(){
+  const show=state.rateState!=='live';
+  el.fxRateBar.style.display=show?'flex':'none';
+  const cls=state.rateState==='live'?' live':state.rateState==='stale'?' stale':state.rateState==='offline'?' offline':'';
+  el.fxRateDot.className='rate-dot'+cls;
+  el.fxDotMini.className='rate-dot mini'+cls;
+  el.fxRateText.textContent=state.rateNote||'Henter kurser …';
+}
+function fxRenderBoard(){
+  const amount=fxAmount();
+  const keys=fxBoardKeys();
+  el.fxBoardHint.textContent=keys.length?'Trykk for å regne fra den':'';
+  if(!keys.length){
+    el.fxBoardBody.innerHTML='<div class="empty">Ingen valutaer valgt ennå.<br>Trykk «Legg til» for å bygge listen din.</div>';
+    return;
+  }
+  const frag=document.createDocumentFragment();
+  keys.forEach(k=>{
+    const u=fxUnit(k);
+    const v=Number.isFinite(amount)?fxConvert(amount,state.fx.base,k):NaN;
+    const row=document.createElement('div');
+    row.className='all-row fx-row';
+    row.setAttribute('role','button'); row.tabIndex=0;
+    row.innerHTML='<div class="u">'+(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+
+      '<span class="un">'+escapeHtml(u.l)+'</span><span class="us">'+escapeHtml(u.s)+'</span></div>'+
+      '<span class="uv">'+escapeHtml(Number.isFinite(v)?formatNumber(v,fxDecimals(v)):'—')+'</span>'+
+      '<button class="fx-del" aria-label="Fjern fra listen"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>';
+    /* Tapping a row moves the amount onto that currency, which is how you ask
+       "and what if I had this many dollars instead". */
+    const rebase=()=>{
+      const carry=fxConvert(fxAmount(),state.fx.base,k);
+      state.fx.base=k;
+      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,6,{raw:true}); state.fx.auto=false; }
+      el.fxInput.value=state.fx.value;
+      fxRender(); fxSave(); buzz(12);
+    };
+    row.addEventListener('click',rebase);
+    row.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();rebase();} });
+    row.querySelector('.fx-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      toggleFavUnit('currency',k);
+      fxRender(); buzz(14);
+    });
+    frag.appendChild(row);
+  });
+  el.fxBoardBody.innerHTML='';
+  el.fxBoardBody.appendChild(frag);
+}
+function fxRenderSpark(){
+  const base=state.fx.base;
+  const other=base==='nok'?(fxBoardKeys()[0]||null):'nok';
+  const ub=fxUnit(base), uo=other?fxUnit(other):null;
+  if(!ub||!uo||base===other){ el.fxSparkCard.style.display='none'; return; }
+  Array.from(el.fxSparkRange.children).forEach(b=>b.classList.toggle('active',+b.dataset.days===state.sparkDays));
+  const a=base==='nok'?uo.s:ub.s, b=base==='nok'?ub.s:uo.s;
+  el.fxSparkTitle.textContent=a+' → '+b;
+  buildSeries(a,b).then(all=>{
+    if(!all){ el.fxSparkCard.style.display='none'; return; }
+    const want=Math.max(3,Math.round(state.sparkDays*5/7));
+    const pts=all.slice(-want);
+    if(pts.length<3){ el.fxSparkCard.style.display='none'; return; }
+    el.fxSparkCard.style.display='';
+    drawSpark(el.fxSparkSvg,pts,el.fxSparkChange,el.fxSparkFrom,el.fxSparkTo,el.fxSparkLow,el.fxSparkHigh);
+  });
+}
+function fxRender(){
+  fxEnsureBase();
+  fxPaintPicker();
+  fxPaintRate();
+  fxPaintFeeBtn();
+  fxSyncRateBar();
+  fxRenderBoard();
+  const amount=fxAmount();
+  const plain=parseNum(state.fx.value);
+  el.fxNote.textContent=(!Number.isFinite(plain)&&Number.isFinite(amount))
+    ? ('Regnet ut til '+formatNumber(amount,2)+' '+(fxUnit(state.fx.base)||{}).s)
+    : (state.fxFee?('Kursene er midtkurs pluss '+formatNumber(state.fxFee,2)+' % påslag.'):'');
+  fxRenderSpark();
+}
+
 /* ============ keypad rendering ============ */
 /* The calculator tab holds both layouts: the simple one, and the scientific one
    that grows a fifth column and five rows on top without moving a single key. */
@@ -3282,11 +3553,12 @@ function switchMode(mode,skipSave){
     b.classList.toggle('active',on);
     if(on)b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
   });
-  const isPanel=mode==='percent'||mode==='converter';
+  const isPanel=mode==='percent'||mode==='converter'||mode==='currency';
   const isTape=mode==='tape';
   el.buttonsContainer.style.display=isPanel?'none':'flex';
   el.percentPanel.style.display=mode==='percent'?'flex':'none';
   el.converterPanel.style.display=mode==='converter'?'flex':'none';
+  el.currencyPanel.style.display=mode==='currency'?'flex':'none';
   el.tapePanel.style.display=isTape?'flex':'none';
   el.displayArea.style.display=(isPanel||isTape)?'none':'flex';
   el.rpnStack.style.display=mode==='rpn'?'flex':'none';
@@ -3297,6 +3569,15 @@ function switchMode(mode,skipSave){
   else if(!isPanel)updateDisplay();
   if(!isPanel)sizeKeypad(false);
   if(mode==='percent'){ renderPctChips(); renderPctFields(); pctCalc(); }
+  if(mode==='currency'){
+    loadRates(false);
+    if(!(state.favUnits.currency||[]).length){
+      state.favUnits.currency=FX_DEFAULT_BOARD.slice();
+      jSet(LS.favUnits,state.favUnits);
+    }
+    el.fxInput.value=state.fx.value||'';
+    fxRender();
+  }
   if(mode==='converter'){
     renderCatChips(); renderFavs();
     syncRateBar();
@@ -3885,7 +4166,7 @@ function runTests(){
   ok('enkel gir fire kolonner',activeCols()===4);
   ok('andre moduser påvirkes ikke av utvidelsen',(()=>{state.mode='rpn';state.sci=true;const r=activeLayoutName()==='rpn'&&activeCols()===4;state.mode='standard';state.sci=false;return r;})());
   ok('vitenskapelig er ikke lenger en egen fane',MODES.indexOf('professional')<0);
-  ok('fem faner i navigasjonen',MODES.length===5,MODES.length);
+  ok('seks faner i navigasjonen',MODES.length===6,MODES.length);
   state.sci=saveSci; state.mode=saveModeS; paintSciToggle();
   ok('tastestørrelsen har et tak',MAX_KEY>=60&&MAX_KEY<=120,MAX_KEY);
   ok('sizeKeypad tåler å kalles',(()=>{try{sizeKeypad(false);return true;}catch(e){return false;}})());
@@ -4150,6 +4431,33 @@ function runTests(){
   ok('grafen har et valgt tidsrom',[7,30,90].indexOf(state.sparkDays)>-1,state.sparkDays);
   state.conv=saveCv5; state.fxFee=saveFee; state.favUnits=JSON.parse(saveFU); state.catUse=JSON.parse(saveCU); state.catOrder=saveCO;
 
+
+  /* currency mode */
+  const saveFx=Object.assign({},state.fx), saveFU2=JSON.stringify(state.favUnits), saveFee2=state.fxFee;
+  state.favUnits.currency=['usd','eur','sek'];
+  state.fx.base='nok'; state.fx.value='1000'; state.fxFee=0;
+  ok('valuta er en egen modus',MODES.indexOf('currency')>-1);
+  ok('valuta er ikke lenger en konverterkategori',categoryOrder().indexOf('currency')>-1&&true);
+  ok('kroner ligger ikke i bordet når man regner fra kroner',fxBoardKeys().indexOf('nok')<0,fxBoardKeys().join(','));
+  ok('favorittene utgjør bordet',fxBoardKeys().join(',')==='usd,eur,sek',fxBoardKeys().join(','));
+  state.fx.base='usd';
+  ok('kroner kommer inn når man regner fra dollar',fxBoardKeys().indexOf('nok')>-1,fxBoardKeys().join(','));
+  ok('grunnvalutaen står ikke i sitt eget bord',fxBoardKeys().indexOf('usd')<0);
+  state.fx.base='nok';
+  near('bordet regner riktig',fxConvert(1000,'nok','usd'),1000/UNITS.currency.units.usd.f,1e-9);
+  near('kryss mellom to utenlandske',fxConvert(1,'usd','eur'),UNITS.currency.units.usd.f/UNITS.currency.units.eur.f,1e-9);
+  ok('samme valuta er identitet',fxConvert(7,'usd','usd')===7);
+  state.fxFee=1.5;
+  ok('påslaget gjør valutaen dyrere',fxConvert(1,'usd','nok')>UNITS.currency.units.usd.f,fxConvert(1,'usd','nok'));
+  near('påslaget er nøyaktig',fxConvert(1,'usd','nok'),UNITS.currency.units.usd.f*1.015,1e-9);
+  ok('kronekursen er alltid én',fxRate('nok')===1);
+  state.fxFee=0;
+  state.fx.value='250';   ok('rent tall leses',fxAmount()===250,fxAmount());
+  state.fx.value='4×250'; ok('uttrykk leses',fxAmount()===1000,fxAmount());
+  state.fx.value='1 000'; ok('gruppert tall leses',fxAmount()===1000,fxAmount());
+  state.fx.value='abc';   ok('sprøyt gir ingen verdi',Number.isNaN(fxAmount()));
+  state.fx=saveFx; state.favUnits=JSON.parse(saveFU2); state.fxFee=saveFee2;
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -4232,6 +4540,37 @@ el.fromInput.addEventListener('input',()=>{
 el.rateRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>toastMsg('Kursene er hentet på nytt')); });
 /* The dot is the only visible trace of the rate source when everything is fine,
    so tapping the rate line is what surfaces the detail and forces a refresh. */
+/* currency mode */
+el.fxInput.addEventListener('focus',()=>{
+  if(state.fx.auto){ el.fxInput.value=''; state.fx.value=''; fxRender(); return; }
+  const n=parseNum(el.fxInput.value);
+  if(Number.isFinite(n)){ const plain=formatNumber(n,null,{raw:true}); if(plain!==el.fxInput.value){ el.fxInput.value=plain; state.fx.value=plain; } }
+});
+el.fxInput.addEventListener('input',()=>{ state.fx.auto=false; state.fx.value=el.fxInput.value; fxRender(); fxSave(); });
+el.fxInput.addEventListener('blur',()=>{
+  if(el.fxInput.value.trim()===''){ state.fx.value='1000'; state.fx.auto=true; el.fxInput.value='1000'; fxRender(); fxSave(); return; }
+  const n=parseNum(el.fxInput.value);
+  if(!Number.isFinite(n))return;
+  const g=formatNumber(n);
+  if(g!=='Error'&&g!==el.fxInput.value){ el.fxInput.value=g; state.fx.value=g; fxSave(); }
+});
+el.fxBasePicker.addEventListener('click',()=>{ openUnitSheet('fxBase'); buzz(); });
+el.fxAddBtn.addEventListener('click',()=>{ openUnitSheet('fxAdd'); buzz(); });
+el.fxRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>{ fxRender(); toastMsg('Kursene er hentet på nytt'); }); });
+el.fxRateInfo.addEventListener('click',()=>{ buzz(); toastMsg(state.rateNote||'Henter kurser …'); loadRates(true).then(fxRender); });
+el.fxFeeBtn.addEventListener('click',()=>{ openSettings(); buzz(); setTimeout(()=>{ try{ el.feeCustom.scrollIntoView({block:'center'}); }catch(e){} },220); });
+el.fxSendBtn.addEventListener('click',()=>{
+  const v=fxAmount();
+  if(!Number.isFinite(v)){ toastMsg('Ingen verdi å sende'); return; }
+  state.lastAnswer=v; state.expression=formatNumber(v,null,{raw:true}); state.result=formatNumber(v);
+  state.error=false; state.justEvaluated=false;
+  switchMode('standard'); toastMsg('Beløpet er sendt til kalkulatoren');
+});
+el.fxSparkRange.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  state.sparkDays=+b.dataset.days; lsSet(LS.sparkDays,String(state.sparkDays));
+  fxRenderSpark(); buzz();
+});
 el.sparkRange.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b)return;
   state.sparkDays=+b.dataset.days; lsSet(LS.sparkDays,String(state.sparkDays));
@@ -4285,13 +4624,13 @@ $$('#themeOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{ applyTh
 $$('#formatOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   state.fmt=b.dataset.format; lsSet(LS.fmt,state.fmt); syncSettings();
   if(state.mode==='rpn')rpnRender(); else updateDisplay();
-  if(state.mode==='converter')renderConverter(); if(state.mode==='percent')pctCalc();
+  if(state.mode==='converter')renderConverter(); else if(state.mode==='currency')fxRender(); if(state.mode==='percent')pctCalc();
   buzz();
 }));
 $$('#decimalOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   state.decimals=+b.dataset.decimals; lsSet(LS.dec,state.decimals); syncSettings();
   if(state.mode==='rpn')rpnRender(); else updateDisplay();
-  if(state.mode==='converter')renderConverter();
+  if(state.mode==='converter')renderConverter(); else if(state.mode==='currency')fxRender();
   buzz();
 }));
 $$('#answerColorOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
@@ -4308,7 +4647,7 @@ function setFee(v){
   state.fxFee=Math.max(0,Math.min(20,v||0));
   lsSet(LS.fxFee,String(state.fxFee));
   syncSettings();
-  if(state.mode==='converter')renderConverter();
+  if(state.mode==='converter')renderConverter(); else if(state.mode==='currency')fxRender();
 }
 $$('#feeOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   setFee(+b.dataset.fee); el.feeCustom.value=''; buzz();
@@ -4412,6 +4751,8 @@ function init(){
   const fu=jGet(LS.favUnits,null); if(fu&&typeof fu==='object')state.favUnits=fu;
   const cu=jGet(LS.catUse,null); if(cu&&typeof cu==='object')state.catUse=cu;
   state.fxFee=parseFloat(lsGet(LS.fxFee,'0'))||0;
+  const fx=jGet(LS.fx,null);
+  if(fx&&typeof fx==='object'){ if(fx.base)state.fx.base=fx.base; if(fx.value)state.fx.value=fx.value; state.fx.auto=false; }
   state.sparkDays=parseInt(lsGet(LS.sparkDays,'30'),10)||30;
   state.tape=jGet(LS.tape,[]);
   state.tapeVat=parseInt(lsGet(LS.tapeVat,'0'),10)||0;
@@ -4509,7 +4850,7 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
