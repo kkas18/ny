@@ -255,7 +255,9 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .spark-change.down{color:var(--danger)}
 .spark-change.flat{color:var(--text-dim)}
 .spark-svg{width:100%;height:52px;display:block;overflow:visible}
-.spark-foot{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-top:2px}
+.spark-foot{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-top:2px}
+#sparkRange{margin:0 0 8px}
+#sparkRange button{padding:4px 11px;font-size:11px}
 
 /* ---------- All-units list ---------- */
 .all-units{background:var(--surface-light);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;flex:1 1 auto;min-height:52px;display:flex;flex-direction:column}
@@ -333,11 +335,16 @@ body.kb-open .sheet-body{padding-bottom:14px}
 .unit-opt .os{font-weight:800;font-size:13px;color:var(--text);min-width:42px;flex-shrink:0}
 .unit-opt .on{font-size:12px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .unit-opt .ov{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);flex-shrink:0}
+.unit-opt .fav{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:var(--text-dim);border-radius:50%;margin:-6px -6px -6px 0}
+.unit-opt .fav:active{background:var(--surface-lighter)}
+.unit-opt .fav.on{color:var(--accent)}
+.unit-opt .fav svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
 .settings-section{margin-bottom:20px}
 .settings-label{font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
 .settings-note{font-size:12px;color:var(--text-dim);line-height:1.55;margin:-2px 2px 9px}
 .seg{display:grid;gap:5px;background:var(--surface-light);padding:4px;border-radius:14px;border:1px solid var(--border)}
 .seg-2{grid-template-columns:repeat(2,1fr)}.seg-3{grid-template-columns:repeat(3,1fr)}
+.seg-4{grid-template-columns:repeat(4,1fr)}
 .seg-5{grid-template-columns:repeat(5,1fr)}
 .seg-btn{padding:10px 3px;border-radius:11px;border:none;background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all var(--transition-fast)}
 .seg-btn.active{background:var(--accent);color:var(--accent-text)}
@@ -595,8 +602,12 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     <div class="chips" id="favChips" style="display:none"></div>
     <div class="spark-card" id="sparkCard" style="display:none">
       <div class="spark-head"><span class="spark-title" id="sparkTitle">Siste noteringer</span><span class="spark-change" id="sparkChange"></span></div>
+      <div class="mini-seg" id="sparkRange">
+        <button data-days="7">7 d</button><button data-days="30">30 d</button><button data-days="90">90 d</button>
+      </div>
       <svg class="spark-svg" id="sparkSvg" viewBox="0 0 300 52" preserveAspectRatio="none" aria-hidden="true"></svg>
       <div class="spark-foot"><span id="sparkFrom"></span><span id="sparkTo"></span></div>
+      <div class="spark-foot"><span id="sparkLow"></span><span id="sparkHigh"></span></div>
     </div>
     <div class="all-units" id="allUnits">
       <div class="all-head" id="allHead" role="button" tabindex="0"><span class="card-label">Alle enheter</span><svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
@@ -705,6 +716,18 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
       <div class="seg seg-2" id="rateSrcOptions"><button class="seg-btn" data-src="nb">Norges Bank</button><button class="seg-btn" data-src="both">NB + utfylling</button></div>
     </section>
     <section class="settings-section">
+      <div class="settings-label">Vekslingsgebyr</div>
+      <p class="settings-note">Norges Bank noterer midtkurs. Kort og vekslingskontor legger vanligvis på 1,5–2 %. Slår du dette på, regner konverteren med påslaget og viser midtkursen ved siden av.</p>
+      <div class="seg seg-4" id="feeOptions">
+        <button class="seg-btn" data-fee="0">Av</button><button class="seg-btn" data-fee="1.5">1,5 %</button>
+        <button class="seg-btn" data-fee="1.75">1,75 %</button><button class="seg-btn" data-fee="2">2 %</button>
+      </div>
+      <div class="custom-row" style="margin-top:7px">
+        <input type="text" id="feeCustom" inputmode="decimal" autocomplete="off" placeholder="Eget påslag i prosent" aria-label="Eget påslag i prosent">
+        <button id="feeCustomBtn">Bruk</button>
+      </div>
+    </section>
+    <section class="settings-section">
       <div class="settings-label">App</div>
       <button class="action-btn" id="installBtn" style="display:none;margin-top:0">Installer på hjemskjermen</button>
       <div class="io-row">
@@ -749,7 +772,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.0.0';
+const VERSION='6.1.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -760,7 +783,7 @@ const CFG={
 };
 const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
-  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',allOpen:'pku_allopen',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',allOpen:'pku_allopen',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
 const MODES=['standard','rpn','tape','percent','converter'];
 const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',converter:'Konverter'};
@@ -780,7 +803,7 @@ const state={
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
-  vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{},
+  vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{}, favUnits:{}, fxFee:0, catUse:{}, catOrder:null, sparkDays:30,
   tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
   dateType:'between', dateVals:{}
 };
@@ -793,10 +816,10 @@ const el={};
  'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
  'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
  'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
- 'sparkFrom','sparkTo','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
+ 'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
- 'testSummary','testOut','modalOverlay','keySheet','keyGlyph','keyName','keyDesc','keyExample',
+ 'testSummary','testOut','modalOverlay','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
  'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
  'toast','appVersion','hapticSwitch','liveSwitch','kbdSwitch',
  'tapePanel','tapeList','tapeSum','tapeSumLabel','tapeSplit','tapeCur','tapePrev','tapeVatBtn','tapeVatLabel',
@@ -1409,7 +1432,7 @@ function loadSeries(code){
   if(seriesCache[code])return Promise.resolve(seriesCache[code]);
   const disk=jGet(LS.series,{});
   if(disk[code]&&(Date.now()-disk[code].t)<CFG.ratesTtlMs){ seriesCache[code]=disk[code].d; return Promise.resolve(disk[code].d); }
-  const to=todayISO(), from=todayISO(new Date(Date.now()-45*86400000));
+  const to=todayISO(), from=todayISO(new Date(Date.now()-140*86400000));
   const url=CFG.nbSeries.replace('{CUR}',code).replace('{FROM}',from).replace('{TO}',to);
   return fetchText(url,10000).then(txt=>{
     const lines=String(txt).replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
@@ -1438,7 +1461,7 @@ function buildSeries(fromCode,toCode){
       const va=a==='NOK'?1:a[d], vb=b==='NOK'?1:b[d];
       if(Number.isFinite(va)&&Number.isFinite(vb)&&vb>0)pts.push({d,v:va/vb});
     });
-    return pts.length>=3?pts.slice(-30):null;
+    return pts.length>=3?pts:null;
   });
 }
 
@@ -1838,6 +1861,16 @@ function pctCalc(){
 
 /* ============ converter UI ============ */
 function cat(){ return UNITS[state.conv.cat]||UNITS.length; }
+/* Norges Bank publishes the mid rate, which nobody is ever offered. A card or a
+   bureau adds a markup, so the panel can apply one and still show the mid rate. */
+function feeFactor(){
+  return (state.conv.cat==='currency'&&state.fxFee>0)?(1+state.fxFee/100):1;
+}
+function convertHere(v,from,to){
+  const base=convert(v,state.conv.cat,from,to);
+  if(!Number.isFinite(base)||from===to)return base;
+  return base/feeFactor();
+}
 /* Money wants two decimals; eight just makes the number hard to read. */
 function convDecimals(catKey,v){
   if(catKey!=='currency')return Math.min(state.decimals,6);
@@ -1847,9 +1880,17 @@ function convDecimals(catKey,v){
   return 6;
 }
 function unitList(c){ const d=UNITS[c]; return Object.keys(d.units).map(k=>Object.assign({key:k},d.units[k])); }
+/* Ordered once per session, not while you are tapping: chips that reshuffle
+   under your finger are worse than chips in a fixed place. */
+function categoryOrder(){
+  if(state.catOrder)return state.catOrder;
+  const keys=Object.keys(UNITS);
+  state.catOrder=keys.slice().sort((a,b)=>((state.catUse[b]||0)-(state.catUse[a]||0))||(keys.indexOf(a)-keys.indexOf(b)));
+  return state.catOrder;
+}
 function renderCatChips(){
   el.catChips.innerHTML='';
-  Object.keys(UNITS).forEach(k=>{
+  categoryOrder().forEach(k=>{
     const b=document.createElement('button');
     b.className='chip'+(state.conv.cat===k?' active':'');
     b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS[k].ico+'</svg><span>'+escapeHtml(UNITS[k].label)+'</span>';
@@ -1864,6 +1905,8 @@ const DEFAULT_PAIR={length:['meter','kilometer'],weight:['kilogram','pound'],tem
  fuel:['l100','mpgus'],numbers:['dec','hex'],currency:['nok','usd']};
 function setCategory(k){
   state.conv.cat=k;
+  state.catUse[k]=(state.catUse[k]||0)+1;
+  jSet(LS.catUse,state.catUse);
   if(k==='dates'){
     state.conv.value='';
     el.rateBar.style.display='none';
@@ -1940,7 +1983,7 @@ function renderConverter(){
       return s+' '+toBaseString(raw,d.units[k].base);
     }).join('   ');
   }else{
-    const out=convert(raw,c.cat,c.from,c.to);
+    const out=convertHere(raw,c.from,c.to);
     if(!Number.isFinite(out)){ c.lastOut=NaN; el.toInput.value='—'; el.fromHint.textContent=''; el.toHint.textContent='Kan ikke konverteres'; renderAllUnits(NaN); return; }
     c.lastOut=out;
     outText=formatNumber(out,convDecimals(c.cat,out));
@@ -1948,8 +1991,13 @@ function renderConverter(){
     const wasExpr=!wasCompound&&!Number.isFinite(parseNum(c.value))&&Number.isFinite(convExpression(c.value));
     el.fromHint.textContent=wasCompound?('Tolket som '+formatNumber(raw,6)+' '+d.units[c.from].s)
       :(wasExpr?('Regnet ut til '+formatNumber(raw,6)+' '+d.units[c.from].s):'');
-    el.toHint.textContent=(c.cat==='currency'&&(d.units[c.to]||{}).src==='fill')
-      ? 'Denne kursen kommer fra reservekilden, ikke Norges Bank.' : '';
+    const notes=[];
+    if(c.cat==='currency'&&(d.units[c.to]||{}).src==='fill')notes.push('Denne kursen kommer fra reservekilden, ikke Norges Bank.');
+    if(feeFactor()>1){
+      const mid=convert(raw,c.cat,c.from,c.to);
+      notes.push('Inkludert '+formatNumber(state.fxFee,2)+' % vekslingsgebyr. Midtkurs gir '+formatNumber(mid,convDecimals(c.cat,mid))+' '+d.units[c.to].s+'.');
+    }
+    el.toHint.textContent=notes.join(' ');
   }
   el.toInput.value=outText;
   renderAllUnits(raw); renderBits();
@@ -1963,19 +2011,26 @@ function paintRate(){
   if(c.cat==='numbers'){ el.convRate.textContent='Grunntall '+uf.base+' → '+ut.base; return; }
   if(c.from===c.to){ el.convRate.textContent='Samme enhet'; return; }
   if(d.special){ el.convRate.textContent=uf.l+' → '+ut.l; return; }
-  const one=convert(1,c.cat,c.from,c.to);
-  if(!Number.isFinite(one)){ el.convRate.textContent=''; return; }
-  el.convRate.textContent='1 '+uf.s+' = '+formatNumber(one,convDecimals(c.cat,one)===2?4:6)+' '+ut.s;
+  const fwd=convertHere(1,c.from,c.to);
+  const back=convertHere(1,c.to,c.from);
+  if(!Number.isFinite(fwd)&&!Number.isFinite(back)){ el.convRate.textContent=''; return; }
+  /* "1 USD = 9,45 NOK" is how a rate is read; "1 NOK = 0,105 USD" is the same
+     fact in a shape nobody quotes. Pick whichever side lands above one. */
+  const useFwd=!Number.isFinite(back)||(Number.isFinite(fwd)&&fwd>=1)||back<1;
+  const a=useFwd?uf:ut, bU=useFwd?ut:uf, v=useFwd?fwd:back;
+  const dec=convDecimals(c.cat,v)===2?4:6;
+  el.convRate.textContent='1 '+a.s+' = '+formatNumber(v,dec)+' '+bU.s
+    +(feeFactor()>1?'  ·  +'+formatNumber(state.fxFee,2)+' %':'');
 }
 function renderAllUnits(raw){
   const c=state.conv,d=cat();
   if(!state.allOpen){ el.allBody.innerHTML=''; return; }
   if(!Number.isFinite(raw)){ el.allBody.innerHTML='<div class="empty">Skriv inn en verdi for å se alle enhetene.</div>'; return; }
   const frag=document.createDocumentFragment();
-  unitList(c.cat).forEach(u=>{
+  orderedUnits(c.cat).forEach(u=>{
     let val;
     if(c.cat==='numbers')val=toBaseString(raw,u.base);
-    else{ const n=convert(raw,c.cat,c.from,u.key); val=Number.isFinite(n)?formatNumber(n,convDecimals(c.cat,n)):'—'; }
+    else{ const n=convertHere(raw,c.from,u.key); val=Number.isFinite(n)?formatNumber(n,convDecimals(c.cat,n)):'—'; }
     const row=document.createElement('div');
     row.className='all-row'+(u.key===c.to?' is-to':'');
     row.innerHTML='<div class="u">'+(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.display=\'none\'">':'')+
@@ -1990,9 +2045,14 @@ function renderSpark(){
   const c=state.conv,d=cat();
   const fc=(d.units[c.from]||{}).s, tc=(d.units[c.to]||{}).s;
   if(!fc||!tc||fc===tc){ el.sparkCard.style.display='none'; return; }
-  el.sparkTitle.textContent=fc+' → '+tc+' · siste 30 noteringer';
-  buildSeries(fc,tc).then(pts=>{
-    if(!pts){ el.sparkCard.style.display='none'; return; }
+  paintSparkRange();
+  el.sparkTitle.textContent=fc+' → '+tc;
+  buildSeries(fc,tc).then(all=>{
+    if(!all){ el.sparkCard.style.display='none'; return; }
+    /* Trading days, not calendar days: a 30-day window is about 22 quotes. */
+    const want=Math.max(3,Math.round(state.sparkDays*5/7));
+    const pts=all.slice(-want);
+    if(pts.length<3){ el.sparkCard.style.display='none'; return; }
     el.sparkCard.style.display='';
     const vals=pts.map(p=>p.v), min=Math.min(...vals), max=Math.max(...vals), span=(max-min)||1;
     const W=300,H=44,PAD=4;
@@ -2000,23 +2060,49 @@ function renderSpark(){
     const line=vals.map((v,i)=>{const p=pt(v,i);return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
     const area=line+' L'+W+' '+(H+4)+' L0 '+(H+4)+' Z';
     const last=pt(vals[vals.length-1],vals.length-1);
+    const iMin=vals.indexOf(min), iMax=vals.indexOf(max);
+    const pMin=pt(min,iMin), pMax=pt(max,iMax);
     el.sparkSvg.innerHTML=
       '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">'+
       '<stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/>'+
       '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+
       '<path d="'+area+'" fill="url(#sg)"/>'+
       '<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+      '<circle cx="'+pMax[0].toFixed(1)+'" cy="'+pMax[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+      '<circle cx="'+pMin[0].toFixed(1)+'" cy="'+pMin[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
       '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.6" fill="var(--accent)"/>';
     const first=vals[0],lastV=vals[vals.length-1];
     const pct=first?((lastV-first)/first*100):0;
     el.sparkChange.className='spark-change '+(Math.abs(pct)<0.05?'flat':pct>0?'up':'down');
     el.sparkChange.textContent=(pct>0?'+':'')+formatNumber(pct,2)+' %';
-    el.sparkFrom.textContent=pts[0].d.slice(5).split('-').reverse().join('.')+'  '+formatNumber(first,4);
-    el.sparkTo.textContent=formatNumber(lastV,4)+'  '+pts[pts.length-1].d.slice(5).split('-').reverse().join('.');
+    const dm=x=>x.slice(5).split('-').reverse().join('.');
+    el.sparkFrom.textContent=dm(pts[0].d)+'  '+formatNumber(first,4);
+    el.sparkTo.textContent=formatNumber(lastV,4)+'  '+dm(pts[pts.length-1].d);
+    el.sparkLow.textContent='Lavest '+formatNumber(min,4)+' ('+dm(pts[iMin].d)+')';
+    el.sparkHigh.textContent='Høyest '+formatNumber(max,4)+' ('+dm(pts[iMax].d)+')';
   });
+}
+function paintSparkRange(){
+  Array.from(el.sparkRange.children).forEach(b=>b.classList.toggle('active',+b.dataset.days===state.sparkDays));
 }
 function saveConv(){ jSet(LS.conv,state.conv); }
 /* With 166 currencies in the list, the ones you actually use should be one tap away. */
+function isFavUnit(catKey,key){ return (state.favUnits[catKey]||[]).indexOf(key)>-1; }
+function toggleFavUnit(catKey,key){
+  const list=state.favUnits[catKey]||[];
+  const i=list.indexOf(key);
+  if(i>-1)list.splice(i,1); else list.unshift(key);
+  state.favUnits[catKey]=list.slice(0,12);
+  jSet(LS.favUnits,state.favUnits);
+}
+/* Favourites first, then the declared order — used by both the picker and the list. */
+function orderedUnits(catKey){
+  const all=unitList(catKey);
+  const fav=state.favUnits[catKey]||[];
+  if(!fav.length)return all;
+  const starred=fav.map(k=>all.find(u=>u.key===k)).filter(Boolean);
+  return starred.concat(all.filter(u=>fav.indexOf(u.key)<0));
+}
 function noteRecent(cat,key){
   const r=state.recent[cat]||[];
   const next=[key].concat(r.filter(k=>k!==key)).slice(0,5);
@@ -2135,9 +2221,17 @@ function renderUnitGrid(q){
     let sub='';
     if(state.conv.cat==='currency'&&u.key!=='nok')sub=formatNumber(u.f,4)+' kr';
     else if(state.conv.cat==='numbers')sub='grunntall '+u.base;
+    const starred=isFavUnit(state.conv.cat,u.key);
     b.innerHTML=(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+
       '<span class="os">'+escapeHtml(u.s)+'</span><span class="on">'+escapeHtml(u.l)+'</span>'+
-      (sub?'<span class="ov">'+escapeHtml(sub)+'</span>':'');
+      (sub?'<span class="ov">'+escapeHtml(sub)+'</span>':'')+
+      '<button class="fav'+(starred?' on':'')+'" aria-label="'+(starred?'Fjern favoritt':'Merk som favoritt')+'" aria-pressed="'+starred+'">'+
+      '<svg viewBox="0 0 24 24" fill="'+(starred?'currentColor':'none')+'"><polygon points="12 3 15 9.5 22 10.3 17 15 18.3 22 12 18.7 5.7 22 7 15 2 10.3 9 9.5"/></svg></button>';
+    b.querySelector('.fav').addEventListener('click',e=>{
+      e.stopPropagation();
+      toggleFavUnit(state.conv.cat,u.key);
+      renderUnitGrid(el.sheetSearch.value); renderConverter(); buzz();
+    });
     b.addEventListener('click',()=>pick(u));
     b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(u);} });
     return b;
@@ -2155,11 +2249,15 @@ function renderUnitGrid(q){
     hits.forEach(u=>el.unitGrid.appendChild(row(u)));
     return;
   }
-  const recentKeys=(state.recent[state.conv.cat]||[]).filter(k=>d.units[k]);
+  const favKeys=(state.favUnits[state.conv.cat]||[]).filter(k=>d.units[k]);
+  const favs=favKeys.map(k=>all.find(u=>u.key===k)).filter(Boolean);
+  const recentKeys=(state.recent[state.conv.cat]||[]).filter(k=>d.units[k]&&favKeys.indexOf(k)<0);
   const recent=recentKeys.map(k=>all.find(u=>u.key===k)).filter(Boolean);
-  if(recent.length>1){
-    group('Nylig brukt',recent);
-    group('Alle',all.filter(u=>recentKeys.indexOf(u.key)<0));
+  const rest=all.filter(u=>favKeys.indexOf(u.key)<0&&recentKeys.indexOf(u.key)<0);
+  if(favs.length||recent.length>1){
+    group('Favoritter',favs);
+    group('Nylig brukt',recent.length>1?recent:[]);
+    group('Alle',recent.length>1?rest:all.filter(u=>favKeys.indexOf(u.key)<0));
   }else{
     all.forEach(u=>el.unitGrid.appendChild(row(u)));
   }
@@ -2591,7 +2689,7 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent];
+const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays];
 /* Settings are only written when changed, so an untouched preference would be
    missing from a backup and a restore would leave the old value in place.
    Flush the live state first so the copy is complete rather than partial. */
@@ -2615,6 +2713,10 @@ function persistAll(){
   jSet(LS.tape,state.tape);
   jSet(LS.vars,state.vars);
   jSet(LS.recent,state.recent);
+  jSet(LS.favUnits,state.favUnits);
+  jSet(LS.catUse,state.catUse);
+  lsSet(LS.fxFee,String(state.fxFee));
+  lsSet(LS.sparkDays,String(state.sparkDays));
 }
 function exportSettings(){
   persistAll();
@@ -3215,6 +3317,7 @@ function syncSettings(){
   $$('#trigOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.trig===state.trig));
   $$('#answerColorOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.ac===state.answerColor));
   $$('#rateSrcOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.src===state.rateSrc));
+  $$('#feeOptions .seg-btn').forEach(b=>b.classList.toggle('active',Math.abs(+b.dataset.fee-state.fxFee)<1e-9));
   setSwitch(el.hapticSwitch,state.haptic); setSwitch(el.liveSwitch,state.livePreview); setSwitch(el.kbdSwitch,state.kbd);
 }
 function openSettings(){ overlayOpened(); el.modalOverlay.classList.add('open'); el.settingsSheet.classList.add('open'); syncSettings(); }
@@ -3986,6 +4089,56 @@ function runTests(){
     probe.remove();
   })();
 
+
+  /* rate direction, fee, starred units and category order */
+  const saveCv5=Object.assign({},state.conv), saveFee=state.fxFee, saveFU=JSON.stringify(state.favUnits), saveCU=JSON.stringify(state.catUse), saveCO=state.catOrder;
+  state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd'; state.fxFee=0;
+  paintRate();
+  ok('kursen snus til den lesbare retningen',/^1 USD =/.test(el.convRate.textContent),el.convRate.textContent);
+  state.conv.from='usd'; state.conv.to='nok';
+  paintRate();
+  ok('samme retning uansett vei du konverterer',/^1 USD =/.test(el.convRate.textContent),el.convRate.textContent);
+  state.conv.cat='length'; state.conv.from='meter'; state.conv.to='kilometer';
+  paintRate();
+  ok('enheter snus også',/^1 km =/.test(el.convRate.textContent),el.convRate.textContent);
+
+  state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd';
+  const mid=convertHere(1000,'nok','usd');
+  state.fxFee=1.75;
+  const withFee=convertHere(1000,'nok','usd');
+  ok('gebyr gir mindre valuta',withFee<mid,withFee+' < '+mid);
+  near('gebyret er nøyaktig 1,75 %',mid/withFee,1.0175,1e-12);
+  const backFee=convertHere(1,'usd','nok');
+  ok('gebyret rammer begge veier',backFee<convert(1,'currency','usd','nok'),backFee);
+  ok('samme enhet er upåvirket',convertHere(5,'nok','nok')===5);
+  state.fxFee=0;
+  ok('uten gebyr er det ren midtkurs',Math.abs(convertHere(1000,'nok','usd')-convert(1000,'currency','nok','usd'))<1e-12);
+  ok('gebyret gjelder ikke andre kategorier',(()=>{state.conv.cat='length';state.fxFee=2;
+    const r=Math.abs(convertHere(1000,'meter','kilometer')-1)<1e-12;state.fxFee=0;return r;})());
+
+  state.favUnits={};
+  state.conv.cat='length';
+  ok('ingen favoritt i utgangspunktet',!isFavUnit('length','yard'));
+  toggleFavUnit('length','yard'); toggleFavUnit('length','foot');
+  ok('favoritt merkes',isFavUnit('length','yard'));
+  ok('favoritter ligger først',orderedUnits('length')[0].key==='foot',orderedUnits('length')[0].key);
+  ok('rekkefølgen mister ingen enheter',orderedUnits('length').length===Object.keys(UNITS.length.units).length);
+  ok('ingen dublett i rekkefølgen',new Set(orderedUnits('length').map(u=>u.key)).size===orderedUnits('length').length);
+  toggleFavUnit('length','yard');
+  ok('favoritt kan fjernes',!isFavUnit('length','yard'));
+  ok('favoritter holdes per kategori',!isFavUnit('currency','foot'));
+
+  state.catUse={currency:9,length:2}; state.catOrder=null;
+  ok('mest brukte kategori kommer først',categoryOrder()[0]==='currency',categoryOrder()[0]);
+  ok('nest mest brukte følger',categoryOrder()[1]==='length',categoryOrder()[1]);
+  ok('rekkefølgen har alle kategoriene',categoryOrder().length===Object.keys(UNITS).length);
+  const first=categoryOrder();
+  state.catUse.length=99;
+  ok('rekkefølgen står stille i økten',categoryOrder()===first);
+
+  ok('grafen har et valgt tidsrom',[7,30,90].indexOf(state.sparkDays)>-1,state.sparkDays);
+  state.conv=saveCv5; state.fxFee=saveFee; state.favUnits=JSON.parse(saveFU); state.catUse=JSON.parse(saveCU); state.catOrder=saveCO;
+
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
@@ -4030,16 +4183,28 @@ el.swapBtn.addEventListener('click',swapUnits);
    select() has to be deferred on mobile and can then swallow the first keystroke.
    Tapping away without typing puts the 1 back so the panel is never left blank. */
 el.fromInput.addEventListener('focus',()=>{
-  if(!state.conv.auto)return;
-  el.fromInput.value='';
-  state.conv.value='';
-  renderConverter();
+  if(state.conv.auto){ el.fromInput.value=''; state.conv.value=''; renderConverter(); return; }
+  const raw=el.fromInput.value;
+  const n=parseNum(raw);
+  if(state.conv.cat!=='numbers'&&Number.isFinite(n)){
+    const plain=formatNumber(n,null,{raw:true});
+    if(plain!==raw){ el.fromInput.value=plain; state.conv.value=plain; }
+  }
 });
 el.fromInput.addEventListener('blur',()=>{
-  if(el.fromInput.value.trim()!=='')return;
-  state.conv.value='1'; state.conv.auto=true;
-  el.fromInput.value='1';
-  renderConverter(); saveConv();
+  if(el.fromInput.value.trim()===''){
+    state.conv.value='1'; state.conv.auto=true;
+    el.fromInput.value='1';
+    renderConverter(); saveConv();
+    return;
+  }
+  /* Group the amount once you leave the field, so it reads the same way the
+     result already does. Editing gets the plain digits back on focus. */
+  if(state.conv.cat==='numbers')return;
+  const raw=el.fromInput.value;
+  if(!Number.isFinite(parseNum(raw)))return;
+  const grouped=formatNumber(parseNum(raw));
+  if(grouped!=='Error'&&grouped!==raw){ el.fromInput.value=grouped; state.conv.value=grouped; saveConv(); }
 });
 el.fromInput.addEventListener('input',()=>{
   state.conv.auto=false;
@@ -4056,6 +4221,11 @@ el.fromInput.addEventListener('input',()=>{
 el.rateRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>toastMsg('Kursene er hentet på nytt')); });
 /* The dot is the only visible trace of the rate source when everything is fine,
    so tapping the rate line is what surfaces the detail and forces a refresh. */
+el.sparkRange.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  state.sparkDays=+b.dataset.days; lsSet(LS.sparkDays,String(state.sparkDays));
+  paintSparkRange(); renderSpark(); buzz();
+});
 el.rateInfoBtn.addEventListener('click',()=>{
   if(!(UNITS[state.conv.cat]||{}).live)return;
   buzz();
@@ -4123,6 +4293,22 @@ $$('#trigOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   $$('[data-trig-btn]').forEach(x=>x.textContent=state.trig.toUpperCase());
   syncSettings(); paintTrigChip(); updateLive(); buzz();
 }));
+function setFee(v){
+  state.fxFee=Math.max(0,Math.min(20,v||0));
+  lsSet(LS.fxFee,String(state.fxFee));
+  syncSettings();
+  if(state.mode==='converter')renderConverter();
+}
+$$('#feeOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  setFee(+b.dataset.fee); el.feeCustom.value=''; buzz();
+  toastMsg(state.fxFee?('Regner med '+formatNumber(state.fxFee,2)+' % påslag'):'Regner med midtkurs');
+}));
+el.feeCustomBtn.addEventListener('click',()=>{
+  const v=parseNum(el.feeCustom.value);
+  if(!Number.isFinite(v)||v<0){ toastMsg('Skriv inn et tall'); return; }
+  setFee(v); buzz(); toastMsg('Regner med '+formatNumber(state.fxFee,2)+' % påslag');
+});
+el.feeCustom.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();el.feeCustomBtn.click();} });
 $$('#rateSrcOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
   state.rateSrc=b.dataset.src; lsSet(LS.src,state.rateSrc); syncSettings();
   loadRates(true).then(()=>toastMsg(state.rateSrc==='nb'?'Bruker kun Norges Bank':'Fyller ut med reservekilde'));
@@ -4212,6 +4398,10 @@ function init(){
   state.history=jGet(LS.hist,[]);
   state.favs=jGet(LS.fav,[]);
   const rec=jGet(LS.recent,null); if(rec&&typeof rec==='object')state.recent=rec;
+  const fu=jGet(LS.favUnits,null); if(fu&&typeof fu==='object')state.favUnits=fu;
+  const cu=jGet(LS.catUse,null); if(cu&&typeof cu==='object')state.catUse=cu;
+  state.fxFee=parseFloat(lsGet(LS.fxFee,'0'))||0;
+  state.sparkDays=parseInt(lsGet(LS.sparkDays,'30'),10)||30;
   state.tape=jGet(LS.tape,[]);
   state.tapeVat=parseInt(lsGet(LS.tapeVat,'0'),10)||0;
   const sv=jGet(LS.vars,null);
