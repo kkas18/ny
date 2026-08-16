@@ -571,10 +571,10 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     <div class="conv-card">
       <div class="conv-side">
         <div class="conv-head">
-          <span class="card-label">Beløp</span>
-          <button class="unit-picker" id="fxBasePicker" aria-label="Velg valuta">
-            <img class="u-flag" id="fxBaseFlag" alt="">
-            <span class="u-symbol" id="fxBaseSymbol">NOK</span><span class="u-name" id="fxBaseName">Norske kroner</span>
+          <span class="card-label">Fra</span>
+          <button class="unit-picker" id="fxFromPicker" aria-label="Velg valuta du regner fra">
+            <img class="u-flag" id="fxFromFlag" alt="">
+            <span class="u-symbol" id="fxFromSymbol">NOK</span><span class="u-name" id="fxFromName">Norske kroner</span>
             <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
@@ -585,6 +585,18 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
           <span class="rate-dot mini" id="fxDotMini"></span>
           <span class="conv-rate" id="fxRate"></span>
         </button>
+        <button class="swap-btn" id="fxSwapBtn" aria-label="Bytt om valutaene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
+      </div>
+      <div class="conv-side to">
+        <div class="conv-head">
+          <span class="card-label">Til</span>
+          <button class="unit-picker" id="fxToPicker" aria-label="Velg valuta du regner til">
+            <img class="u-flag" id="fxToFlag" alt="">
+            <span class="u-symbol" id="fxToSymbol">USD</span><span class="u-name" id="fxToName">Amerikanske dollar</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <input type="text" class="value-input readonly" id="fxOutput" placeholder="—" readonly aria-label="Resultat">
       </div>
     </div>
     <div class="conv-notes"><span id="fxNote"></span></div>
@@ -832,7 +844,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.3.0';
+const VERSION='6.4.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -863,7 +875,7 @@ const state={
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
-  fx:{base:'nok',value:'1000',auto:true}, tabs:{rpn:true,tape:true},
+  fx:{from:'nok',to:'usd',value:'1000',auto:true,exact:null}, tabs:{rpn:true,tape:true},
   vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{}, favUnits:{}, fxFee:0, catUse:{}, catOrder:null, sparkDays:30,
   tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
   dateType:'between', dateVals:{}
@@ -878,8 +890,8 @@ const el={};
  'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
  'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
  'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange',
- 'currencyPanel','fxRateBar','fxRateDot','fxRateText','fxRefreshBtn','fxBasePicker','fxBaseFlag','fxBaseSymbol',
- 'fxBaseName','fxInput','fxRateInfo','fxDotMini','fxRate','fxNote','fxAddBtn','fxFeeBtn','fxFeeLabel','fxSendBtn',
+ 'currencyPanel','fxRateBar','fxRateDot','fxRateText','fxRefreshBtn','fxFromPicker','fxFromFlag','fxFromSymbol','fxFromName','fxToPicker','fxToFlag','fxToSymbol','fxToName',
+ 'fxOutput','fxSwapBtn','fxInput','fxRateInfo','fxDotMini','fxRate','fxNote','fxAddBtn','fxFeeBtn','fxFeeLabel','fxSendBtn',
  'fxBoard','fxBoardHint','fxBoardBody','fxSparkCard','fxSparkTitle','fxSparkChange','fxSparkRange','fxSparkSvg',
  'fxSparkFrom','fxSparkTo','fxSparkLow','fxSparkHigh','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
@@ -2275,11 +2287,18 @@ function toggleFav(){
    context rather than reaching straight into the converter's state. */
 function sheetContext(){
   const side=state.sheetFor;
-  if(side==='fxBase')return {cat:'currency',current:state.fx.base,title:'Regn fra',
-    pick:u=>{ const carry=fxConvert(fxAmount(),state.fx.base,u.key);
-      state.fx.base=u.key;
-      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,fxDecimals(carry)); state.fx.auto=false; el.fxInput.value=state.fx.value; }
-      noteRecent('currency',u.key); fxRender(); fxSave(); }};
+  if(side==='fxFrom'||side==='fxTo'){
+    const isFrom=side==='fxFrom';
+    return {cat:'currency',current:isFrom?state.fx.from:state.fx.to,title:isFrom?'Fra: valuta':'Til: valuta',
+      pick:u=>{
+        if(isFrom)state.fx.from=u.key; else state.fx.to=u.key;
+        if(state.fx.from===state.fx.to){
+          const alt=Object.keys(fxUnits()).filter(k=>k!==u.key);
+          if(alt.length){ if(isFrom)state.fx.to=alt.indexOf('nok')>-1&&u.key!=='nok'?'nok':alt[0];
+                          else state.fx.from=alt.indexOf('nok')>-1&&u.key!=='nok'?'nok':alt[0]; }
+        }
+        noteRecent('currency',u.key); fxRender(); fxSave(); }};
+  }
   if(side==='fxAdd')return {cat:'currency',current:null,title:'Legg til valuta',keepOpen:true,
     pick:u=>{ if(!isFavUnit('currency',u.key))toggleFavUnit('currency',u.key);
       noteRecent('currency',u.key); fxRender(); }};
@@ -2843,7 +2862,7 @@ function persistAll(){
   jSet(LS.catUse,state.catUse);
   lsSet(LS.fxFee,String(state.fxFee));
   lsSet(LS.sparkDays,String(state.sparkDays));
-  jSet(LS.fx,{base:state.fx.base,value:state.fx.value});
+  jSet(LS.fx,{from:state.fx.from,to:state.fx.to,value:state.fx.value});
   jSet(LS.tabs,state.tabs);
 }
 function exportSettings(){
@@ -3220,16 +3239,20 @@ const FX_DEFAULT_BOARD=['usd','eur','sek','dkk','gbp'];
 function fxUnits(){ return UNITS.currency.units||{}; }
 function fxUnit(k){ return fxUnits()[k]; }
 function fxBoardKeys(){
-  /* Kroner is the reference every other number is judged against, so it belongs
-     on the board whenever it is not the currency you are calculating from. */
+  /* The board is the extra currencies, beside the pair you are working on. */
   const list=(state.favUnits.currency||[]).slice();
   if(list.indexOf('nok')<0)list.unshift('nok');
-  return list.filter(k=>k!==state.fx.base&&fxUnit(k));
+  return list.filter(k=>k!==state.fx.from&&k!==state.fx.to&&fxUnit(k));
 }
-function fxEnsureBase(){
-  if(!fxUnit(state.fx.base))state.fx.base=fxUnit('nok')?'nok':Object.keys(fxUnits())[0];
+function fxEnsurePair(){
+  if(!fxUnit(state.fx.from))state.fx.from=fxUnit('nok')?'nok':Object.keys(fxUnits())[0];
+  if(!fxUnit(state.fx.to)||state.fx.to===state.fx.from){
+    const alt=Object.keys(fxUnits()).filter(k=>k!==state.fx.from);
+    state.fx.to=(state.fx.from==='nok'?(alt.indexOf('usd')>-1?'usd':alt[0]):'nok');
+    if(!fxUnit(state.fx.to))state.fx.to=alt[0];
+  }
 }
-function fxSave(){ jSet(LS.fx,{base:state.fx.base,value:state.fx.value}); }
+function fxSave(){ jSet(LS.fx,{from:state.fx.from,to:state.fx.to,value:state.fx.value}); }
 
 function fxRate(unitKey){
   const u=fxUnit(unitKey);
@@ -3245,6 +3268,10 @@ function fxConvert(v,from,to){
 }
 function fxAmount(){
   const raw=state.fx.value;
+  /* A carried amount keeps its full precision behind the rounded text, so a swap
+     and a swap back land on 1000 again instead of drifting to 999,97. The exact
+     value is dropped the moment the field is edited. */
+  if(Number.isFinite(state.fx.exact)&&formatNumber(state.fx.exact,fxDecimals(state.fx.exact))===raw)return state.fx.exact;
   const plain=parseNum(raw);
   if(Number.isFinite(plain))return plain;
   const t=String(raw||'').trim();
@@ -3259,16 +3286,18 @@ function fxDecimals(v){
   return 6;
 }
 
-function fxPaintPicker(){
-  const u=fxUnit(state.fx.base)||{};
-  el.fxBaseSymbol.textContent=u.s||'';
-  el.fxBaseName.textContent=u.l||'';
-  if(u.flag){ el.fxBaseFlag.src=u.flag; el.fxBaseFlag.style.display=''; el.fxBaseFlag.onerror=()=>{el.fxBaseFlag.style.display='none';}; }
-  else el.fxBaseFlag.style.display='none';
+function fxPaintPicker(side){
+  const key=side==='from'?state.fx.from:state.fx.to;
+  const u=fxUnit(key)||{};
+  const sym=side==='from'?el.fxFromSymbol:el.fxToSymbol;
+  const nm=side==='from'?el.fxFromName:el.fxToName;
+  const fl=side==='from'?el.fxFromFlag:el.fxToFlag;
+  sym.textContent=u.s||''; nm.textContent=u.l||'';
+  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.display='none';}; }
+  else fl.style.display='none';
 }
 function fxPaintRate(){
-  const base=state.fx.base;
-  const other=base==='nok'?(fxBoardKeys()[0]||'usd'):'nok';
+  const base=state.fx.from, other=state.fx.to;
   const ub=fxUnit(base), uo=fxUnit(other);
   if(!ub||!uo||base===other){ el.fxRate.textContent=''; return; }
   const fwd=fxConvert(1,base,other), back=fxConvert(1,other,base);
@@ -3293,15 +3322,15 @@ function fxSyncRateBar(){
 function fxRenderBoard(){
   const amount=fxAmount();
   const keys=fxBoardKeys();
-  el.fxBoardHint.textContent=keys.length?'Trykk for å regne fra den':'';
+  el.fxBoardHint.textContent=keys.length?'Trykk for å veksle til den':'';
   if(!keys.length){
-    el.fxBoardBody.innerHTML='<div class="empty">Ingen valutaer valgt ennå.<br>Trykk «Legg til» for å bygge listen din.</div>';
+    el.fxBoardBody.innerHTML='<div class="empty">Ingen flere valutaer i listen.<br>Trykk «Legg til» for å følge med på flere.</div>';
     return;
   }
   const frag=document.createDocumentFragment();
   keys.forEach(k=>{
     const u=fxUnit(k);
-    const v=Number.isFinite(amount)?fxConvert(amount,state.fx.base,k):NaN;
+    const v=Number.isFinite(amount)?fxConvert(amount,state.fx.from,k):NaN;
     const row=document.createElement('div');
     row.className='all-row fx-row';
     row.setAttribute('role','button'); row.tabIndex=0;
@@ -3309,19 +3338,11 @@ function fxRenderBoard(){
       '<span class="un">'+escapeHtml(u.l)+'</span><span class="us">'+escapeHtml(u.s)+'</span></div>'+
       '<span class="uv">'+escapeHtml(Number.isFinite(v)?formatNumber(v,fxDecimals(v)):'—')+'</span>'+
       '<button class="fx-del" aria-label="Fjern fra listen"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>';
-    /* Tapping a row moves the amount onto that currency, which is how you ask
-       "and what if I had this many dollars instead". */
-    const rebase=()=>{
-      const carry=fxConvert(fxAmount(),state.fx.base,k);
-      state.fx.base=k;
-      /* The amount is money now, so show it as money. Six raw decimals in the
-         big field was precision nobody asked for and could not read. */
-      if(Number.isFinite(carry)){ state.fx.value=formatNumber(carry,fxDecimals(carry)); state.fx.auto=false; }
-      el.fxInput.value=state.fx.value;
-      fxRender(); fxSave(); buzz(12);
-    };
-    row.addEventListener('click',rebase);
-    row.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();rebase();} });
+    /* Tapping a row makes it the currency you are converting to, so the board is
+       a shortcut into the pair above rather than a separate way of working. */
+    const useIt=()=>{ state.fx.to=k; fxRender(); fxSave(); buzz(12); };
+    row.addEventListener('click',useIt);
+    row.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();useIt();} });
     row.querySelector('.fx-del').addEventListener('click',e=>{
       e.stopPropagation();
       toggleFavUnit('currency',k);
@@ -3333,12 +3354,12 @@ function fxRenderBoard(){
   el.fxBoardBody.appendChild(frag);
 }
 function fxRenderSpark(){
-  const base=state.fx.base;
-  const other=base==='nok'?(fxBoardKeys()[0]||null):'nok';
-  const ub=fxUnit(base), uo=other?fxUnit(other):null;
-  if(!ub||!uo||base===other){ el.fxSparkCard.style.display='none'; return; }
+  const ub=fxUnit(state.fx.from), uo=fxUnit(state.fx.to);
+  if(!ub||!uo||state.fx.from===state.fx.to){ el.fxSparkCard.style.display='none'; return; }
   Array.from(el.fxSparkRange.children).forEach(b=>b.classList.toggle('active',+b.dataset.days===state.sparkDays));
-  const a=base==='nok'?uo.s:ub.s, b=base==='nok'?ub.s:uo.s;
+  /* Graph the readable direction, matching the rate line above. */
+  const flip=fxConvert(1,state.fx.from,state.fx.to)<1;
+  const a=flip?uo.s:ub.s, b=flip?ub.s:uo.s;
   el.fxSparkTitle.textContent=a+' → '+b;
   buildSeries(a,b).then(all=>{
     if(!all){ el.fxSparkCard.style.display='none'; return; }
@@ -3350,18 +3371,38 @@ function fxRenderSpark(){
   });
 }
 function fxRender(){
-  fxEnsureBase();
-  fxPaintPicker();
+  fxEnsurePair();
+  fxPaintPicker('from'); fxPaintPicker('to');
   fxPaintRate();
   fxPaintFeeBtn();
   fxSyncRateBar();
   fxRenderBoard();
   const amount=fxAmount();
+  const out=Number.isFinite(amount)?fxConvert(amount,state.fx.from,state.fx.to):NaN;
+  el.fxOutput.value=Number.isFinite(out)?formatNumber(out,fxDecimals(out)):'';
   const plain=parseNum(state.fx.value);
-  el.fxNote.textContent=(!Number.isFinite(plain)&&Number.isFinite(amount))
-    ? ('Regnet ut til '+formatNumber(amount,2)+' '+(fxUnit(state.fx.base)||{}).s)
-    : (state.fxFee?('Kursene er midtkurs pluss '+formatNumber(state.fxFee,2)+' % påslag.'):'');
+  const notes=[];
+  if(!Number.isFinite(plain)&&Number.isFinite(amount))notes.push('Regnet ut til '+formatNumber(amount,2)+' '+(fxUnit(state.fx.from)||{}).s+'.');
+  if(state.fxFee&&Number.isFinite(amount)){
+    const saveFee=state.fxFee; state.fxFee=0;
+    const mid=fxConvert(amount,state.fx.from,state.fx.to);
+    state.fxFee=saveFee;
+    notes.push('Valutaen er priset '+formatNumber(state.fxFee,2)+' % over midtkurs. Til ren midtkurs: '+formatNumber(mid,fxDecimals(mid))+' '+(fxUnit(state.fx.to)||{}).s+'.');
+  }
+  el.fxNote.textContent=notes.join(' ');
   fxRenderSpark();
+}
+
+function fxSwap(){
+  const carry=fxConvert(fxAmount(),state.fx.from,state.fx.to);
+  const t=state.fx.from; state.fx.from=state.fx.to; state.fx.to=t;
+  if(Number.isFinite(carry)){
+    state.fx.exact=carry;
+    state.fx.value=formatNumber(carry,fxDecimals(carry));
+    state.fx.auto=false;
+  }
+  el.fxInput.value=state.fx.value;
+  fxRender(); fxSave(); buzz(14);
 }
 
 /* ============ keypad rendering ============ */
@@ -4449,15 +4490,14 @@ function runTests(){
   /* currency mode */
   const saveFx=Object.assign({},state.fx), saveFU2=JSON.stringify(state.favUnits), saveFee2=state.fxFee;
   state.favUnits.currency=['usd','eur','sek'];
-  state.fx.base='nok'; state.fx.value='1000'; state.fxFee=0;
+  state.fx.from='nok'; state.fx.to='usd'; state.fx.value='1000'; state.fxFee=0;
   ok('valuta er en egen modus',MODES.indexOf('currency')>-1);
   ok('valuta er ikke lenger en konverterkategori',categoryOrder().indexOf('currency')>-1&&true);
-  ok('kroner ligger ikke i bordet når man regner fra kroner',fxBoardKeys().indexOf('nok')<0,fxBoardKeys().join(','));
-  ok('favorittene utgjør bordet',fxBoardKeys().join(',')==='usd,eur,sek',fxBoardKeys().join(','));
-  state.fx.base='usd';
-  ok('kroner kommer inn når man regner fra dollar',fxBoardKeys().indexOf('nok')>-1,fxBoardKeys().join(','));
-  ok('grunnvalutaen står ikke i sitt eget bord',fxBoardKeys().indexOf('usd')<0);
-  state.fx.base='nok';
+  ok('paret står ikke også i bordet',fxBoardKeys().indexOf('nok')<0&&fxBoardKeys().indexOf('usd')<0,fxBoardKeys().join(','));
+  ok('resten av favorittene utgjør bordet',fxBoardKeys().join(',')==='eur,sek',fxBoardKeys().join(','));
+  state.fx.to='eur';
+  ok('bordet følger paret',fxBoardKeys().indexOf('usd')>-1&&fxBoardKeys().indexOf('eur')<0,fxBoardKeys().join(','));
+  state.fx.to='usd';
   near('bordet regner riktig',fxConvert(1000,'nok','usd'),1000/UNITS.currency.units.usd.f,1e-9);
   near('kryss mellom to utenlandske',fxConvert(1,'usd','eur'),UNITS.currency.units.usd.f/UNITS.currency.units.eur.f,1e-9);
   ok('samme valuta er identitet',fxConvert(7,'usd','usd')===7);
@@ -4493,6 +4533,7 @@ function runTests(){
   /* a rebased amount is money, not raw precision */
   const saveFx2=Object.assign({},state.fx), saveFU3=JSON.stringify(state.favUnits);
   state.favUnits.currency=['usd','eur']; state.fx.base='nok'; state.fx.value='1000';
+  state.fx.from='nok'; state.fx.to='eur';
   const moved=formatNumber(fxConvert(1000,'nok','eur'),fxDecimals(fxConvert(1000,'nok','eur')));
   ok('overført beløp har høyst to desimaler',(moved.split(',')[1]||'').length<=2,moved);
   ok('overført beløp har bare ett skilletegn',moved.replace(/[^,.]/g,'').length<=1,moved);
@@ -4500,6 +4541,36 @@ function runTests(){
 
   /* currency is gone from the converter, with no lookalike left behind */
   ok('valuta er ute av konverteren',categoryOrder().filter(k=>k!=='currency').indexOf('currency')<0);
+
+
+  /* the currency pair behaves like a currency app, not a board */
+  const saveFx3=Object.assign({},state.fx), saveFU4=JSON.stringify(state.favUnits), saveFee3=state.fxFee;
+  state.favUnits.currency=['usd','eur','sek']; state.fxFee=0;
+  state.fx.from='nok'; state.fx.to='usd'; state.fx.value='1000'; state.fx.auto=false;
+  el.fxInput.value='1000'; fxRender();
+  ok('resultatfeltet fylles',el.fxOutput.value!=='',el.fxOutput.value);
+  near('resultatet stemmer',parseNum(el.fxOutput.value),fxConvert(1000,'nok','usd'),0.01);
+  const beforeFrom=state.fx.from, beforeTo=state.fx.to, beforeOut=parseNum(el.fxOutput.value);
+  fxSwap();
+  ok('bytte snur paret',state.fx.from===beforeTo&&state.fx.to===beforeFrom,state.fx.from+'/'+state.fx.to);
+  near('bytte tar med resultatet',parseNum(state.fx.value),beforeOut,0.01);
+  near('og gir tilbake det du startet med',parseNum(el.fxOutput.value),1000,0.5);
+  /* repeated swapping must not erode the number */
+  state.fx.from='nok'; state.fx.to='usd'; state.fx.value='1000'; state.fx.exact=null; state.fx.auto=false;
+  el.fxInput.value='1000'; fxRender();
+  fxSwap(); fxSwap();
+  near('fram og tilbake gir nøyaktig utgangspunktet',fxAmount(),1000,1e-6);
+  ok('og feltet viser et lesbart tall',(state.fx.value.split(',')[1]||'').length<=2,state.fx.value);
+  fxSwap(); fxSwap(); fxSwap(); fxSwap();
+  near('heller ikke etter seks bytter',fxAmount(),1000,1e-6);
+  ok('retningen er tilbake der den startet',state.fx.from==='nok'&&state.fx.to==='usd',state.fx.from+'/'+state.fx.to);
+  /* editing the field drops the carried precision */
+  state.fx.value='250'; state.fx.exact=null;
+  ok('redigert beløp bruker det som står',fxAmount()===250,fxAmount());
+  /* the pair can never collapse onto one currency */
+  state.fx.from='usd'; state.fx.to='usd'; fxEnsurePair();
+  ok('paret kan ikke bli to like',state.fx.from!==state.fx.to,state.fx.from+'/'+state.fx.to);
+  state.fx=saveFx3; state.favUnits=JSON.parse(saveFU4); state.fxFee=saveFee3;
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
@@ -4589,7 +4660,7 @@ el.fxInput.addEventListener('focus',()=>{
   const n=parseNum(el.fxInput.value);
   if(Number.isFinite(n)){ const plain=formatNumber(n,null,{raw:true}); if(plain!==el.fxInput.value){ el.fxInput.value=plain; state.fx.value=plain; } }
 });
-el.fxInput.addEventListener('input',()=>{ state.fx.auto=false; state.fx.value=el.fxInput.value; fxRender(); fxSave(); });
+el.fxInput.addEventListener('input',()=>{ state.fx.auto=false; state.fx.exact=null; state.fx.value=el.fxInput.value; fxRender(); fxSave(); });
 el.fxInput.addEventListener('blur',()=>{
   if(el.fxInput.value.trim()===''){ state.fx.value='1000'; state.fx.auto=true; el.fxInput.value='1000'; fxRender(); fxSave(); return; }
   const n=parseNum(el.fxInput.value);
@@ -4597,7 +4668,14 @@ el.fxInput.addEventListener('blur',()=>{
   const g=formatNumber(n);
   if(g!=='Error'&&g!==el.fxInput.value){ el.fxInput.value=g; state.fx.value=g; fxSave(); }
 });
-el.fxBasePicker.addEventListener('click',()=>{ openUnitSheet('fxBase'); buzz(); });
+el.fxFromPicker.addEventListener('click',()=>{ openUnitSheet('fxFrom'); buzz(); });
+el.fxToPicker.addEventListener('click',()=>{ openUnitSheet('fxTo'); buzz(); });
+el.fxSwapBtn.addEventListener('click',fxSwap);
+el.fxOutput.addEventListener('click',()=>{
+  const v=el.fxOutput.value;
+  if(!v)return;
+  copyText(v+' '+((UNITS.currency.units[state.fx.to]||{}).s||'')).then(ok=>{ if(ok){ toastMsg('Kopiert'); buzz(12); } });
+});
 el.fxAddBtn.addEventListener('click',()=>{ openUnitSheet('fxAdd'); buzz(); });
 el.fxRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>{ fxRender(); toastMsg('Kursene er hentet på nytt'); }); });
 el.fxRateInfo.addEventListener('click',()=>{ buzz(); toastMsg(state.rateNote||'Henter kurser …'); loadRates(true).then(fxRender); });
@@ -4803,7 +4881,7 @@ function init(){
   const cu=jGet(LS.catUse,null); if(cu&&typeof cu==='object')state.catUse=cu;
   state.fxFee=parseFloat(lsGet(LS.fxFee,'0'))||0;
   const fx=jGet(LS.fx,null);
-  if(fx&&typeof fx==='object'){ if(fx.base)state.fx.base=fx.base; if(fx.value)state.fx.value=fx.value; state.fx.auto=false; }
+  if(fx&&typeof fx==='object'){ if(fx.from)state.fx.from=fx.from; if(fx.to)state.fx.to=fx.to; if(fx.value)state.fx.value=fx.value; state.fx.auto=false; }
   state.sparkDays=parseInt(lsGet(LS.sparkDays,'30'),10)||30;
   const tabs=jGet(LS.tabs,null);
   if(tabs&&typeof tabs==='object')['rpn','tape'].forEach(k=>{ if(typeof tabs[k]==='boolean')state.tabs[k]=tabs[k]; });
@@ -4904,7 +4982,7 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,fxSwap,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
