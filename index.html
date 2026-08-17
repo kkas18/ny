@@ -207,8 +207,10 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .pair-card.active .pair-legend{color:var(--accent)}
 .pair-input{caret-color:transparent}
 .pair-card.active .pair-input::after{content:''}
-.fx-keys{padding:8px 14px 10px}
+.fx-keys{max-height:0;padding:0 14px;overflow:hidden;border-top:none;transition:max-height .24s cubic-bezier(.4,0,.2,1),padding .24s ease}
+.fx-keys.open{max-height:52vh;padding:9px 14px 11px;border-top:1px solid var(--border)}
 .fx-keys .calc-buttons{grid-template-columns:repeat(4,1fr);gap:8px}
+.pair-input.editing{border-bottom:2px solid var(--accent);padding-bottom:2px;margin-bottom:-4px}
 .pair-legend{position:absolute;top:-8px;left:14px;padding:0 7px;background:var(--surface);font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--text-dim);border-radius:6px}
 .pair-row{display:flex;align-items:center;gap:10px;min-height:44px}
 .pair-amount{flex:1;display:flex;align-items:baseline;gap:6px;min-width:0}
@@ -924,7 +926,7 @@ const state={
   favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
   rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
   fx:{from:'nok',to:'usd',value:'1000',side:'from',auto:true,exact:null},
-  fxDate:null, fxHist:null, fxChange:{}, tabs:{rpn:true,tape:true},
+  fxDate:null, fxHist:null, fxChange:{}, fxKeysOpen:false, tabs:{rpn:true,tape:true},
   vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{}, favUnits:{}, fxFee:0, catUse:{}, catOrder:null, sparkDays:30,
   tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
   dateType:'between', dateVals:{}
@@ -3526,11 +3528,12 @@ function fxSwap(){
 
 /* ---- keypad ---- */
 const FX_KEYS=[
- {t:'AC',a:'clear',c:'clear'},{t:'⌫',a:'back',c:'func'},{t:'00',a:'num',v:'00',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},
- {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},
- {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},
- {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},
- {t:'±',a:'sign',c:'func'},{t:'0',a:'num',v:'0'},{t:',',a:'dot'},{t:'⇅',a:'swap',c:'func accentish'}
+ /* Tall og ingenting annet. Regnestykker hører hjemme i kalkulatorfanen, som er
+    ett trykk unna og gjør det bedre. */
+ {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'⌫',a:'back',c:'func'},
+ {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'AC',a:'clear',c:'clear'},
+ {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'00',a:'num',v:'00',c:'func'},
+ {t:'0',a:'num',v:'0',w:1},{t:',',a:'dot'},{t:'Ferdig',a:'done',c:'equals'}
 ];
 function fxRenderKeys(){
   if(el.fxKeys.querySelector('.calc-buttons'))return;
@@ -3538,7 +3541,7 @@ function fxRenderKeys(){
   grid.className='calc-buttons';
   FX_KEYS.forEach(k=>{
     const b=document.createElement('button');
-    b.className='btn'+(k.c?' '+k.c:'');
+    b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'');
     b.type='button'; b.textContent=k.t;
     b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
     b.setAttribute('aria-label',k.t);
@@ -3556,13 +3559,11 @@ function fxEdit(fn){
   fxRender(); fxSave();
 }
 function fxKey(a,v){
-  if(a==='swap'){ fxSwap(); return; }
+  if(a==='done'){ fxSetKeys(false); return; }
   if(a==='clear'){ fxEdit(()=>''); return; }
   if(a==='back'){ fxEdit(r=>r.slice(0,-1)); return; }
   if(a==='num'){ fxEdit(r=>(r==='0'&&v!=='00')?v:(r+v).slice(0,18)); return; }
   if(a==='dot'){ fxEdit(r=>{ const tail=/[\d,]*$/.exec(r)[0]; return tail.indexOf(',')>-1?r:(r?r+',':'0,'); }); return; }
-  if(a==='op'){ fxEdit(r=>{ if(!r)return v==='-'?'-':''; return '+-×÷'.indexOf(r.slice(-1))>-1?r.slice(0,-1)+v:r+v; }); return; }
-  if(a==='sign'){ fxEdit(r=>r.slice(0,1)==='-'?r.slice(1):'-'+r); return; }
 }
 
 /* ---- rates on a chosen date ---- */
@@ -3654,6 +3655,29 @@ function fxShare(){
   const meta=[state.fxDate?('Kurs fra '+fmtDate(parseDate(state.fxHist?state.fxHist.quoted:state.fxDate))):(state.rateNote||'Norges Bank')];
   if(state.fxFee)meta.push('inkl. '+formatNumber(state.fxFee,2)+' % påslag');
   copyText(head+'\n'+rows.join('\n')+'\n'+meta.join(' · ')).then(ok=>toastMsg(ok?'Kopiert':'Klarte ikke å kopiere'));
+}
+
+/* The keypad is not needed until you are actually entering a number, and it
+   costs half the screen while it is up. So it comes when you tap an amount. */
+function fxSetKeys(open){
+  state.fxKeysOpen=!!open;
+  el.fxKeys.classList.toggle('open',state.fxKeysOpen);
+  el.fxInput.classList.toggle('editing',state.fxKeysOpen&&state.fx.side==='from');
+  el.fxOutput.classList.toggle('editing',state.fxKeysOpen&&state.fx.side==='to');
+  if(!state.fxKeysOpen){
+    /* Leaving the field empty would show nothing at all, so put a number back. */
+    if(String(state.fx.value||'').trim()===''){
+      state.fx.value='1000'; state.fx.auto=true; state.fx.exact=null;
+    }
+    fxRender(); fxSave();
+  }
+}
+function fxTapField(side){
+  fxSetSide(side);
+  state.fx.side=side;
+  if(!state.fxKeysOpen)fxSetKeys(true);
+  else fxSetKeys(true);
+  fxRender();
 }
 
 /* ============ keypad rendering ============ */
@@ -3864,6 +3888,7 @@ function switchMode(mode,skipSave){
   el.converterPanel.style.display=mode==='converter'?'flex':'none';
   el.currencyPanel.style.display=mode==='currency'?'flex':'none';
   el.fxKeys.style.display=mode==='currency'?'flex':'none';
+  if(mode!=='currency'&&typeof fxSetKeys==='function')fxSetKeys(false);
   el.tapePanel.style.display=isTape?'flex':'none';
   el.displayArea.style.display=(isPanel||isTape)?'none':'flex';
   el.rpnStack.style.display=mode==='rpn'?'flex':'none';
@@ -4867,8 +4892,39 @@ function runTests(){
   state.fxDate=null; state.fxHist=null;
   state.fx.from='nok'; state.fx.to='usd'; state.fx.side='from';
   state.fx.value=''; state.fx.exact=null; state.fx.auto=false;
-  ok('tastaturet har tjue taster',FX_KEYS.length===20,FX_KEYS.length);
-  ok('sifrene ligger i kolonne 1 til 3',FX_KEYS.filter((k,i)=>k.a==='num'&&k.v!=='00').every((k,i,arr)=>true));
+  ok('tastaturet har femten taster',FX_KEYS.length===15,FX_KEYS.length);
+  /* Digits keep columns 1 to 3, as everywhere else in the app. */
+  ['7','8','9','4','5','6','1','2','3'].forEach(t=>{
+    const idx=FX_KEYS.findIndex(k=>k.t===t);
+    ok('sifferet '+t+' står i kolonne 1 til 3',idx%4<3,'kolonne '+(idx%4+1));
+  });
+  ok('ingen regnetegn på valutatastaturet',!FX_KEYS.some(k=>k.a==='op'),
+     FX_KEYS.filter(k=>k.a==='op').map(k=>k.t).join(','));
+  ok('ingen fortegnstast',!FX_KEYS.some(k=>k.a==='sign'));
+  ok('ingen byttetast',!FX_KEYS.some(k=>k.a==='swap')&&!!el.fxSwapBtn);
+  ok('alle sifrene finnes','0123456789'.split('').every(d=>FX_KEYS.some(k=>k.v===d)));
+  ok('komma, nullnull, slett og AC finnes',
+     ['dot','back','clear'].every(a=>FX_KEYS.some(k=>k.a===a))&&FX_KEYS.some(k=>k.v==='00'));
+  ok('ferdig-tasten lukker tastaturet',FX_KEYS.some(k=>k.a==='done'));
+
+  /* the keypad only appears when you are entering a number */
+  fxSetKeys(false);
+  ok('tastaturet er skjult i utgangspunktet',!state.fxKeysOpen);
+  ok('og har ingen høyde',!el.fxKeys.classList.contains('open'));
+  fxTapField('from');
+  ok('trykk i beløpet åpner tastaturet',state.fxKeysOpen);
+  ok('og fra-siden er den aktive',state.fx.side==='from');
+  fxTapField('to');
+  ok('trykk i det andre feltet bytter side',state.fx.side==='to');
+  ok('og tastaturet blir stående',state.fxKeysOpen);
+  fxKey('done');
+  ok('ferdig lukker tastaturet',!state.fxKeysOpen);
+  fxTapField('from');
+  state.fx.value=''; fxSetKeys(false);
+  ok('tomt felt fylles når tastaturet lukkes',state.fx.value==='1000',state.fx.value);
+  /* start each keying test from a clean field */
+  state.fx.side='from'; state.fx.value=''; state.fx.exact=null; state.fx.auto=false;
+
   ['2','5','0'].forEach(t=>fxKey('num',t));
   ok('taster skriver inn',state.fx.value==='250',state.fx.value);
   fxKey('num','00');
@@ -4879,19 +4935,12 @@ function runTests(){
   ok('komma settes inn',state.fx.value==='250,5',state.fx.value);
   fxKey('dot');
   ok('bare ett komma per tall',state.fx.value==='250,5',state.fx.value);
-  fxKey('op','×'); fxKey('num','2');
-  ok('regnetegn kan skrives',state.fx.value==='250,5×2',state.fx.value);
-  near('og regnestykket regnes ut',fxAmount(),501,1e-9);
-  fxKey('op','+');
-  ok('regnetegn legges til etter et siffer',state.fx.value==='250,5×2+',state.fx.value);
-  fxKey('op','-');
-  ok('men erstatter et regnetegn som allerede står der',state.fx.value==='250,5×2-',state.fx.value);
+  near('beløpet leses som tall',fxAmount(),250.5,1e-9);
   fxKey('clear');
   ok('AC tømmer feltet',state.fx.value==='',state.fx.value);
   fxKey('num','0'); fxKey('num','7');
   ok('ledende null erstattes',state.fx.value==='7',state.fx.value);
-  fxKey('sign');
-  ok('fortegn kan snus',state.fx.value==='-7',state.fx.value);
+
 
   /* typing on either side */
   state.fx.side='from'; state.fx.value='1000'; state.fx.exact=null;
@@ -4999,8 +5048,8 @@ el.rateRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()
 /* currency mode */
 /* Both fields are driven by the app's own keypad, so neither opens the system
    keyboard; tapping one just decides which side you are typing into. */
-el.fxInput.addEventListener('click',()=>fxSetSide('from'));
-el.fxOutput.addEventListener('click',()=>fxSetSide('to'));
+el.fxInput.addEventListener('click',()=>fxTapField('from'));
+el.fxOutput.addEventListener('click',()=>fxTapField('to'));
 el.fxKeys.addEventListener('pointerdown',e=>{
   const btn=e.target.closest('.btn'); if(!btn)return;
   ripple(e,btn); buzz();
@@ -5339,7 +5388,7 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,fxSwap,fxKey,fxSetSide,fxCompute,fxApplyDate,fxShare,fxLoadDate,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,fxSwap,fxKey,fxSetSide,fxCompute,fxSetKeys,fxTapField,fxApplyDate,fxShare,fxLoadDate,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
 })();
 </script>
 </body>
