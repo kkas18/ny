@@ -319,7 +319,7 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .all-row:last-child{border-bottom:none}
 .all-row:active{background:var(--surface-lighter)}
 .all-row.is-to{background:var(--accent-soft)}
-.all-row .u{display:flex;align-items:center;gap:8px;min-width:0}
+.all-row .u{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto;overflow:hidden}
 .all-row .u img{width:30px;height:22px;border-radius:4px;object-fit:cover;background:var(--border);flex-shrink:0;box-shadow:0 0 0 1px rgba(128,128,128,.25)}
 .all-row .un{font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .all-row .us{font-size:12px;color:var(--text-dim);font-weight:800;flex-shrink:0}
@@ -329,12 +329,15 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .fx-del svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 #fxSparkRange{margin:0 0 8px}
 #fxSparkRange button{padding:4px 11px;font-size:11px}
-.all-row .uv{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
-.all-row .uc{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.all-row .uv{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:14px;font-weight:700;
+  font-family:var(--font-mono);color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;
+  /* Pushed to the right so every value lines up under the one above it: with
+     space-between the column drifted with the length of the name beside it. */
+  margin-left:auto;flex-shrink:0}
+.all-row .uc{font-size:11px;font-weight:700;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .all-row .uc.up{color:var(--success)}
 .all-row .uc.down{color:var(--danger)}
 .all-row .uc.flat{color:var(--text-dim)}
-.all-row .uv-x{font-size:14px;font-weight:700;font-family:var(--font-mono);color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* ---------- Percent ---------- */
 .field-grid{display:flex;flex-direction:column;gap:9px}
@@ -901,7 +904,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.8.0';
+const VERSION='6.8.1';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -4913,6 +4916,31 @@ function runTests(){
     });
     document.documentElement.setAttribute('data-theme',saveTheme||'dark');
     document.body.dataset.mode=saveMode||'standard';
+    probe.remove();
+  })();
+
+
+  /* the value column has to line up down the list, whatever the names beside it */
+  if(cssEngine)(function(){
+    const probe=document.createElement('div');
+    probe.className='all-units open';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:360px';
+    const body=document.createElement('div'); body.className='all-body';
+    [['Euro','EUR','432,27'],['Svenske kroner','SEK','4753,52'],['Britiske pund','GBP','369,43']].forEach(([n,c,v])=>{
+      const r=document.createElement('div'); r.className='all-row fx-row';
+      r.innerHTML='<div class="u"><span class="un">'+n+'</span><span class="us">'+c+'</span></div>'+
+        '<span class="uv">'+v+'<span class="uc up">+1,00 %</span></span>'+
+        '<button class="fx-del">x</button>';
+      body.appendChild(r);
+    });
+    probe.appendChild(body); document.body.appendChild(probe);
+    const rights=Array.from(probe.querySelectorAll('.uv')).map(v=>Math.round(v.getBoundingClientRect().right));
+    ok('verdiene deler samme høyrekant',new Set(rights).size===1,rights.join(' / '));
+    const cs=getComputedStyle(probe.querySelector('.uv'));
+    ok('verdiene bruker fastbreddefont',/mono|Mono|Courier/.test(cs.fontFamily),cs.fontFamily);
+    ok('og tabulære sifre, så kolonnene ikke sklir',cs.fontVariantNumeric.indexOf('tabular-nums')>-1,cs.fontVariantNumeric);
+    const pct=Array.from(probe.querySelectorAll('.uc')).map(v=>Math.round(v.getBoundingClientRect().right));
+    ok('prosentene følger samme kant',new Set(pct).size===1,pct.join(' / '));
     probe.remove();
   })();
 
