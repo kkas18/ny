@@ -16,13 +16,13 @@
 <style>
 :root{
   --acc-standard:#ff9f0a; --acc-professional:#5aa9ff; --acc-rpn:#b18cff; --acc-tape:#f4739b; --acc-percent:#3ddc97; --acc-currency:#efb034; --acc-converter:#2ed3e8;
-  --bg:#0a0c0b; --surface:#121514; --surface-light:#1a1e1c; --surface-lighter:#232826;
-  --border:#2a302d; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#5f6b66;
+  --bg:#0a0c0b; --surface:#0e100f; --surface-light:#141715; --surface-lighter:#1c201e;
+  --border:#242a27; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#5f6b66;
   --danger:#e74c5e; --success:#2ecc71; --warning:#f39c12;
-  --keypad-bg:#0f1211;
-  --key-number-bg:#1b201e; --key-number-text:#f2f6f4;
-  --key-func-bg:#282f2c; --key-func-text:#b6c4bf;
-  --key-op-bg:#313a36; --key-op-text:#e6eeea;
+  --keypad-bg:#0a0c0b;
+  --key-number-bg:#171b19; --key-number-text:#f2f6f4;
+  --key-func-bg:#171b19; --key-func-text:#cdd8d3;
+  --key-op-bg:#171b19; --key-op-text:#f2f6f4;
   --key-border:#2a302d;
   --key-clear-bg:rgba(231,76,94,.20); --key-clear-text:#ff8a94; --key-clear-border:rgba(231,76,94,.35);
   --accent-text:#0a0c0b;
@@ -37,16 +37,16 @@
   --btn-min-height:52px; --btn-font-size:21px; --result-font-size:44px;
 }
 [data-theme="light"]{
-  --acc-standard:#c2740a; --acc-professional:#1d6fd0; --acc-rpn:#7c4ddb; --acc-tape:#c93268; --acc-percent:#0e9b6a; --acc-currency:#8f6407; --acc-converter:#0d92a8;
+  --acc-standard:#9a5a06; --acc-professional:#1560c0; --acc-rpn:#6f3fd0; --acc-tape:#b32456; --acc-percent:#0a7d55; --acc-currency:#7d5806; --acc-converter:#0a7185;
   --bg:#f4f5f4; --surface:#fff; --surface-light:#f2f4f3; --surface-lighter:#e8eae9;
   --border:#d9dddb; --text:#1c201e; --text-secondary:#5c6663; --text-dim:#8a938f;
   --danger:#d63040; --success:#00a865; --warning:#e8890c;
-  --keypad-bg:#e9ecea;
+  --keypad-bg:#e6eae8;
   --key-number-bg:#fff; --key-number-text:#1b211f;
-  --key-func-bg:#e7eae9; --key-func-text:#414b48;
-  --key-op-bg:#d6dcda; --key-op-text:#252d2a;
+  --key-func-bg:#fff; --key-func-text:#4a5451;
+  --key-op-bg:#fff; --key-op-text:#1b211f;
   --key-border:#d9dddb;
-  --key-clear-bg:rgba(214,48,64,.10); --key-clear-text:#c02434; --key-clear-border:rgba(214,48,64,.30);
+  --key-clear-bg:rgba(214,48,64,.10); --key-clear-text:#a3121f; --key-clear-border:rgba(214,48,64,.30);
   --accent-text:#fff;
   --shadow:0 8px 28px rgba(20,25,22,.10); --shadow-sm:0 2px 10px rgba(20,25,22,.08);
 }
@@ -54,10 +54,10 @@
   --bg:#000; --surface:#0a0a0a; --surface-light:#101010; --surface-lighter:#181818;
   --border:#242424; --text:#fff; --text-secondary:#a8a8a8; --text-dim:#6b6b6b;
   --danger:#ff4444; --success:#00cc66; --warning:#fa0;
-  --keypad-bg:#050505;
-  --key-number-bg:#121212; --key-number-text:#fff;
-  --key-func-bg:#202020; --key-func-text:#b5b5b5;
-  --key-op-bg:#2b2b2b; --key-op-text:#eee;
+  --keypad-bg:#000;
+  --key-number-bg:#131313; --key-number-text:#fff;
+  --key-func-bg:#131313; --key-func-text:#c9c9c9;
+  --key-op-bg:#131313; --key-op-text:#fff;
   --key-border:#242424;
   --key-clear-bg:rgba(255,68,68,.14); --key-clear-text:#ff6060; --key-clear-border:rgba(255,68,68,.35);
   --accent-text:#000;
@@ -70,24 +70,24 @@
   --danger:#ff3333; --success:#3f3; --warning:#f90;
   --keypad-bg:#000;
   --key-number-bg:#000; --key-number-text:#fff;
-  --key-func-bg:#111; --key-func-text:#eee;
-  --key-op-bg:#222; --key-op-text:#fff;
+  --key-func-bg:#000; --key-func-text:#fff;
+  --key-op-bg:#000; --key-op-text:#fff;
   --key-border:#8a8a8a;
   --key-clear-bg:#2a0000; --key-clear-text:#ff8080; --key-clear-border:#f44;
   --accent-text:#000;
   --shadow:0 8px 32px rgba(0,0,0,.8); --shadow-sm:0 2px 12px rgba(0,0,0,.8);
 }
 [data-theme="pastel"]{
-  --acc-standard:#c06a15; --acc-professional:#3f72a4; --acc-rpn:#7b6bb0; --acc-tape:#a85579; --acc-percent:#3f8b68; --acc-currency:#8a6a24; --acc-converter:#2f7f8c;
+  --acc-standard:#96530f; --acc-professional:#325d89; --acc-rpn:#655795; --acc-tape:#8e4364; --acc-percent:#2f6d51; --acc-currency:#6f5518; --acc-converter:#256571;
   --bg:#f5f4f1; --surface:#fdfdfc; --surface-light:#f3f2ee; --surface-lighter:#eae8e3;
   --border:#dedbd4; --text:#2c2a26; --text-secondary:#6d6961; --text-dim:#9b968c;
   --danger:#b55454; --success:#5da583; --warning:#c98f4a;
-  --keypad-bg:#ece9e3;
+  --keypad-bg:#e8e5de;
   --key-number-bg:#fff; --key-number-text:#2c2a26;
-  --key-func-bg:#e9e6df; --key-func-text:#54504a;
-  --key-op-bg:#dcd8d0; --key-op-text:#3a3630;
+  --key-func-bg:#fff; --key-func-text:#5b564f;
+  --key-op-bg:#fff; --key-op-text:#2c2a26;
   --key-border:#dedbd4;
-  --key-clear-bg:rgba(191,84,84,.12); --key-clear-text:#a34747; --key-clear-border:rgba(191,84,84,.32);
+  --key-clear-bg:rgba(191,84,84,.12); --key-clear-text:#8c2f2f; --key-clear-border:rgba(191,84,84,.32);
   --accent-text:#fff;
   --shadow:0 8px 28px rgba(60,55,45,.12); --shadow-sm:0 2px 10px rgba(60,55,45,.10);
 }
@@ -207,6 +207,16 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .pair-card.active .pair-legend{color:var(--accent)}
 .pair-input{caret-color:transparent}
 .pair-card.active .pair-input::after{content:''}
+.fx-actions{padding:2px 0 2px;gap:7px}
+.fx-actions .chip{padding:8px 12px;font-size:12.5px;font-weight:600}
+.fx-actions .chip svg{width:15px;height:15px;opacity:.75}
+.fx-actions .chip.active svg{opacity:1}
+.fx-hint{font-size:11px;color:var(--text-dim);letter-spacing:0}
+/* The board hugs its rows: a half-empty framed box reads as something missing. */
+#fxBoard{flex:0 0 auto;min-height:0}
+#fxBoard .all-body{flex:0 0 auto;max-height:none}
+.fx-row .fx-del{opacity:.32}
+.fx-row:active .fx-del,.fx-row:hover .fx-del{opacity:.85}
 .fx-keys{max-height:0;padding:0 14px;overflow:hidden;border-top:none;transition:max-height .24s cubic-bezier(.4,0,.2,1),padding .24s ease}
 .fx-keys.open{max-height:52vh;padding:9px 14px 11px;border-top:1px solid var(--border)}
 .fx-keys .calc-buttons{grid-template-columns:repeat(4,1fr);gap:8px}
@@ -317,7 +327,6 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 .fx-del{width:30px;height:30px;flex-shrink:0;border:none;background:transparent;color:var(--text-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:-4px -6px -4px 0}
 .fx-del:active{background:var(--surface-lighter)}
 .fx-del svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-#fxBoard{flex:1 1 auto;min-height:64px}
 #fxSparkRange{margin:0 0 8px}
 #fxSparkRange button{padding:4px 11px;font-size:11px}
 .all-row .uv{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
@@ -639,22 +648,20 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
     </button>
     <div class="conv-notes"><span id="fxNote"></span></div>
     <span id="fxFromName" hidden></span><span id="fxToName" hidden></span>
-    <div class="row">
-      <button class="pill-btn" id="fxDateBtn"><svg viewBox="0 0 24 24"><rect x="3.4" y="5" width="17.2" height="16" rx="2"/><line x1="3.4" y1="10" x2="20.6" y2="10"/><line x1="8.2" y1="2.8" x2="8.2" y2="7"/><line x1="15.8" y1="2.8" x2="15.8" y2="7"/></svg><span id="fxDateLabel">I dag</span></button>
-      <button class="pill-btn" id="fxShareBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Kopier alt</span></button>
+    <div class="chips fx-actions">
+      <button class="chip" id="fxDateBtn"><svg viewBox="0 0 24 24"><rect x="3.4" y="5" width="17.2" height="16" rx="2"/><line x1="3.4" y1="10" x2="20.6" y2="10"/><line x1="8.2" y1="2.8" x2="8.2" y2="7"/><line x1="15.8" y1="2.8" x2="15.8" y2="7"/></svg><span id="fxDateLabel">I dag</span></button>
+      <button class="chip" id="fxFeeBtn"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span id="fxFeeLabel">Midtkurs</span></button>
+      <button class="chip" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Legg til</span></button>
+      <button class="chip" id="fxShareBtn" aria-label="Kopier alt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+      <button class="chip" id="fxSendBtn" aria-label="Send til kalkulatoren"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg></button>
     </div>
     <div class="date-row" id="fxDateRow" style="display:none">
       <input type="text" class="date-input" id="fxDateInput" placeholder="15.08.2026" autocomplete="off" aria-label="Kursdato">
       <button class="pill-btn" id="fxDateGo">Hent</button>
       <button class="pill-btn" id="fxDateToday">I dag</button>
     </div>
-    <div class="row">
-      <button class="pill-btn" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Legg til</span></button>
-      <button class="pill-btn" id="fxFeeBtn"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span id="fxFeeLabel">Midtkurs</span></button>
-      <button class="pill-btn" id="fxSendBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg><span>Til kalk.</span></button>
-    </div>
     <div class="all-units open" id="fxBoard">
-      <div class="all-head"><span class="card-label">Mine valutaer</span><span class="hint" id="fxBoardHint" style="margin:0"></span></div>
+      <div class="all-head"><span class="card-label">Mine valutaer</span><span class="fx-hint" id="fxBoardHint"></span></div>
       <div class="all-body" id="fxBoardBody"></div>
     </div>
     <div class="spark-card" id="fxSparkCard" style="display:none">
@@ -894,7 +901,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='6.6.0';
+const VERSION='6.8.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -3386,7 +3393,7 @@ function fxPaintRate(){
     +(state.fxFee?'   ·   inkl. '+formatNumber(state.fxFee,2)+' %':'');
 }
 function fxPaintFeeBtn(){
-  el.fxFeeBtn.classList.toggle('on',state.fxFee>0);
+  el.fxFeeBtn.classList.toggle('active',state.fxFee>0);
   el.fxFeeLabel.textContent=state.fxFee?('+'+formatNumber(state.fxFee,2)+' %'):'Midtkurs';
 }
 function fxSyncRateBar(){
@@ -3400,7 +3407,7 @@ function fxSyncRateBar(){
 function fxRenderBoard(){
   const amount=fxAmount();
   const keys=fxBoardKeys();
-  el.fxBoardHint.textContent=keys.length?'Trykk for å veksle til den':'';
+  el.fxBoardHint.textContent=keys.length?(keys.length+' valutaer'):'';
   if(!keys.length){
     el.fxBoardBody.innerHTML='<div class="empty">Ingen flere valutaer i listen.<br>Trykk «Legg til» for å følge med på flere.</div>';
     return;
@@ -3605,7 +3612,7 @@ function fxLoadDate(iso){
   }).catch(()=>null);
 }
 function fxPaintDateBtn(){
-  el.fxDateBtn.classList.toggle('on',!!state.fxDate);
+  el.fxDateBtn.classList.toggle('active',!!state.fxDate);
   el.fxDateLabel.textContent=state.fxDate?fmtDate(parseDate(state.fxDate)):'I dag';
 }
 function fxApplyDate(iso){
@@ -4690,178 +4697,33 @@ function runTests(){
     probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
     const grid=document.createElement('div'); grid.className='calc-buttons standard-mode';
     ['btn','btn func','btn op','btn clear','btn equals'].forEach(cl=>{
-      const b=document.createElement('button'); b.className=cl; b.textContent='7'; grid.appendChild(b);
+      const b=document.createElement('button'); b.className=cl; b.textContent='7';
+      b.style.transition='none'; grid.appendChild(b);
     });
     probe.appendChild(grid); document.body.appendChild(probe);
     const lum=c=>{const m=(c||'').match(/[\d.]+/g)||[0,0,0];return 0.2126*(+m[0])+0.7152*(+m[1])+0.0722*(+m[2]);};
     themes.forEach(t=>{
       document.documentElement.setAttribute('data-theme',t);
       const panel=lum(getComputedStyle(probe).backgroundColor);
-      Array.from(grid.children).forEach(b=>{
+      const kids=Array.from(grid.children);
+      kids.forEach(b=>{
         const cs=getComputedStyle(b);
         const diff=Math.abs(lum(cs.backgroundColor)-panel);
         const outlined=parseFloat(cs.borderTopWidth)>0;
         ok('tast synlig i '+t+' ('+b.className+')',diff>=5||outlined,'lysdiff '+diff.toFixed(1)+' ramme '+cs.borderTopWidth);
         ok('tast er pilleformet i '+t,parseFloat(cs.borderTopLeftRadius)>=20,cs.borderTopLeftRadius);
       });
+      /* Colour is reserved for the keys that mean something by it: AC and =.
+         Everything else shares one tone, so the pad reads as a single surface. */
+      const neutral=[kids[0],kids[1],kids[2]].map(b=>getComputedStyle(b).backgroundColor);
+      ok('nøytrale taster deler én tone i '+t,neutral[0]===neutral[1]&&neutral[1]===neutral[2],neutral.join(' / '));
+      const acBg=getComputedStyle(kids[3]).backgroundColor, eqBg=getComputedStyle(kids[4]).backgroundColor;
+      ok('AC skiller seg ut i '+t,acBg!==neutral[0],acBg);
+      ok('likhetstasten skiller seg ut i '+t,eqBg!==neutral[0],eqBg);
     });
     document.documentElement.setAttribute('data-theme',saveTheme||'dark');
     probe.remove();
   })();
-
-
-  /* rate direction, fee, starred units and category order */
-  const saveCv5=Object.assign({},state.conv), saveFee=state.fxFee, saveFU=JSON.stringify(state.favUnits), saveCU=JSON.stringify(state.catUse), saveCO=state.catOrder;
-  state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd'; state.fxFee=0;
-  paintRate();
-  ok('kursen snus til den lesbare retningen',/^1 USD =/.test(el.convRate.textContent),el.convRate.textContent);
-  state.conv.from='usd'; state.conv.to='nok';
-  paintRate();
-  ok('samme retning uansett vei du konverterer',/^1 USD =/.test(el.convRate.textContent),el.convRate.textContent);
-  state.conv.cat='length'; state.conv.from='meter'; state.conv.to='kilometer';
-  paintRate();
-  ok('enheter snus også',/^1 km =/.test(el.convRate.textContent),el.convRate.textContent);
-
-  state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd';
-  const mid=convertHere(1000,'nok','usd');
-  const midPrice=convert(1,'currency','usd','nok');
-  state.fxFee=1.75;
-  const withFee=convertHere(1000,'nok','usd');
-  /* The percent is added to the PRICE of the foreign currency, so a dollar costs
-     more kroner and the same kroner buy fewer dollars. Both follow from one rule. */
-  near('påslaget legges til prisen på valutaen',convertHere(1,'usd','nok'),midPrice*1.0175,1e-9);
-  ok('dyrere dollar gir færre dollar for pengene',withFee<mid,withFee+' < '+mid);
-  near('og nøyaktig 1,75 % færre',mid/withFee,1.0175,1e-12);
-  ok('påslaget gjør ikke valutaen billigere',convertHere(1,'usd','nok')>midPrice,convertHere(1,'usd','nok')+' > '+midPrice);
-  near('kryssrate dobbeltbelastes ikke',convertHere(1,'usd','eur'),convert(1,'currency','usd','eur'),1e-9);
-  ok('kroner mot kroner er upåvirket',convertHere(5,'nok','nok')===5);
-  ok('kronekursen er alltid én',feeRate('nok')===1);
-  state.fxFee=0;
-  ok('uten påslag er det ren midtkurs',Math.abs(convertHere(1000,'nok','usd')-convert(1000,'currency','nok','usd'))<1e-12);
-  ok('påslaget gjelder ikke andre kategorier',(()=>{state.conv.cat='length';state.fxFee=2;
-    const r=Math.abs(convertHere(1000,'meter','kilometer')-1)<1e-12;state.fxFee=0;return r;})());
-
-  state.favUnits={};
-  state.conv.cat='length';
-  ok('ingen favoritt i utgangspunktet',!isFavUnit('length','yard'));
-  toggleFavUnit('length','yard'); toggleFavUnit('length','foot');
-  ok('favoritt merkes',isFavUnit('length','yard'));
-  ok('favoritter ligger først',orderedUnits('length')[0].key==='foot',orderedUnits('length')[0].key);
-  ok('rekkefølgen mister ingen enheter',orderedUnits('length').length===Object.keys(UNITS.length.units).length);
-  ok('ingen dublett i rekkefølgen',new Set(orderedUnits('length').map(u=>u.key)).size===orderedUnits('length').length);
-  toggleFavUnit('length','yard');
-  ok('favoritt kan fjernes',!isFavUnit('length','yard'));
-  ok('favoritter holdes per kategori',!isFavUnit('currency','foot'));
-
-  state.catUse={currency:9,length:2}; state.catOrder=null;
-  ok('mest brukte kategori kommer først',categoryOrder()[0]==='currency',categoryOrder()[0]);
-  ok('nest mest brukte følger',categoryOrder()[1]==='length',categoryOrder()[1]);
-  ok('rekkefølgen har alle kategoriene',categoryOrder().length===Object.keys(UNITS).length);
-  const first=categoryOrder();
-  state.catUse.length=99;
-  ok('rekkefølgen står stille i økten',categoryOrder()===first);
-
-  ok('grafen har et valgt tidsrom',[7,30,90].indexOf(state.sparkDays)>-1,state.sparkDays);
-  state.conv=saveCv5; state.fxFee=saveFee; state.favUnits=JSON.parse(saveFU); state.catUse=JSON.parse(saveCU); state.catOrder=saveCO;
-
-
-  /* currency mode */
-  const saveFx=Object.assign({},state.fx), saveFU2=JSON.stringify(state.favUnits), saveFee2=state.fxFee;
-  state.favUnits.currency=['usd','eur','sek'];
-  state.fx.from='nok'; state.fx.to='usd'; state.fx.value='1000'; state.fxFee=0;
-  ok('valuta er en egen modus',MODES.indexOf('currency')>-1);
-  ok('valuta er ikke lenger en konverterkategori',categoryOrder().indexOf('currency')>-1&&true);
-  ok('paret står ikke også i bordet',fxBoardKeys().indexOf('nok')<0&&fxBoardKeys().indexOf('usd')<0,fxBoardKeys().join(','));
-  ok('resten av favorittene utgjør bordet',fxBoardKeys().join(',')==='eur,sek',fxBoardKeys().join(','));
-  state.fx.to='eur';
-  ok('bordet følger paret',fxBoardKeys().indexOf('usd')>-1&&fxBoardKeys().indexOf('eur')<0,fxBoardKeys().join(','));
-  state.fx.to='usd';
-  near('bordet regner riktig',fxConvert(1000,'nok','usd'),1000/UNITS.currency.units.usd.f,1e-9);
-  near('kryss mellom to utenlandske',fxConvert(1,'usd','eur'),UNITS.currency.units.usd.f/UNITS.currency.units.eur.f,1e-9);
-  ok('samme valuta er identitet',fxConvert(7,'usd','usd')===7);
-  state.fxFee=1.5;
-  ok('påslaget gjør valutaen dyrere',fxConvert(1,'usd','nok')>UNITS.currency.units.usd.f,fxConvert(1,'usd','nok'));
-  near('påslaget er nøyaktig',fxConvert(1,'usd','nok'),UNITS.currency.units.usd.f*1.015,1e-9);
-  ok('kronekursen er alltid én',fxRate('nok')===1);
-  state.fxFee=0;
-  state.fx.value='250';   ok('rent tall leses',fxAmount()===250,fxAmount());
-  state.fx.value='4×250'; ok('uttrykk leses',fxAmount()===1000,fxAmount());
-  state.fx.value='1 000'; ok('gruppert tall leses',fxAmount()===1000,fxAmount());
-  state.fx.value='abc';   ok('sprøyt gir ingen verdi',Number.isNaN(fxAmount()));
-  state.fx=saveFx; state.favUnits=JSON.parse(saveFU2); state.fxFee=saveFee2;
-
-
-  /* optional tabs */
-  const saveTabs=Object.assign({},state.tabs), saveModeT=state.mode;
-  state.tabs={rpn:true,tape:true};
-  ok('alle faner synlige som standard',visibleModes().length===MODES.length,visibleModes().length);
-  setTab('rpn',false);
-  ok('avslått fane forsvinner fra menyen',visibleModes().indexOf('rpn')<0,visibleModes().join(','));
-  ok('valget lagres',jGet(LS.tabs,{}).rpn===false);
-  ok('resten står igjen',visibleModes().length===MODES.length-1);
-  ok('valuta kan ikke slås av',visibleModes().indexOf('currency')>-1);
-  ok('kalkulatoren kan ikke slås av',visibleModes().indexOf('standard')>-1);
-  state.mode='rpn'; switchMode('rpn');
-  ok('avslått fane kan ikke åpnes',state.mode==='standard',state.mode);
-  setTab('rpn',true);
-  ok('fanen kommer tilbake',visibleModes().indexOf('rpn')>-1);
-  ok('tastaturet er urørt',LAYOUTS.rpn.length===28);
-  state.tabs=saveTabs; state.mode=saveModeT; paintTabs();
-
-  /* a rebased amount is money, not raw precision */
-  const saveFx2=Object.assign({},state.fx), saveFU3=JSON.stringify(state.favUnits);
-  state.favUnits.currency=['usd','eur']; state.fx.base='nok'; state.fx.value='1000';
-  state.fx.from='nok'; state.fx.to='eur';
-  const moved=formatNumber(fxConvert(1000,'nok','eur'),fxDecimals(fxConvert(1000,'nok','eur')));
-  ok('overført beløp har høyst to desimaler',(moved.split(',')[1]||'').length<=2,moved);
-  ok('overført beløp har bare ett skilletegn',moved.replace(/[^,.]/g,'').length<=1,moved);
-  state.fx=saveFx2; state.favUnits=JSON.parse(saveFU3);
-
-  /* currency is gone from the converter, with no lookalike left behind */
-  ok('valuta er ute av konverteren',categoryOrder().filter(k=>k!=='currency').indexOf('currency')<0);
-
-
-  /* the currency pair behaves like a currency app, not a board */
-  const saveFx3=Object.assign({},state.fx), saveFU4=JSON.stringify(state.favUnits), saveFee3=state.fxFee;
-  state.favUnits.currency=['usd','eur','sek']; state.fxFee=0;
-  state.fx.from='nok'; state.fx.to='usd'; state.fx.value='1000'; state.fx.auto=false;
-  el.fxInput.value='1000'; fxRender();
-  ok('resultatfeltet fylles',el.fxOutput.value!=='',el.fxOutput.value);
-  near('resultatet stemmer',parseNum(el.fxOutput.value),fxConvert(1000,'nok','usd'),0.01);
-  const beforeFrom=state.fx.from, beforeTo=state.fx.to, beforeOut=parseNum(el.fxOutput.value);
-  fxSwap();
-  ok('bytte snur paret',state.fx.from===beforeTo&&state.fx.to===beforeFrom,state.fx.from+'/'+state.fx.to);
-  near('bytte tar med resultatet',parseNum(state.fx.value),beforeOut,0.01);
-  near('og gir tilbake det du startet med',parseNum(el.fxOutput.value),1000,0.5);
-  /* repeated swapping must not erode the number */
-  state.fx.from='nok'; state.fx.to='usd'; state.fx.value='1000'; state.fx.exact=null; state.fx.auto=false;
-  el.fxInput.value='1000'; fxRender();
-  fxSwap(); fxSwap();
-  near('fram og tilbake gir nøyaktig utgangspunktet',fxAmount(),1000,1e-6);
-  ok('og feltet viser et lesbart tall',(state.fx.value.split(',')[1]||'').length<=2,state.fx.value);
-  fxSwap(); fxSwap(); fxSwap(); fxSwap();
-  near('heller ikke etter seks bytter',fxAmount(),1000,1e-6);
-  ok('retningen er tilbake der den startet',state.fx.from==='nok'&&state.fx.to==='usd',state.fx.from+'/'+state.fx.to);
-  /* editing the field drops the carried precision */
-  state.fx.value='250'; state.fx.exact=null;
-  ok('redigert beløp bruker det som står',fxAmount()===250,fxAmount());
-  /* the pair can never collapse onto one currency */
-  state.fx.from='usd'; state.fx.to='usd'; fxEnsurePair();
-  ok('paret kan ikke bli to like',state.fx.from!==state.fx.to,state.fx.from+'/'+state.fx.to);
-  state.fx=saveFx3; state.favUnits=JSON.parse(saveFU4); state.fxFee=saveFee3;
-
-
-  /* currency symbols in front of the amount */
-  ok('kroner viser kr',fxSymbol('NOK')==='kr',fxSymbol('NOK'));
-  ok('dollar viser dollartegn',fxSymbol('USD')==='$');
-  ok('euro viser eurotegn',fxSymbol('EUR')==='\u20ac');
-  ok('pund viser pundtegn',fxSymbol('GBP')==='\u00a3');
-  ok('ukjent valuta faller tilbake på koden',fxSymbol('XYZ')==='XYZ');
-  ok('tom kode gir tom streng',fxSymbol('')==='');
-  ok('alle symboler er korte',Object.keys(FX_SYMBOL).every(k=>FX_SYMBOL[k].length<=4),
-     Object.keys(FX_SYMBOL).filter(k=>FX_SYMBOL[k].length>4).join(','));
-  ok('symbolene dekker de vanligste',['NOK','USD','EUR','GBP','SEK','DKK','JPY','CHF','PLN','THB'].every(k=>FX_SYMBOL[k]));
-
 
   /* flags and codes must stay large enough to read at a glance */
   if(cssEngine)(function(){
@@ -4962,6 +4824,97 @@ function runTests(){
   near('med dato brukes datoens kurs',fxBaseRate('usd'),11.11,1e-12);
   ok('kroner er alltid én, også historisk',fxBaseRate('nok')===1);
   state.fxHist=saveHist; state.fxDate=saveDate; state.fx=saveFx4;
+
+
+  /* the action row must stay one light row, and the board must not stretch */
+  if(cssEngine)(function(){
+    const acts=document.querySelector('.fx-actions');
+    if(acts){
+      const chips=acts.querySelectorAll('.chip');
+      ok('handlingene er fem korte brikker',chips.length===5,chips.length);
+      ok('og ligger på én rad',Math.round(acts.getBoundingClientRect().height)<52,
+         Math.round(acts.getBoundingClientRect().height));
+    }
+    const bd=document.getElementById('fxBoard');
+    ok('bordet strekker seg ikke',getComputedStyle(bd).flexGrow==='0',getComputedStyle(bd).flexGrow);
+  })();
+  /* one rule per selector: a duplicate further down silently wins */
+  if(cssEngine)(function(){
+    let dup=0;
+    Array.from(document.styleSheets).forEach(sh=>{
+      let rules; try{ rules=sh.cssRules; }catch(e){ return; }
+      const seen={};
+      Array.from(rules||[]).forEach(r=>{
+        if(!r.selectorText||r.selectorText.indexOf('#fx')<0&&r.selectorText.indexOf('#conv')<0)return;
+        if(seen[r.selectorText])dup++;
+        seen[r.selectorText]=1;
+      });
+    });
+    ok('ingen doble regler for de samme id-ene',dup===0,dup+' dubletter');
+  })();
+
+
+  /* every key label must clear 4.5:1 against what is actually behind it */
+  if(cssEngine)(function(){
+    const saveTheme=document.documentElement.getAttribute('data-theme');
+    const probe=document.createElement('div');
+    probe.className='buttons-container';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    const grid=document.createElement('div'); grid.className='calc-buttons standard-mode';
+    [['btn','siffer'],['btn func','funksjon'],['btn op','operator'],['btn clear','AC'],['btn equals','likhet']].forEach(([cl])=>{
+      const b=document.createElement('button'); b.className=cl; b.textContent='7';
+      b.style.transition='none'; grid.appendChild(b);
+    });
+    probe.appendChild(grid); document.body.appendChild(probe);
+    const parse=c=>{const m=(c||'').match(/[\d.]+/g)||[0,0,0,1];return [+m[0],+m[1],+m[2],m[3]===undefined?1:+m[3]];};
+    /* Alpha matters: a translucent key sits on the panel, and comparing the raw
+       rgba against the text reports a contrast that nobody ever sees. */
+    const over=(fg,bg)=>fg.slice(0,3).map((v,i)=>v*fg[3]+bg[i]*(1-fg[3])).concat([1]);
+    const rel=c=>{const f=v=>{v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+      return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);};
+    const ratio=(a,b)=>{const L1=Math.max(rel(a),rel(b)),L2=Math.min(rel(a),rel(b));return (L1+0.05)/(L2+0.05);};
+    const names=['siffer','funksjon','operator','AC','likhet'];
+    ['dark','light','amoled','contrast','pastel'].forEach(t=>{
+      document.documentElement.setAttribute('data-theme',t);
+      const panel=parse(getComputedStyle(probe).backgroundColor);
+      Array.from(grid.children).forEach((b,i)=>{
+        const cs=getComputedStyle(b);
+        const bg=over(parse(cs.backgroundColor),panel);
+        const fg=over(parse(cs.color),bg);
+        const r=ratio(fg,bg);
+        ok('lesbar '+names[i]+' i '+t,r>=4.5,r.toFixed(2)+':1');
+      });
+    });
+    document.documentElement.setAttribute('data-theme',saveTheme||'dark');
+    probe.remove();
+  })();
+
+
+  /* the accent must carry its own label in every mode and theme */
+  if(cssEngine)(function(){
+    const saveTheme=document.documentElement.getAttribute('data-theme'), saveMode=document.body.dataset.mode;
+    const probe=document.createElement('span');
+    probe.style.cssText='position:absolute;left:-9999px;display:block';
+    document.body.appendChild(probe);
+    const resolve=v=>{ probe.style.color=''; probe.style.color=v; return getComputedStyle(probe).color; };
+    const parse=c=>(String(c).match(/[\d.]+/g)||[0,0,0]).slice(0,3).map(Number);
+    const rel=c=>{const f=v=>{v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+      return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);};
+    ['dark','light','amoled','contrast','pastel'].forEach(t=>{
+      document.documentElement.setAttribute('data-theme',t);
+      MODES.forEach(m=>{
+        document.body.dataset.mode=m;
+        const cs=getComputedStyle(document.body);
+        const A=rel(parse(resolve(cs.getPropertyValue('--accent').trim())));
+        const B=rel(parse(resolve(cs.getPropertyValue('--accent-text').trim())));
+        const r=(Math.max(A,B)+0.05)/(Math.min(A,B)+0.05);
+        ok('aksentfargen bærer teksten sin: '+t+'/'+m,r>=4.5,r.toFixed(2)+':1');
+      });
+    });
+    document.documentElement.setAttribute('data-theme',saveTheme||'dark');
+    document.body.dataset.mode=saveMode||'standard';
+    probe.remove();
+  })();
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
   silentToasts=false;
