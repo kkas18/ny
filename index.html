@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-title" content="Kalkulator">
 <meta name="description" content="Profesjonell norsk kalkulator med vitenskapelig modus, RPN, prosent og MVA, og enhetskonvertering med offisielle kurser fra Norges Bank.">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
-<link rel="apple-touch-icon" href="icons/icon-512.png">
+<link rel="icon" type="image/jpeg" href="icons/icon-192.jpg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.jpg">
 <title>Pro Kalkulator Ultra</title>
 <style>
 /* Inter, variable weight axis, subset to the characters this app uses.
@@ -125,8 +125,7 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 /* A hairline in the mode colour, so the header carries the identity the old chip did. */
 .app-header::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 22%,transparent) 62%,transparent);transition:background var(--transition)}
 .brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
-.logo-icon{width:29px;height:29px;border-radius:var(--r-inner);background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background var(--transition)}
-.logo-icon svg{width:16px;height:16px;fill:none;stroke:var(--accent-text);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.logo-icon{width:29px;height:29px;border-radius:var(--r-inner);object-fit:cover;flex-shrink:0;background:#1e1e1d;box-shadow:0 0 0 1px rgba(128,128,128,.22)}
 .app-name{font-size:14.5px;font-weight:700;letter-spacing:-.3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .header-pill{border:1px solid var(--border);background:var(--surface-light);color:var(--text-secondary);border-radius:var(--r-pill);height:28px;padding:0 10px;font-size:10.5px;font-weight:800;letter-spacing:.7px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all var(--transition-fast);font-family:var(--font-sans)}
@@ -582,7 +581,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <body data-mode="standard">
 <header class="app-header">
   <div class="brand">
-    <div class="logo-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="7.5" x2="15" y2="7.5"/><line x1="9" y1="12" x2="12" y2="12"/><line x1="9" y1="16.5" x2="15" y2="16.5"/></svg></div>
+    <img class="logo-icon" src="icons/logo-96.jpg" alt="" width="29" height="29">
     <div class="app-name">Kalkulator</div>
   </div>
   <div class="header-actions">
@@ -937,7 +936,7 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 <script>
 (function(){
 'use strict';
-const VERSION='7.1.0';
+const VERSION='7.2.0';
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
   nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
@@ -5127,6 +5126,22 @@ function runTests(){
     const inactive=themeBtns.filter(b=>!b.classList.contains('active'))
       .map(b=>getComputedStyle(b).backgroundColor);
     ok('temaknappene farger ikke seg selv',new Set(inactive).size<=1,[...new Set(inactive)].join(' '));
+  })();
+
+
+  /* the installed icon set has to actually be there */
+  if(cssEngine)(function(){
+    const logo=document.querySelector('.logo-icon');
+    ok('logoen er et bilde',logo&&logo.tagName==='IMG',logo&&logo.tagName);
+    ok('logoen er lastet',!logo||(logo.complete&&logo.naturalWidth>0),logo&&logo.naturalWidth);
+    ok('logoen er kvadratisk',!logo||logo.naturalWidth===logo.naturalHeight,
+       logo&&(logo.naturalWidth+'x'+logo.naturalHeight));
+    const icon=document.querySelector('link[rel="icon"]');
+    const apple=document.querySelector('link[rel="apple-touch-icon"]');
+    ok('faneikon er satt',!!icon&&/icons\//.test(icon.getAttribute('href')),icon&&icon.getAttribute('href'));
+    ok('hjemskjermikon for iOS er satt',!!apple&&/icons\//.test(apple.getAttribute('href')),apple&&apple.getAttribute('href'));
+    ok('ingen referanser til gamle ikonfiler',
+       !/icons\/icon\.svg|icon-192\.png|icon-512\.png/.test(document.documentElement.innerHTML));
   })();
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
