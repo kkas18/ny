@@ -28,6 +28,7 @@
 </header>
 
 <main class="main-content" id="mainContent">
+  <ol class="recent" id="recentList" aria-label="Siste utregninger"></ol>
   <div class="display-area" id="displayArea" role="button" tabindex="0" aria-label="Trykk for å kopiere resultatet">
     <div class="display-chips">
       <span class="spacer"></span>
@@ -336,6 +337,12 @@
       <div class="test-out" id="testOut" style="display:none"></div>
     </section>
   </div>
+</div>
+
+<div class="sheet" id="catSheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Alle kategorier">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span>Kategorier</span><button class="text-btn" id="catCloseBtn">Lukk</button></div>
+  <div class="sheet-body"><div class="cat-grid" id="catGrid"></div></div>
 </div>
 
 <div class="overlay" id="modalOverlay"></div>

@@ -124,6 +124,14 @@ button,input,select{font-family:inherit}
 
 /* ---------- Display ---------- */
 .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0}
+/* Recent answers above the display (calculator tab only). */
+.recent{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;list-style:none;padding:8px 14px 0;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 70%);mask-image:linear-gradient(to bottom,transparent 0,#000 70%)}
+body:not([data-mode="standard"]) .recent{display:none}
+.recent li{display:flex;justify-content:flex-end}
+.recent-item{border:none;background:transparent;color:var(--text-secondary);font-size:var(--t-3);padding:6px 8px;border-radius:var(--r-inner);cursor:pointer;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.recent-item:active{background:var(--surface-light)}
+.recent-item .rr{color:var(--text)}
+body[data-mode="standard"] .display-area{flex:0 0 auto}
 .display-area{padding:12px 22px 14px;flex:1 1 auto;min-height:118px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;background:var(--bg);cursor:pointer;user-select:none;gap:2px}
 .display-chips{position:absolute;top:8px;left:22px;right:22px;display:flex;align-items:center}
 .spacer{flex:1}
@@ -232,6 +240,12 @@ body.sci .zone-toggle{background:var(--accent);color:var(--accent-text)}
 .chip.active{background:var(--surface-light);color:var(--text);font-weight:600}
 .chip:active{background:var(--surface-light)}
 .card{border-top:1px solid var(--border);padding:14px 0 0;flex-shrink:0}
+.chip-all{color:var(--text)}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-top:4px}
+.cat-opt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:84px;padding:12px 6px;border:none;border-radius:var(--r-inner);background:var(--surface-light);color:var(--text);font-size:var(--t-1);cursor:pointer;text-align:center}
+.cat-opt:active{background:var(--key-press)}
+.cat-opt.active{background:var(--accent);color:var(--accent-text)}
+.cat-opt svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .card-label{font-size:var(--t-2);font-weight:600;color:var(--text)}
 

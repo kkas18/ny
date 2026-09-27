@@ -42,7 +42,7 @@ const state={
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const el={};
 ['mainContent','displayArea','memPill','memValue','trigPill','liveResult','zoneToggle','zoneToggleLabel','expressionDisplay','resultDisplay','rpnStack',
- 'buttonsContainer','percentPanel','converterPanel','bottomNav','historyBtn','historyBadge','settingsBtn',
+ 'recentList','buttonsContainer','percentPanel','converterPanel','bottomNav','historyBtn','historyBadge','settingsBtn',
  'pctChips','pctFields','pctResult','pctSentence','pctBreakdown','pctUseBtn','pctCopyBtn',
  'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
  'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
@@ -54,7 +54,7 @@ const el={};
  'fxSparkFrom','fxSparkTo','fxSparkLow','fxSparkHigh','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
- 'testSummary','testOut','modalOverlay','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
+ 'testSummary','testOut','modalOverlay','catSheet','catCloseBtn','catGrid','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
  'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
  'toast','appVersion','amoledSwitch','hcSwitch','hapticSwitch','liveSwitch','kbdSwitch','tabRpnSwitch','tabTapeSwitch',
  'tapePanel','tapeList','tapeSum','tapeSumLabel','tapeSplit','tapeCur','tapePrev','tapeVatBtn','tapeVatLabel',
@@ -829,6 +829,7 @@ function updateDisplay(){
   el.resultDisplay.innerHTML='<span>'+escapeHtml(state.error?r:prettyNumber(r))+'</span>';
   el.resultDisplay.className=resultClass(r,state.error,state.justEvaluated)+(pv===null?'':' preview');
   el.displayArea.classList.toggle('typing',pv!==null);
+  renderRecent();
   el.resultDisplay.scrollLeft=0;
   paintMemPill();
   updateLive();
@@ -1196,8 +1197,16 @@ function categoryOrder(){
   state.catOrder=keys.slice().sort((a,b)=>((state.catUse[b]||0)-(state.catUse[a]||0))||(keys.indexOf(a)-keys.indexOf(b)));
   return state.catOrder;
 }
+/* Eighteen categories do not fit in a row you can see at once. The row shows the
+   ones you use most, and "Alle" opens every category as a grid. */
 function renderCatChips(){
   el.catChips.innerHTML='';
+  const all=document.createElement('button');
+  all.className='chip chip-all';
+  all.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg><span>Alle</span>';
+  all.setAttribute('aria-haspopup','dialog');
+  all.addEventListener('click',()=>{ openCatSheet(); buzz(); });
+  el.catChips.appendChild(all);
   categoryOrder().filter(k=>k!=='currency').forEach(k=>{
     const b=document.createElement('button');
     b.className='chip'+(state.conv.cat===k?' active':'');
@@ -1206,6 +1215,21 @@ function renderCatChips(){
     el.catChips.appendChild(b);
   });
 }
+function openCatSheet(){
+  overlayOpened();
+  el.catGrid.innerHTML='';
+  Object.keys(UNITS).filter(k=>k!=='currency').forEach(k=>{
+    const b=document.createElement('button');
+    b.className='cat-opt'+(state.conv.cat===k?' active':'');
+    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS[k].ico+'</svg><span>'+escapeHtml(UNITS[k].label)+'</span>';
+    if(state.conv.cat===k)b.setAttribute('aria-current','true');
+    b.addEventListener('click',()=>{ closeCatSheet(); setCategory(k); buzz();
+      const on=el.catChips.querySelector('.chip.active'); if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest',inline:'center'}); });
+    el.catGrid.appendChild(b);
+  });
+  el.sheetOverlay.classList.add('open'); el.catSheet.classList.add('open');
+}
+function closeCatSheet(){ el.catSheet.classList.remove('open'); if(!el.unitSheet.classList.contains('open')&&!el.keySheet.classList.contains('open'))el.sheetOverlay.classList.remove('open'); overlayClosed(); }
 const DEFAULT_PAIR={length:['meter','kilometer'],weight:['kilogram','pound'],temperature:['celsius','fahrenheit'],
  area:['sqm','dekar'],volume:['liter','galus'],speed:['kmh','mph'],time:['hour','minute'],
  energy:['kwh','megajoule'],power:['kilowatt','hkm'],pressure:['bar','psi'],force:['newton','kp'],
@@ -1645,7 +1669,32 @@ function addHistory(expr,res){
   updateBadge();
   if(state.historyOpen)renderHistory(el.histSearch.value);
 }
+/* The last few answers stand above the display, fading upwards, so the space a
+   tall phone leaves empty holds something useful. Tapping one puts its value into
+   the expression. The answer already on the display is not repeated. */
+function recentEntries(){
+  const calc=state.history.filter(h=>h.m==='standard'||h.m==='professional');
+  const skip=state.justEvaluated&&calc[0]&&calc[0].e===state.expression?1:0;
+  return calc.slice(skip,skip+3);
+}
+function renderRecent(){
+  if(!el.recentList)return;
+  const list=recentEntries();
+  el.recentList.innerHTML=list.slice().reverse().map((h,i,arr)=>
+    '<li><button type="button" class="recent-item" data-i="'+(arr.length-1-i)+'">'+
+    '<span class="re">'+escapeHtml(formatExpression(h.e))+' =</span> <span class="rr">'+escapeHtml(prettyNumber(h.r))+'</span></button></li>').join('');
+}
+function useRecent(h){
+  const v=parseNum(String(h.r).replace(/[\u202F\u00A0\s]/g,''));
+  if(!Number.isFinite(v))return;
+  const raw=formatNumber(v,null,{raw:true});
+  if(state.justEvaluated||state.error){ state.expression=''; state.justEvaluated=false; state.error=false; }
+  const lc=state.expression.slice(-1);
+  append(/[\d.)%!πeA-D²³]/.test(lc)?'×'+raw:raw);
+  buzz();
+}
 function updateBadge(){
+  renderRecent();
   const n=state.history.length;
   el.historyBadge.style.display=n?'flex':'none';
   el.historyBadge.textContent=n>99?'99+':String(n);
@@ -1670,6 +1719,8 @@ function renderHistory(q){
   list.forEach(h=>{
     const it=document.createElement('div');
     it.className='hist-item';
+    it.setAttribute('role','button'); it.tabIndex=0;
+    it.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); it.click(); } });
     it.innerHTML='<div class="he">'+escapeHtml(formatExpression(h.e))+'</div><div class="hr">'+escapeHtml(prettyNumber(h.r))+'</div>'+
       '<div class="hm"><span>'+escapeHtml(MODE_LABEL[h.m]||'')+'</span><span>'+relTime(h.t)+'</span></div>';
     it.addEventListener('click',()=>{
@@ -1961,8 +2012,17 @@ function renderDateChips(){
     el.dateChips.appendChild(b);
   });
 }
+/* The tool opens with an answer, not a form: today, and a sensible other end. */
+function dateDefaults(){
+  const today=new Date(todayISO()+'T00:00:00Z');
+  const v=state.dateVals;
+  if(!v.a)v.a=fmtDate(today);
+  if(state.dateType==='between'&&!v.b)v.b=fmtDate(new Date(Date.UTC(today.getUTCFullYear(),11,31)));
+  if((state.dateType==='add'||state.dateType==='workdays')&&!v.n)v.n=state.dateType==='add'?'30':'10';
+}
 function renderDateFields(){
   const t=dateType();
+  dateDefaults();
   el.dateFields.innerHTML='';
   t.fields.forEach(f=>{
     const card=document.createElement('div'); card.className='card';
@@ -3179,7 +3239,7 @@ function onKey(e){
   /* Enter and Space on a focused control belong to that control, not to = . */
   if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('button,select,a,[role=button],[role=switch]')
      &&!e.target.closest('.calc-buttons'))return;
-  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')){
+  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')||el.catSheet.classList.contains('open')){
     if(e.key==='Escape'){ closeSettings(); closeUnitSheet(); }
     return;
   }
@@ -3232,7 +3292,7 @@ let tx=0,ty=0,tracking=false;
 function swipeBlocked(t){ return t&&t.closest&&t.closest('.chips,input,textarea,.sheet-body,.history-list,.all-body,.calc-buttons'); }
 document.addEventListener('touchstart',e=>{
   if(e.touches.length!==1)return;
-  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||state.historyOpen||el.keySheet.classList.contains('open'))return;
+  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||state.historyOpen||el.keySheet.classList.contains('open')||el.catSheet.classList.contains('open'))return;
   if(swipeBlocked(e.target))return;
   tx=e.touches[0].clientX; ty=e.touches[0].clientY; tracking=true;
 },{passive:true});
@@ -3254,7 +3314,8 @@ function anyOverlayOpen(){
   return state.historyOpen
     || el.settingsSheet.classList.contains('open')
     || el.unitSheet.classList.contains('open')
-    || el.keySheet.classList.contains('open');
+    || el.keySheet.classList.contains('open')
+    || el.catSheet.classList.contains('open');
 }
 let overlayPushed=false;
 function overlayOpened(){
@@ -3271,7 +3332,7 @@ function overlayClosed(){
    moves into it, Esc closes it whatever the keyboard setting, and focus returns
    to the control that opened it. Closed sheets are inert too, so Tab never lands
    on a control that is parked off-screen. */
-const DIALOGS=[el.keySheet,el.unitSheet,el.settingsSheet,el.historyDrawer];
+const DIALOGS=[el.keySheet,el.catSheet,el.unitSheet,el.settingsSheet,el.historyDrawer];
 const APP_CHROME=[document.querySelector('.app-header'),el.mainContent,el.bottomNav];
 let dialogReturn=null;
 function dialogOpen(d){ return d.classList.contains('open'); }
@@ -3296,13 +3357,14 @@ window.addEventListener('keydown',e=>{
   if(e.key!=='Escape'||!anyOverlayOpen())return;
   e.preventDefault(); e.stopPropagation();
   if(dialogOpen(el.keySheet))closeKeyHelp();
+  else if(dialogOpen(el.catSheet))closeCatSheet();
   else if(dialogOpen(el.unitSheet))closeUnitSheet();
   else if(dialogOpen(el.settingsSheet))closeSettings();
   else closeHistory();
 },true);
 window.addEventListener('popstate',()=>{
   overlayPushed=false;
-  if(anyOverlayOpen()){ closeHistory(); closeSettings(); closeUnitSheet(); closeKeyHelp(); }
+  if(anyOverlayOpen()){ closeHistory(); closeSettings(); closeUnitSheet(); closeKeyHelp(); closeCatSheet(); }
 });
 
 /* ============ on-screen keyboard ============ */
@@ -3864,6 +3926,19 @@ function runTests(){
   ok('rangering mister ingen treff',rankUnits(lenUnits,'meter').length===lenUnits.filter(u=>(u.l+' '+u.s+' '+u.key).toLowerCase().indexOf('meter')>-1).length);
 
 
+  /* the recent strip shows past answers, never the one on the display */
+  (function(){
+    const sh=state.history, se=state.expression, sr=state.result, sj=state.justEvaluated, sm=state.mode;
+    state.mode='standard';
+    state.history=[{e:'2+2',r:'4',t:1,m:'standard'},{e:'3×3',r:'9',t:2,m:'standard'},{e:'5',r:'5',t:3,m:'rpn'}];
+    state.expression='2+2'; state.justEvaluated=true;
+    ok('siste utregninger hopper over svaret i displayet',recentEntries().length===1&&recentEntries()[0].e==='3×3',recentEntries().map(h=>h.e).join());
+    state.justEvaluated=false; state.expression='';
+    ok('siste utregninger tar bare kalkulatoren',recentEntries().every(h=>h.m!=='rpn'));
+    useRecent({r:'9'}); ok('trykk setter inn verdien',state.expression==='9',state.expression);
+    useRecent({r:'4'}); ok('etter et tall ganges det inn',state.expression==='9×4',state.expression);
+    state.history=sh; state.expression=se; state.result=sr; state.justEvaluated=sj; state.mode=sm; updateDisplay();
+  })();
   /* operators get breathing room in the display, a leading minus does not */
   ok('mellomrom rundt operatorer',formatExpression('12×4+3')==='12\u2009×\u20094\u2009+\u20093',formatExpression('12×4+3'));
   ok('minus som fortegn står tett',formatExpression('3×-2')==='3\u2009×\u2009−2',formatExpression('3×-2'));
@@ -3876,12 +3951,15 @@ function runTests(){
   /* overlays and the back gesture */
   ok('historikk har lukkeknapp',!!el.closeHistBtn);
   /* The runner itself lives in the settings sheet, so judge the other overlays. */
-  const othersOpen=()=>state.historyOpen||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open');
+  const othersOpen=()=>state.historyOpen||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')||el.catSheet.classList.contains('open');
   ok('ingen overlegg åpne fra start',!othersOpen());
   openHistory(); ok('historikk åpner',anyOverlayOpen()&&state.historyOpen);
   closeHistory(); ok('historikk lukker',!othersOpen());
   openSettings(); ok('innstillinger åpner',anyOverlayOpen());
   closeSettings(); ok('innstillinger lukker',!anyOverlayOpen());
+  openCatSheet(); ok('kategoriarket åpner',el.catSheet.classList.contains('open')&&el.catGrid.children.length>=17,el.catGrid.children.length);
+  closeCatSheet(); ok('kategoriarket lukker',!othersOpen());
+  ok('kategorirekka starter med Alle',(()=>{ renderCatChips(); const f=el.catChips.firstElementChild; return !!f&&f.classList.contains('chip-all'); })());
   openKeyHelp('²'); ok('hjelpeark åpner',anyOverlayOpen());
   closeKeyHelp(); ok('hjelpeark lukker',!anyOverlayOpen());
 
@@ -4380,7 +4458,12 @@ el.modalOverlay.addEventListener('click',closeSettings);
 el.keyCloseBtn.addEventListener('click',closeKeyHelp);
 el.keyCustomBtn.addEventListener('click',applyKeyCustom);
 el.keyCustomInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();applyKeyCustom();} });
-el.sheetOverlay.addEventListener('click',()=>{ closeUnitSheet(); closeKeyHelp(); });
+el.sheetOverlay.addEventListener('click',()=>{ closeUnitSheet(); closeKeyHelp(); closeCatSheet(); });
+el.catCloseBtn.addEventListener('click',()=>{ closeCatSheet(); buzz(); });
+el.recentList.addEventListener('click',e=>{
+  const b=e.target.closest('.recent-item'); if(!b)return;
+  const h=recentEntries()[+b.dataset.i]; if(h)useRecent(h);
+});
 el.sheetCloseBtn.addEventListener('click',closeUnitSheet);
 el.histSearch.addEventListener('input',()=>renderHistory(el.histSearch.value));
 el.clearHistBtn.addEventListener('click',()=>{
