@@ -104,7 +104,8 @@ html{touch-action:manipulation}
 html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-sans);font-size:var(--t-2);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);transition:background var(--transition),color var(--transition)}
 button,input,select{font-family:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-tiny)}
+/* The ring follows the control's own corners; it never reshapes the control. */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ---------- Header: two tools, nothing else ---------- */

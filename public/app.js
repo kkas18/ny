@@ -104,6 +104,19 @@ function groupDigits(s){
   if(sep.g&&int.length>4)int=int.replace(/\B(?=(\d{3})+(?!\d))/g,sep.g);
   return m[1]+int+(m[3]?sep.d+m[3]:'')+(m[4]||'');
 }
+/* For the eye only: 1,21932631e+17 reads as 1,219 326 31 × 10¹⁷. Copying and
+   reusing a value keep the plain e-form, which every parser understands. */
+const SUPER={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+function prettyNumber(s){
+  const m=/^(-?)([\d\u202F\u00A0 .,]+)e([+-]?)(\d+)$/i.exec(String(s));
+  if(!m)return s;
+  const exp=(m[3]==='-'?'-':'')+m[4];
+  let mant=m[2];
+  const sep=SEP[state.fmt]||SEP.no;
+  /* Only the Norwegian format groups decimals, with the same thin space. */
+  if(state.fmt==='no'){ const i=mant.indexOf(sep.d); if(i>-1)mant=mant.slice(0,i+1)+mant.slice(i+1).replace(/(\d{3})(?=\d)/g,'$1'+sep.g); }
+  return m[1]+mant+' × 10'+exp.split('').map(c=>SUPER[c]).join('');
+}
 /* Groups every number that appears inside a typed expression, for the display only. */
 function formatExpression(expr){
   const sep=SEP[state.fmt]||SEP.no;
@@ -750,7 +763,16 @@ const LAYOUTS={
  ]
 };
 /* ============ haptics + toast ============ */
-function buzz(ms){ if(!state.haptic)return; try{ if(navigator.vibrate)navigator.vibrate(ms||9); }catch(e){} }
+/* In the Android app the web view has no vibration of its own, so the native
+   haptics plugin gives the tap; in the browser, navigator.vibrate does. */
+function buzz(ms){
+  if(!state.haptic)return;
+  try{
+    const h=IS_NATIVE&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Haptics;
+    if(h){ h.impact({style:(ms||9)>20?'MEDIUM':'LIGHT'}).catch(()=>{}); return; }
+    if(navigator.vibrate)navigator.vibrate(ms||9);
+  }catch(e){}
+}
 let toastTimer, silentToasts=false;
 function toastMsg(m){ if(silentToasts)return; el.toast.textContent=m; el.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.toast.classList.remove('show'),2200); }
 function copyText(t){
@@ -797,7 +819,7 @@ function updateDisplay(){
   el.expressionDisplay.scrollLeft=0;
   const pv=livePreviewValue();
   const r=pv===null?state.result:pv;
-  el.resultDisplay.innerHTML='<span>'+escapeHtml(r)+'</span>';
+  el.resultDisplay.innerHTML='<span>'+escapeHtml(state.error?r:prettyNumber(r))+'</span>';
   el.resultDisplay.className=resultClass(r,state.error,state.justEvaluated)+(pv===null?'':' preview');
   el.displayArea.classList.toggle('typing',pv!==null);
   el.resultDisplay.scrollLeft=0;
@@ -1641,7 +1663,7 @@ function renderHistory(q){
   list.forEach(h=>{
     const it=document.createElement('div');
     it.className='hist-item';
-    it.innerHTML='<div class="he">'+escapeHtml(formatExpression(h.e))+'</div><div class="hr">'+escapeHtml(h.r)+'</div>'+
+    it.innerHTML='<div class="he">'+escapeHtml(formatExpression(h.e))+'</div><div class="hr">'+escapeHtml(prettyNumber(h.r))+'</div>'+
       '<div class="hm"><span>'+escapeHtml(MODE_LABEL[h.m]||'')+'</span><span>'+relTime(h.t)+'</span></div>';
     it.addEventListener('click',()=>{
       const v=parseNum(h.r);
@@ -3834,6 +3856,11 @@ function runTests(){
   ok('uten treff gir tom liste',rankUnits(lenUnits,'zzzz').length===0);
   ok('rangering mister ingen treff',rankUnits(lenUnits,'meter').length===lenUnits.filter(u=>(u.l+' '+u.s+' '+u.key).toLowerCase().indexOf('meter')>-1).length);
 
+
+  /* big and tiny numbers read as powers of ten, but stay plain underneath */
+  ok('stort tall vises med tierpotens',state.fmt!=='no'||prettyNumber('1,21932631e+17')==='1,219\u202F326\u202F31 × 10¹⁷',prettyNumber('1,21932631e+17'));
+  ok('lite tall får negativ eksponent',prettyNumber('2,5e-12')==='2,5 × 10⁻¹²',prettyNumber('2,5e-12'));
+  ok('vanlige tall røres ikke',prettyNumber('1 234,5')==='1 234,5');
 
   /* overlays and the back gesture */
   ok('historikk har lukkeknapp',!!el.closeHistBtn);
