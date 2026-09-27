@@ -2064,6 +2064,12 @@ function exportSettings(){
   const data={app:'Pro Kalkulator Ultra',version:VERSION,exported:new Date().toISOString(),values:{}};
   BACKUP_KEYS.forEach(k=>{ const v=lsGet(k,null); if(v!==null)data.values[k]=v; });
   const json=JSON.stringify(data,null,2);
+  /* The Android web view has no download manager, so a file link would do nothing.
+     Hand over the copy through the clipboard instead, and say where it went. */
+  if(IS_NATIVE){
+    copyText(json).then(ok=>toastMsg(ok?'Kopien ligger på utklippstavlen. Lim den inn i et notat.':'Klarte ikke å lagre kopien'));
+    return;
+  }
   try{
     const blob=new Blob([json],{type:'application/json'});
     const url=URL.createObjectURL(blob);
@@ -3079,7 +3085,19 @@ function applyTheme(t){
   state.theme=t;
   document.documentElement.setAttribute('data-theme',t);
   metaTheme.setAttribute('content',THEME_BG[t]||'#0a0c0b');
+  paintSystemBars(t);
   lsSet(LS.theme,t); syncSettings();
+}
+/* In the Android app the status bar is native; give it the theme's background and
+   icons that read against it, as theme-color does for the browser. */
+function paintSystemBars(t){
+  const bar=IS_NATIVE&&window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
+  if(!bar)return;
+  const light=t==='light'||t==='pastel';
+  try{
+    bar.setBackgroundColor({color:THEME_BG[t]||'#0a0c0b'}).catch(()=>{});
+    bar.setStyle({style:light?'LIGHT':'DARK'}).catch(()=>{});
+  }catch(e){}
 }
 function setSwitch(node,on){ node.classList.toggle('on',!!on); node.setAttribute('aria-checked',on?'true':'false'); }
 function syncSettings(){
@@ -4574,6 +4592,7 @@ function init(){
   state.theme=t||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');
   document.documentElement.setAttribute('data-theme',state.theme);
   metaTheme.setAttribute('content',THEME_BG[state.theme]||'#0a0c0b');
+  paintSystemBars(state.theme);
   state.fmt=lsGet(LS.fmt,'no');
   state.decimals=parseInt(lsGet(LS.dec,String(CFG.defaultDecimals)),10)||CFG.defaultDecimals;
   state.trig=lsGet(LS.trig,'deg');
