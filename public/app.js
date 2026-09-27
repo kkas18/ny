@@ -49,7 +49,7 @@ const el={};
  'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
  'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange',
  'currencyPanel','fxKeys','fxRateBar','fxRateDot','fxRateText','fxRefreshBtn','fxFromPicker','fxFromFlag','fxFromSymbol','fxFromName','fxToPicker','fxToFlag','fxToSymbol','fxToName',
- 'fxOutput','fxSwapBtn','fxInput','fxRateInfo','fxFromAffix','fxToAffix','fxDotMini','fxRate','fxNote','fxAddBtn','fxFeeBtn','fxFeeLabel','fxSendBtn','fxDateBtn','fxDateLabel','fxShareBtn','fxDateRow','fxDateInput','fxDateGo','fxDateToday',
+ 'fxOutput','fxSwapBtn','fxInput','fxRateInfo','fxFromAffix','fxToAffix','fxDotMini','fxRate','fxNote','fxAddBtn','fxSendBtn','fxDateBtn','fxDateLabel','fxShareBtn','fxDateRow','fxDateInput','fxDateGo','fxDateToday',
  'fxBoard','fxBoardHint','fxBoardBody','fxSparkCard','fxSparkTitle','fxSparkChange','fxSparkRange','fxSparkSvg',
  'fxSparkFrom','fxSparkTo','fxSparkLow','fxSparkHigh','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
  'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
@@ -120,11 +120,18 @@ function prettyNumber(s){
 /* Groups every number that appears inside a typed expression, for the display only. */
 function formatExpression(expr){
   const sep=SEP[state.fmt]||SEP.no;
-  return expr.replace(/\d+(?:\.\d+)?/g,n=>{
+  const grouped=expr.replace(/\d+(?:\.\d+)?/g,n=>{
     const p=n.split('.'); let i=p[0];
     if(sep.g&&i.length>4)i=i.replace(/\B(?=(\d{3})+(?!\d))/g,sep.g);
     return i+(p[1]?sep.d+p[1]:'');
   });
+  /* A thin space either side of a binary operator: 1 250 × 4 + 18 reads faster than
+     1250×4+18. A minus that starts a number (−5, 3×−2) stays tight, and so does
+     the sign inside an exponent like 1,2e+17. */
+  return grouped.replace(/([\d)%!πA-D²³])([+\-×÷])/g,(m,a,op,off,str)=>{
+    if(a!==')'&&str[off-1]==='e'&&/\d/.test(str[off-2]||''))return m;
+    return a+'\u2009'+(op==='-'?'−':op)+'\u2009';
+  }).replace(/-/g,'−');
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -643,7 +650,7 @@ function loadRates(force){
     }
     if(!Object.keys(rates).length){
       if(cached){ setRateState(cached); }
-      else{ paintRateBar('offline','Fikk ikke kontakt med kurskildene. Viser innebygde kurser.'); }
+      else{ paintRateBar('offline','Uten nett. Bruker innebygde kurser.'); }
       return;
     }
     const payload={rates,date:nbDate||todayISO(),fetched:Date.now(),nbCount,fillCount,hadNb:!!nb};
@@ -661,7 +668,7 @@ function setRateState(p){
     paintRateBar('live',src+', '+dateNo+'. '+total+' valutaer.');
   }else{
     state.rateState='stale';
-    paintRateBar('stale','Kursene er '+age+' dager gamle ('+dateNo+'). Trykk oppdater.');
+    paintRateBar('stale','Kurser fra '+dateNo+', '+age+' dager gamle.');
   }
 }
 /* When the rates are fresh there is nothing to act on, so the strip stays out of
@@ -2561,8 +2568,7 @@ function fxPaintRate(){
     +(state.fxFee?', med '+formatNumber(state.fxFee,2)+' % påslag':'');
 }
 function fxPaintFeeBtn(){
-  el.fxFeeBtn.classList.toggle('active',state.fxFee>0);
-  el.fxFeeLabel.textContent=state.fxFee?('+'+formatNumber(state.fxFee,2)+' %'):'Midtkurs';
+  /* The fee lives in settings; the rate sentence says when one is applied. */
 }
 function fxSyncRateBar(){
   const show=state.rateState!=='live';
@@ -2704,11 +2710,12 @@ function fxSwap(){
 /* ---- keypad ---- */
 const FX_KEYS=[
  /* Tall og ingenting annet. Regnestykker hører hjemme i kalkulatorfanen, som er
-    ett trykk unna og gjør det bedre. */
- {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:BACK_ICON,a:'back',c:'func'},
- {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'C',a:'clear',c:'clear'},
- {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'00',a:'num',v:'00',c:'func'},
- {t:'0',a:'num',v:'0',w:1},{t:',',a:'dot'},{t:'Ferdig',a:'done',c:'equals'}
+    ett trykk unna og gjør det bedre. Bunnraden er den samme som i kalkulatoren
+    (0 , ⌫), og Ferdig står der = står, to rader høy som på et talltastatur. */
+ {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'C',a:'clear',c:'clear'},
+ {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'00',a:'num',v:'00',c:'func'},
+ {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'Ferdig',a:'done',c:'equals',tall:1},
+ {t:'0',a:'num',v:'0'},{t:',',a:'dot'},{t:BACK_ICON,a:'back',c:'func'}
 ];
 function fxRenderKeys(){
   if(el.fxKeys.querySelector('.calc-buttons'))return;
@@ -2716,7 +2723,7 @@ function fxRenderKeys(){
   grid.className='calc-buttons';
   FX_KEYS.forEach(k=>{
     const b=document.createElement('button');
-    b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'');
+    b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'')+(k.tall?' tall':'');
     b.type='button';
     if(/^<svg/.test(k.t))b.innerHTML=k.t;
     else{ b.textContent=k.t; if(k.t.length>=5)b.classList.add('long'); }
@@ -3857,6 +3864,10 @@ function runTests(){
   ok('rangering mister ingen treff',rankUnits(lenUnits,'meter').length===lenUnits.filter(u=>(u.l+' '+u.s+' '+u.key).toLowerCase().indexOf('meter')>-1).length);
 
 
+  /* operators get breathing room in the display, a leading minus does not */
+  ok('mellomrom rundt operatorer',formatExpression('12×4+3')==='12\u2009×\u20094\u2009+\u20093',formatExpression('12×4+3'));
+  ok('minus som fortegn står tett',formatExpression('3×-2')==='3\u2009×\u2009−2',formatExpression('3×-2'));
+  ok('eksponent i tall får ikke mellomrom',formatExpression('1.2e+17')==='1'+(SEP[state.fmt]||SEP.no).d+'2e+17',formatExpression('1.2e+17'));
   /* big and tiny numbers read as powers of ten, but stay plain underneath */
   ok('stort tall vises med tierpotens',state.fmt!=='no'||prettyNumber('1,21932631e+17')==='1,219\u202F326\u202F31 × 10¹⁷',prettyNumber('1,21932631e+17'));
   ok('lite tall får negativ eksponent',prettyNumber('2,5e-12')==='2,5 × 10⁻¹²',prettyNumber('2,5e-12'));
@@ -4049,6 +4060,8 @@ function runTests(){
   ok('komma, nullnull, slett og AC finnes',
      ['dot','back','clear'].every(a=>FX_KEYS.some(k=>k.a===a))&&FX_KEYS.some(k=>k.v==='00'));
   ok('ferdig-tasten lukker tastaturet',FX_KEYS.some(k=>k.a==='done'));
+  ok('bunnraden er 0 , slett som i kalkulatoren',FX_KEYS.slice(-3).map(k=>k.a).join()==='num,dot,back'&&FX_KEYS[12].v==='0');
+  ok('ferdig står i kolonne 4, to rader høy',FX_KEYS.findIndex(k=>k.a==='done')%4===3&&FX_KEYS.some(k=>k.a==='done'&&k.tall));
 
   /* the keypad only appears when you are entering a number */
   fxSetKeys(false);
@@ -4112,7 +4125,8 @@ function runTests(){
     const acts=document.querySelector('#currencyPanel .fx-actions');
     if(acts){
       const chips=acts.querySelectorAll('.chip');
-      ok('handlingene er fem korte brikker',chips.length===5,chips.length);
+      ok('handlingene er tre brikker med tekst',chips.length===3&&Array.from(chips).every(c=>c.textContent.trim().length>0),chips.length);
+      ok('legg til står i listetoppen',!!document.querySelector('#fxBoard .all-head #fxAddBtn'));
       ok('og ligger på én rad',Math.round(acts.getBoundingClientRect().height)<52,
          Math.round(acts.getBoundingClientRect().height));
     }
@@ -4214,8 +4228,6 @@ function runTests(){
     probe.appendChild(body); document.body.appendChild(probe);
     const rights=Array.from(probe.querySelectorAll('.uv')).map(v=>Math.round(v.getBoundingClientRect().right));
     ok('verdiene deler samme høyrekant',new Set(rights).size===1,rights.join(' / '));
-    const cs=getComputedStyle(probe.querySelector('.uv'));
-    ok('verdiene har tabulære sifre, så kolonnene ikke sklir',cs.fontVariantNumeric.indexOf('tabular-nums')>-1,cs.fontVariantNumeric);
     const pct=Array.from(probe.querySelectorAll('.uc')).map(v=>Math.round(v.getBoundingClientRect().right));
     ok('prosentene følger samme kant',new Set(pct).size===1,pct.join(' / '));
     probe.remove();
@@ -4249,11 +4261,11 @@ function runTests(){
   })();
 
 
-  /* Tabular figures hold columns still: lists, the tape and history. A single big
-     number (the display, an amount) keeps proportional figures, because Schibsted
-     sets the comma and the thousands space on the same wide pitch as a digit. */
+  /* Schibsted's tabular figures set the comma and the thousands space as wide as a
+     digit, which reads as 91 , 49. Columns line up on their right edge instead
+     (tested above), so every number keeps proportional figures. */
   if(cssEngine)(function(){
-    const sels=['.all-row .uv','.tape-val','.hist-item .hr'];
+    const sels=['.all-row .uv','.tape-val','.hist-item .hr','.result','.pair-input','.breakdown .b-row span:last-child'];
     const probe=document.createElement('div');
     probe.style.cssText='position:absolute;left:-9999px;top:0;width:340px';
     probe.innerHTML='<div class="pair-card"><span class="pair-input">1</span><span class="conv-rate">1</span></div>'+
@@ -4262,16 +4274,17 @@ function runTests(){
       '<div class="tape-foot"><div class="tape-sum"><span class="val">1</span></div></div>'+
       '<div class="hist-item"><div class="hr">1</div></div><span class="spark-change">1</span>'+
       '<button class="header-pill"><span class="pv">1</span></button>'+
-      '<div class="result">1</div><div class="expression">1</div>';
+      '<div class="result">1</div><div class="expression">1</div>'+
+      '<div class="breakdown"><div class="b-row"><span>a</span><span>1</span></div></div>';
     document.body.appendChild(probe);
     const bad=[];
     sels.forEach(sel=>{
       const e=probe.querySelector(sel);
       if(!e){ bad.push(sel+' (fantes ikke)'); return; }
       const cs=getComputedStyle(e);
-      if(cs.fontVariantNumeric.indexOf('tabular-nums')<0)bad.push(sel+' ('+cs.fontVariantNumeric+')');
+      if(cs.fontVariantNumeric.indexOf('tabular-nums')>-1)bad.push(sel+' ('+cs.fontVariantNumeric+')');
     });
-    ok('tallflatene har faste sifferbredder',bad.length===0,bad.join(', '));
+    ok('tall har vanlige sifferbredder, uten luker rundt kommaet',bad.length===0,bad.join(', '));
     probe.remove();
   })();
   /* one typeface, embedded, so it looks the same offline and on any phone */
@@ -4467,10 +4480,9 @@ el.fxOutput.addEventListener('click',()=>{
   if(!v)return;
   copyText(v+' '+((UNITS.currency.units[state.fx.to]||{}).s||'')).then(ok=>{ if(ok){ toastMsg('Kopiert'); buzz(12); } });
 });
-el.fxAddBtn.addEventListener('click',()=>{ openUnitSheet('fxAdd'); buzz(); });
+el.fxAddBtn.addEventListener('click',e=>{ e.stopPropagation(); openUnitSheet('fxAdd'); buzz(); });
 el.fxRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>{ fxRender(); toastMsg('Kursene er hentet på nytt'); }); });
 el.fxRateInfo.addEventListener('click',()=>{ buzz(); toastMsg(state.rateNote||'Henter kurser …'); loadRates(true).then(fxRender); });
-el.fxFeeBtn.addEventListener('click',()=>{ openSettings(); buzz(); setTimeout(()=>{ try{ el.feeCustom.scrollIntoView({block:'center'}); }catch(e){} },220); });
 el.fxSendBtn.addEventListener('click',()=>{
   const v=fxAmount();
   if(!Number.isFinite(v)){ toastMsg('Ingen verdi å sende'); return; }

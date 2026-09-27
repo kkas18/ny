@@ -120,10 +120,8 @@
     <span id="fxFromName" hidden></span><span id="fxToName" hidden></span>
     <div class="chips fx-actions">
       <button class="chip" id="fxDateBtn"><svg viewBox="0 0 24 24"><rect x="3.4" y="5" width="17.2" height="16" rx="2"/><line x1="3.4" y1="10" x2="20.6" y2="10"/><line x1="8.2" y1="2.8" x2="8.2" y2="7"/><line x1="15.8" y1="2.8" x2="15.8" y2="7"/></svg><span id="fxDateLabel">I dag</span></button>
-      <button class="chip" id="fxFeeBtn"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span id="fxFeeLabel">Midtkurs</span></button>
-      <button class="chip" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Legg til</span></button>
-      <button class="chip" id="fxShareBtn" aria-label="Kopier alt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
-      <button class="chip" id="fxSendBtn" aria-label="Send til kalkulatoren"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg></button>
+      <button class="chip" id="fxShareBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Kopier</span></button>
+      <button class="chip" id="fxSendBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg><span>Til kalkulator</span></button>
     </div>
     <div class="date-row" id="fxDateRow" style="display:none">
       <input type="text" class="date-input" id="fxDateInput" placeholder="15.08.2026" autocomplete="off" aria-label="Kursdato">
@@ -131,7 +129,7 @@
       <button class="pill-btn" id="fxDateToday">I dag</button>
     </div>
     <div class="all-units open" id="fxBoard">
-      <div class="all-head"><span class="card-label">Mine valutaer</span><span class="fx-hint" id="fxBoardHint"></span></div>
+      <div class="all-head"><span class="card-label">Mine valutaer</span><span class="fx-hint" id="fxBoardHint" hidden></span><button class="text-btn" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Legg til</button></div>
       <div class="all-body" id="fxBoardBody"></div>
     </div>
     <div class="spark-card" id="fxSparkCard" style="display:none">

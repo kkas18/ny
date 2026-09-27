@@ -171,6 +171,7 @@ button,input,select{font-family:inherit}
 .btn.long{font-size:calc(var(--btn-font-size)*.66)}
 .btn.equals.long{font-size:calc(var(--btn-font-size)*.7);font-weight:500}
 .btn.wide{grid-column:span 2}
+.btn.tall{grid-row:span 2}
 /* With f(x) open, the keys shrink to a tighter radius, and the function rows above
    the pad drop their fill so the digits stay the heaviest thing on screen. */
 .professional-mode .btn{border-radius:var(--r-inner)}
@@ -389,6 +390,9 @@ html[data-theme="contrast"] .seg-btn,html[data-theme="contrast"] .pill-btn,html[
 .drawer-head .title{font-size:var(--t-4);font-weight:600}
 .text-btn{border:none;background:transparent;color:var(--text);font-size:var(--t-2);font-weight:400;cursor:pointer;padding:8px 6px;border-radius:var(--r-inner)}
 .text-btn:active{background:var(--surface-light)}
+.text-btn{display:inline-flex;align-items:center;gap:6px}
+.text-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.all-head .text-btn{margin:-8px -6px -8px 0}
 .text-btn.danger{color:var(--danger)}
 .search-wrap{padding:8px 16px}
 .search-wrap input{width:100%;background:var(--surface-light);border:1px solid transparent;border-radius:var(--r-inner);padding:11px 14px;color:var(--text);font-size:var(--t-2);outline:none}
@@ -572,14 +576,4 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto}
   body{max-width:560px;margin:0 auto;box-shadow:0 0 0 1px var(--border),var(--shadow)}
   .sheet{max-width:560px;margin:0 auto}
   .toast,.update-bar{max-width:520px;margin-inline:auto}
-}
-
-/* ---------- Figures ---------- */
-/* Tabular figures only where numbers stand in a column and must line up. Schibsted
-   sets the comma and the space on the same fixed pitch, which looks gappy in a big
-   single number, so the display and the amounts keep proportional figures. */
-.all-row .uv,.all-row .uc,.breakdown .b-row span:last-child,.tape-val,.tape-split,
-.hist-item .hr,.spark-foot,.bit-result .r,.bit-ops button,.unit-opt .ov,.bit-byte .idx{
-  font-variant-numeric:tabular-nums;
-  font-feature-settings:'tnum' 1;
 }
