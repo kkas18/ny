@@ -26,7 +26,7 @@ function jSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
 
 const state={
   mode:'standard', theme:'dark', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
-  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'red', sci:false,
+  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'neutral', sci:false,
   expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
   history:[], historyOpen:false, stack:[], rpnEntry:'',
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
@@ -778,27 +778,35 @@ function paintMemPill(){
   el.memPill.classList.toggle('on',on);
   if(on)el.memValue.textContent=formatNumber(state.memory,Math.min(state.decimals,2));
 }
+/* While an expression is being typed, the big line shows what it comes to so far.
+   A trailing operator or open bracket is set aside, so 7×8+ already reads 56. */
+function livePreviewValue(){
+  if(!state.livePreview||state.mode==='rpn'||!state.expression||state.justEvaluated||state.error)return null;
+  for(const e of [state.expression,trimDangling(state.expression)]){
+    if(!e)continue;
+    try{ const v=evaluate(e); if(Number.isFinite(v))return formatNumber(v); }catch(x){}
+  }
+  return null;
+}
+/* An operator left hanging at the end (7×8+) has nothing to act on yet. */
+function trimDangling(e){ return e.replace(/[+\-×÷^\s]+$/,''); }
 function updateDisplay(){
   const expr=state.expression;
   el.expressionDisplay.innerHTML='<span>'+escapeHtml(formatExpression(expr)||'')+'</span>';
   el.expressionDisplay.scrollLeft=0;
-  const r=state.result;
+  const pv=livePreviewValue();
+  const r=pv===null?state.result:pv;
   el.resultDisplay.innerHTML='<span>'+escapeHtml(r)+'</span>';
-  el.resultDisplay.className=resultClass(r,state.error,state.justEvaluated);
+  el.resultDisplay.className=resultClass(r,state.error,state.justEvaluated)+(pv===null?'':' preview');
+  el.displayArea.classList.toggle('typing',pv!==null);
   el.resultDisplay.scrollLeft=0;
   paintMemPill();
   updateLive();
   $$('.btn.mem-active').forEach(b=>b.classList.remove('mem-active'));
   if(state.memory!==0)$$('.btn[data-a="mRecall"],.btn[data-a="mAdd"]').forEach(b=>b.classList.add('mem-active'));
 }
-function updateLive(){
-  if(!state.livePreview||state.mode==='rpn'||!state.expression||state.justEvaluated){ el.liveResult.textContent=''; return; }
-  try{
-    const v=evaluate(state.expression);
-    const f=formatNumber(v);
-    el.liveResult.textContent=(f===state.result)?'':'= '+f;
-  }catch(e){ el.liveResult.textContent=''; }
-}
+/* The preview now lives on the result line itself; the corner slot stays empty. */
+function updateLive(){ el.liveResult.textContent=''; }
 function setResult(v,isError){
   state.error=!!isError;
   state.result=isError?v:formatNumber(v);
@@ -872,7 +880,14 @@ function handleAns(){ startFresh(); append(formatNumber(state.lastAnswer,null,{r
 function handleEquals(){
   if(!state.expression)return;
   try{
-    const v=evaluate(state.expression);
+    /* = gives what the preview showed: a dangling operator is dropped, not an error. */
+    let v;
+    try{ v=evaluate(state.expression); }
+    catch(first){
+      const t=trimDangling(state.expression);
+      if(!t||t===state.expression)throw first;
+      v=evaluate(t); state.expression=t;
+    }
     state.lastAnswer=v;
     const shown=formatNumber(v);
     addHistory(state.expression,shown);
@@ -3893,10 +3908,12 @@ function runTests(){
         ok('tast synlig i '+t+' ('+b.className+')',diff>=5||outlined,'lysdiff '+diff.toFixed(1)+' ramme '+cs.borderTopWidth);
         ok('tast er pilleformet i '+t,parseFloat(cs.borderTopLeftRadius)>=20,cs.borderTopLeftRadius);
       });
-      /* Colour is reserved for the keys that mean something by it: AC and =.
-         Everything else shares one tone, so the pad reads as a single surface. */
-      const neutral=[kids[0],kids[1],kids[2]].map(b=>getComputedStyle(b).backgroundColor);
-      ok('nøytrale taster deler én tone i '+t,neutral[0]===neutral[1]&&neutral[1]===neutral[2],neutral.join(' / '));
+      /* Digits and functions share one tone so the pad reads as a single surface.
+         The four operators sit a step apart, so ÷ × − + are found without reading. */
+      const neutral=[kids[0],kids[1]].map(b=>getComputedStyle(b).backgroundColor);
+      ok('nøytrale taster deler én tone i '+t,neutral[0]===neutral[1],neutral.join(' / '));
+      const opBg=getComputedStyle(kids[2]).backgroundColor;
+      ok('operatorene har egen tone i '+t,opBg!==neutral[0],opBg);
       const acBg=getComputedStyle(kids[3]).backgroundColor, eqBg=getComputedStyle(kids[4]).backgroundColor;
       ok('AC skiller seg ut i '+t,acBg!==neutral[0],acBg);
       ok('likhetstasten skiller seg ut i '+t,eqBg!==neutral[0],eqBg);
@@ -4561,7 +4578,7 @@ function init(){
   state.livePreview=lsGet(LS.live,'1')==='1';
   state.kbd=lsGet(LS.kbd,'1')==='1';
   state.rateSrc=lsGet(LS.src,'both');
-  state.answerColor=lsGet(LS.answerColor,'red');
+  state.answerColor=lsGet(LS.answerColor,'neutral');
   state.sci=lsGet(LS.sci,'0')==='1';
   state.allOpen=lsGet(LS.allOpen,'1')==='1';
   state.history=jGet(LS.hist,[]);

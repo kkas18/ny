@@ -17,7 +17,7 @@
   --keypad-bg:#0a0c0b;
   --key-number-bg:#171b19; --key-number-text:#f2f6f4;
   --key-func-bg:#171b19; --key-func-text:#cdd8d3;
-  --key-op-bg:#171b19; --key-op-text:#f2f6f4;
+  --key-op-bg:#1f2522; --key-op-text:#f2f6f4;
   --key-border:#2a302d;
   --key-clear-bg:rgba(231,76,94,.20); --key-clear-text:#ff8a94; --key-clear-border:rgba(231,76,94,.35);
   --accent-text:#0a0c0b;
@@ -42,7 +42,7 @@ html[data-theme="light"]{
   --keypad-bg:#e6eae8;
   --key-number-bg:#fff; --key-number-text:#1b211f;
   --key-func-bg:#fff; --key-func-text:#4a5451;
-  --key-op-bg:#fff; --key-op-text:#1b211f;
+  --key-op-bg:#eef2f0; --key-op-text:#1b211f;
   --key-border:#d9dddb;
   --key-clear-bg:rgba(214,48,64,.10); --key-clear-text:#a3121f; --key-clear-border:rgba(214,48,64,.30);
   --accent-text:#fff;
@@ -55,7 +55,7 @@ html[data-theme="amoled"]{
   --keypad-bg:#000;
   --key-number-bg:#131313; --key-number-text:#fff;
   --key-func-bg:#131313; --key-func-text:#c9c9c9;
-  --key-op-bg:#131313; --key-op-text:#fff;
+  --key-op-bg:#1c1c1c; --key-op-text:#fff;
   --key-border:#242424;
   --key-clear-bg:rgba(255,68,68,.14); --key-clear-text:#ff6060; --key-clear-border:rgba(255,68,68,.35);
   --accent-text:#000;
@@ -69,7 +69,7 @@ html[data-theme="contrast"]{
   --keypad-bg:#000;
   --key-number-bg:#000; --key-number-text:#fff;
   --key-func-bg:#000; --key-func-text:#fff;
-  --key-op-bg:#000; --key-op-text:#fff;
+  --key-op-bg:#141400; --key-op-text:#fff;
   --key-border:#8a8a8a;
   --key-clear-bg:#2a0000; --key-clear-text:#ff8080; --key-clear-border:#f44;
   --accent-text:#000;
@@ -83,7 +83,7 @@ html[data-theme="pastel"]{
   --keypad-bg:#e8e5de;
   --key-number-bg:#fff; --key-number-text:#2c2a26;
   --key-func-bg:#fff; --key-func-text:#5b564f;
-  --key-op-bg:#fff; --key-op-text:#2c2a26;
+  --key-op-bg:#f4f1eb; --key-op-text:#2c2a26;
   --key-border:#dedbd4;
   --key-clear-bg:rgba(191,84,84,.12); --key-clear-text:#8c2f2f; --key-clear-border:rgba(191,84,84,.32);
   --accent-text:#fff;
@@ -143,6 +143,13 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 html[data-theme="light"] .result.answer-red,html[data-theme="pastel"] .result.answer-red{color:#c4172f}
 html[data-theme="contrast"] .result.answer-red{color:#ff6b6b}
 .result.answer-accent{color:var(--accent)}
+/* Typing: the expression is what you are working on, so it moves up to reading
+   size, and the running answer sits under it in the quieter colour. Pressing =
+   swaps the weights back. */
+.expression,.result{transition:font-size .16s ease,color .16s ease}
+.display-area.typing .expression{font-size:27px;color:var(--text);letter-spacing:-.01em;min-height:36px}
+.result.preview{font-size:calc(var(--result-font-size)*.62);color:var(--text-secondary);font-weight:600}
+.result.preview.shrink{font-size:calc(var(--result-font-size)*.5)}
 .result.error{color:var(--danger);font-size:calc(var(--result-font-size)*.5);letter-spacing:0;white-space:normal;line-height:1.3}
 .display-area.copied::after{content:'Kopiert';position:absolute;right:16px;bottom:10px;font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--accent);animation:fadeUp 1.1s ease forwards}
 @keyframes fadeUp{0%{opacity:0;transform:translateY(4px)}25%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
@@ -161,7 +168,7 @@ html[data-theme="contrast"] .result.answer-red{color:#ff6b6b}
 .btn{border:none;border-radius:var(--r-pill);background:var(--key-number-bg);color:var(--key-number-text);font-size:var(--btn-font-size);font-weight:500;font-family:var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:transform .09s ease,filter var(--transition-fast),background var(--transition-fast);user-select:none;-webkit-user-select:none;min-height:var(--btn-min-height);padding:2px}
 .btn:active{transform:scale(.95);filter:brightness(1.35)}
 .btn.func{background:var(--key-func-bg);color:var(--key-func-text);font-size:calc(var(--btn-font-size)*.82);font-weight:500}
-.btn.op{background:var(--key-op-bg);color:var(--key-op-text);font-size:calc(var(--btn-font-size)*1.06)}
+.btn.op{background:var(--key-op-bg);color:var(--accent);font-size:calc(var(--btn-font-size)*1.12);font-weight:600}
 .btn.clear{background:var(--key-clear-bg);color:var(--key-clear-text);font-size:calc(var(--btn-font-size)*.88);font-weight:600}
 .btn.equals{background:var(--accent);color:var(--accent-text);font-weight:700;font-size:calc(var(--btn-font-size)*1.1)}
 .btn.accentish{color:var(--accent)}
@@ -460,8 +467,9 @@ body.sci .zone-toggle{color:var(--accent)}
 html[data-theme="contrast"] .btn{border:2px solid var(--key-border)}
 html[data-theme="contrast"] .btn.equals,html[data-theme="contrast"] .btn.clear{border-color:currentColor}
 .btn .key-ico{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.btn.has-more::before{content:'';position:absolute;top:8px;right:10px;width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.32}
-.btn.equals.has-more::before,.btn.clear.has-more::before{opacity:.5}
+/* Centred over the label, so it stays inside the pill whatever its shape. */
+.btn.has-more::before{content:'';position:absolute;top:14%;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:currentColor;opacity:.45}
+.btn.equals.has-more::before,.btn.clear.has-more::before{opacity:.6}
 
 /* ---------- Update bar ---------- */
 .update-bar{position:fixed;left:10px;right:10px;bottom:calc(var(--nav-height) + 10px + var(--safe-bottom));background:var(--accent);color:var(--accent-text);border-radius:var(--r-inner);padding:11px 14px;display:none;align-items:center;gap:10px;z-index:150;box-shadow:var(--shadow);font-size:13px;font-weight:700}
