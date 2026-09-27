@@ -1,7 +1,7 @@
 {
   "appId": "no.kalkulator.pro",
   "appName": "Kalkulator",
-  "webDir": "public",
+  "webDir": "www",
   "backgroundColor": "#11151c",
   "zoomEnabled": true,
   "android": {

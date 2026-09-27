@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const VERSION='8.0.0';
+const VERSION='8.1.0';
 const IS_NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
@@ -1667,7 +1667,7 @@ function addHistory(expr,res){
   if(state.history.length>CFG.maxHistory)state.history.length=CFG.maxHistory;
   jSet(LS.hist,state.history);
   updateBadge();
-  if(state.historyOpen)renderHistory(el.histSearch.value);
+  if(state.historyOpen||historyDocked())renderHistory(el.histSearch.value);
 }
 /* The last few answers stand above the display, fading upwards, so the space a
    tall phone leaves empty holds something useful. Tapping one puts its value into
@@ -2980,6 +2980,8 @@ const KEY_CAP={standard:0,rpn:0,tape:58};
 const DISPLAY_FLOOR={standard:132,rpn:186,tape:250};
 /* The scientific pad needs eleven rows, so the display gives up part of its share. */
 const SCI_FLOOR=98;
+const LANDSCAPE=window.matchMedia?window.matchMedia('(orientation: landscape) and (max-height: 560px)'):null;
+function sideBySide(){ return !!(LANDSCAPE&&LANDSCAPE.matches)&&['standard','rpn','tape'].indexOf(state.mode)>-1; }
 function sizeKeypad(animate){
   const c=el.buttonsContainer;
   const grid=c.querySelector('.calc-buttons');
@@ -3008,7 +3010,10 @@ function sizeKeypad(animate){
   const dispMin=parseFloat(getComputedStyle(el.displayArea).minHeight)||100;
   const base=(mode==='standard'&&state.sci)?SCI_FLOOR:(DISPLAY_FLOOR[mode]||0);
   /* Tape's floor holds a toolbar, lines and a sum, so it may claim up to half. */
-  const floor=Math.max(dispMin,Math.min(base,Math.round(mainH*(mode==='tape'?0.5:0.34))));
+  /* In landscape on a phone the calculator sits side by side with its display,
+     so the keypad owns the full height and needs no floor under it. */
+  const side=sideBySide();
+  const floor=side?0:Math.max(dispMin,Math.min(base,Math.round(mainH*(mode==='tape'?0.5:0.34))));
   const avail=mainH-floor-padY-toggleH-seam;
   const fit=Math.floor((avail-gap*(rows-1))/rows);
   const cap=Math.min(KEY_CAP[mode]||MAX_KEY,MAX_KEY,colW);
@@ -3018,7 +3023,7 @@ function sizeKeypad(animate){
      and the leftover width becomes an even margin on both sides. */
   /* On short screens even the minimum row height can overflow; cap the keypad
      so the display keeps its floor and let the grid scroll the remainder. */
-  const maxC=mainH-(mode==='tape'?0:dispMin)-2;
+  const maxC=mainH-(mode==='tape'||side?0:dispMin)-2;
   const target=Math.min(rows*h+gap*(rows-1)+padY+toggleH+seam,maxC);
   const overflows=rows*h+gap*(rows-1)+padY+toggleH+seam>maxC;
   if(animate){
@@ -3202,13 +3207,16 @@ function applyTheme(t){
 if(prefersLight&&prefersLight.addEventListener)prefersLight.addEventListener('change',()=>{ if(state.theme==='system')paintTheme(); });
 /* In the Android app the status bar is native; give it the theme's background and
    icons that read against it, as theme-color does for the browser. */
+let systemBars=null;
 function paintSystemBars(t){
-  const bar=IS_NATIVE&&window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
-  if(!bar)return;
-  const light=t==='light';
+  if(!IS_NATIVE)return;
+  const light=t==='light', color=THEME_BG[t]||THEME_BG.dark;
   try{
-    bar.setBackgroundColor({color:THEME_BG[t]||THEME_BG.dark}).catch(()=>{});
-    bar.setStyle({style:light?'LIGHT':'DARK'}).catch(()=>{});
+    /* Our own small plugin paints the status and navigation bar alike. */
+    if(!systemBars&&window.Capacitor.registerPlugin)systemBars=window.Capacitor.registerPlugin('SystemBars');
+    if(systemBars){ systemBars.paint({color,light}).catch(()=>{}); return; }
+    const bar=window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
+    if(bar){ bar.setBackgroundColor({color}).catch(()=>{}); bar.setStyle({style:light?'LIGHT':'DARK'}).catch(()=>{}); }
   }catch(e){}
 }
 function setSwitch(node,on){ node.classList.toggle('on',!!on); node.setAttribute('aria-checked',on?'true':'false'); }
@@ -3332,6 +3340,22 @@ function overlayClosed(){
    moves into it, Esc closes it whatever the keyboard setting, and focus returns
    to the control that opened it. Closed sheets are inert too, so Tab never lands
    on a control that is parked off-screen. */
+/* On a wide screen the history is a column beside the calculator rather than a
+   drawer: always there, not a dialog, never inert. */
+const WIDE=window.matchMedia?window.matchMedia('(min-width: 1000px) and (min-height: 600px)'):null;
+function historyDocked(){ return !!(WIDE&&WIDE.matches); }
+function paintDock(){
+  const d=historyDocked();
+  document.body.classList.toggle('docked',d);
+  if(d){
+    el.historyDrawer.removeAttribute('role'); el.historyDrawer.removeAttribute('aria-modal');
+    if(state.historyOpen)closeHistory();
+    renderHistory(el.histSearch.value);
+  }else{
+    el.historyDrawer.setAttribute('role','dialog'); el.historyDrawer.setAttribute('aria-modal','true');
+  }
+  syncDialogs();
+}
 const DIALOGS=[el.keySheet,el.catSheet,el.unitSheet,el.settingsSheet,el.historyDrawer];
 const APP_CHROME=[document.querySelector('.app-header'),el.mainContent,el.bottomNav];
 let dialogReturn=null;
@@ -3342,6 +3366,7 @@ function syncDialogs(){
   const top=open[0];
   APP_CHROME.forEach(n=>{ if(n)n.inert=!!top; });
   DIALOGS.forEach(d=>{ if(d!==top&&dialogOpen(d))d.inert=true; });
+  if(historyDocked()){ el.historyDrawer.inert=!!top; el.historyDrawer.setAttribute('aria-hidden',top?'true':'false'); }
   if(top){
     if(!dialogReturn){ const a=document.activeElement; dialogReturn=a&&a!==document.body?a:null; }
     if(!top.contains(document.activeElement))top.focus({preventScroll:true});
@@ -3353,6 +3378,9 @@ function syncDialogs(){
 const dialogWatch=new MutationObserver(syncDialogs);
 DIALOGS.forEach(d=>dialogWatch.observe(d,{attributes:true,attributeFilter:['class']}));
 syncDialogs();
+if(WIDE&&WIDE.addEventListener)WIDE.addEventListener('change',paintDock);
+if(LANDSCAPE&&LANDSCAPE.addEventListener)LANDSCAPE.addEventListener('change',()=>sizeKeypad(false));
+paintDock();
 window.addEventListener('keydown',e=>{
   if(e.key!=='Escape'||!anyOverlayOpen())return;
   e.preventDefault(); e.stopPropagation();
@@ -3391,6 +3419,7 @@ function trackKeyboard(){
 }
 
 /* ============ test suite ============ */
+/* @tests:start — scripts/build-web.mjs leaves this block out of the Android build. */
 function runTests(){
   const R=[]; let pass=0,fail=0;
   silentToasts=true;
@@ -4443,6 +4472,7 @@ function runTests(){
   silentToasts=false;
   return {pass,fail,total:pass+fail,lines:R};
 }
+/* @tests:end */
 
 /* ============ wiring ============ */
 el.bottomNav.addEventListener('click',e=>{ const b=e.target.closest('.nav-item'); if(!b)return; switchMode(b.dataset.mode); buzz(); });
@@ -4720,7 +4750,8 @@ el.importFile.addEventListener('change',()=>{
 });
 
 /* The self-test is for whoever maintains the app, so it sits behind the version. */
-el.appVersion.addEventListener('click',()=>{ el.runTestsBtn.hidden=!el.runTestsBtn.hidden; });
+const HAS_TESTS=typeof runTests==='function';
+el.appVersion.addEventListener('click',()=>{ if(HAS_TESTS)el.runTestsBtn.hidden=!el.runTestsBtn.hidden; });
 el.runTestsBtn.addEventListener('click',()=>{
   el.runTestsBtn.textContent='Kjører …';
   setTimeout(()=>{
@@ -4878,5 +4909,5 @@ el.updateBtn.addEventListener('click',()=>{
 });
 
 /* exposed for debugging in the console */
-window.PKU={state,checkBuild,money,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,fxSwap,fxKey,fxSetSide,fxCompute,fxSetKeys,fxTapField,fxApplyDate,fxShare,fxLoadDate,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,runTests,UNITS,VERSION};
+window.PKU={state,checkBuild,money,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,fxSwap,fxKey,fxSetSide,fxCompute,fxSetKeys,fxTapField,fxApplyDate,fxShare,fxLoadDate,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,...(typeof runTests==='function'?{runTests}:{}),UNITS,VERSION};
 })();

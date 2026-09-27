@@ -10,6 +10,7 @@ nettleseren og som Android-app (APK) bygget med Capacitor.
 public/            appen: index.html, style.css, app.js, fonts/, icons/, sw.js, manifest
 resources/         kildene til Androids adaptive ikonlag (SVG)
 scripts/icons.mjs  lager alle PNG-ikoner fra SVG-kildene
+scripts/build-web.mjs  lager Android-kopien i www/: uten testpakken, minimert
 android/           Capacitor-prosjektet for Android
 ```
 
@@ -34,7 +35,7 @@ Krever Node 20+, JDK 21 og Android SDK 35 (`ANDROID_HOME` satt).
 
 ```sh
 npm install
-npm run android:sync   # ikoner + kopier public/ inn i android/
+npm run android:sync   # ikoner, www/ fra public/ (uten tester, minimert), kopier inn i android/
 npm run android:apk    # signert app-release.apk hvis nøkkelen er satt opp
 ```
 

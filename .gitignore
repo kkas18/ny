@@ -4,3 +4,4 @@ node_modules/
 *.jks
 keystore.properties
 signering/
+www/

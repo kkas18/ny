@@ -1,6 +1,6 @@
 /* Pro Kalkulator Ultra – service worker */
-const CORE='pku-core-v80';
-const RUNTIME='pku-runtime-v80';
+const CORE='pku-core-v81';
+const RUNTIME='pku-runtime-v81';
 const CORE_ASSETS=['./','./index.html','./style.css','./app.js','./fonts/schibsted-grotesk.woff2','./fonts/inter.woff2','./manifest.webmanifest','./icons/icon.svg','./icons/favicon-32.png','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-192.png','./icons/icon-maskable-512.png','./icons/icon-monochrome-512.png','./icons/apple-touch-icon.png'];
 
 self.addEventListener('install',e=>{
