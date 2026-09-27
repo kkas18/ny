@@ -1,7 +1,7 @@
 /* Pro Kalkulator Ultra – service worker */
-const CORE='pku-core-v71';
-const RUNTIME='pku-runtime-v71';
-const CORE_ASSETS=['./','./index.html','./manifest.webmanifest','./icons/logo-96.jpg','./icons/icon-192.jpg','./icons/icon-512.jpg','./icons/icon-maskable-512.jpg','./icons/apple-touch-icon.jpg'];
+const CORE='pku-core-v72';
+const RUNTIME='pku-runtime-v72';
+const CORE_ASSETS=['./','./index.html','./style.css','./app.js','./fonts/inter.woff2','./manifest.webmanifest','./icons/logo-96.jpg','./icons/icon-192.jpg','./icons/icon-512.jpg','./icons/icon-maskable-512.jpg','./icons/apple-touch-icon.jpg'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CORE)
@@ -42,7 +42,17 @@ self.addEventListener('fetch',e=>{
     return;
   }
 
-  /* Own files: cache first. */
+  /* Own code: network first, like the page itself, so the shell, its styles and
+     its script always come from the same deploy. The cache is the offline copy. */
+  if(url.origin===self.location.origin&&/\.(css|js|webmanifest)$/.test(url.pathname)){
+    e.respondWith(fetch(req).then(res=>{
+      if(res&&res.ok){ const copy=res.clone(); caches.open(CORE).then(c=>c.put(req,copy)); }
+      return res;
+    }).catch(()=>caches.match(req,{ignoreSearch:true})));
+    return;
+  }
+
+  /* Own images and fonts: cache first. */
   if(url.origin===self.location.origin){
     e.respondWith(caches.match(req).then(hit=>hit||fetch(req).then(res=>{
       const copy=res.clone();
