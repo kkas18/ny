@@ -432,9 +432,12 @@ body.kb-open .sheet-body{padding-bottom:14px}
 .unit-opt .fav.on{color:var(--text)}
 .unit-opt .fav svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
 
-/* Settings: a heading, a line of choices, done. */
-.settings-section{margin-bottom:28px}
-.settings-label{font-size:var(--t-2);font-weight:600;color:var(--text);margin-bottom:10px}
+/* Settings: five groups, each a heading with its choices under it. */
+.settings-group{font-size:var(--t-3);font-weight:600;color:var(--text);margin:28px 0 12px}
+.settings-group:first-child{margin-top:4px}
+.settings-section{margin-bottom:18px}
+.settings-label{font-size:var(--t-1);font-weight:400;color:var(--text-secondary);margin-bottom:8px}
+.version-btn{display:block;margin:14px auto 0;border:none;background:transparent;color:var(--text-secondary);font-size:var(--t-1);padding:8px 12px;border-radius:var(--r-inner);cursor:pointer}
 .settings-note{font-size:var(--t-1);color:var(--text-secondary);line-height:1.5;margin:-4px 0 10px}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg-btn{flex:0 0 auto;padding:9px 14px;border-radius:var(--r-inner);border:none;background:var(--surface-light);color:var(--text-secondary);font-size:var(--t-2);font-weight:400;cursor:pointer;white-space:nowrap;transition:background var(--transition-fast),color var(--transition-fast)}

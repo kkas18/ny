@@ -4636,6 +4636,8 @@ el.importFile.addEventListener('change',()=>{
   el.importFile.value='';
 });
 
+/* The self-test is for whoever maintains the app, so it sits behind the version. */
+el.appVersion.addEventListener('click',()=>{ el.runTestsBtn.hidden=!el.runTestsBtn.hidden; });
 el.runTestsBtn.addEventListener('click',()=>{
   el.runTestsBtn.textContent='Kjører …';
   setTimeout(()=>{
@@ -4677,7 +4679,8 @@ function init(){
   state.livePreview=lsGet(LS.live,'1')==='1';
   state.kbd=lsGet(LS.kbd,'1')==='1';
   state.rateSrc=lsGet(LS.src,'both');
-  state.answerColor=lsGet(LS.answerColor,'neutral');
+  /* The answer colour is no longer a choice: the result is always ink on paper. */
+  state.answerColor='neutral';
   state.sci=lsGet(LS.sci,'0')==='1';
   state.allOpen=lsGet(LS.allOpen,'1')==='1';
   state.history=jGet(LS.hist,[]);

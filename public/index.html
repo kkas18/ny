@@ -263,6 +263,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-title"><span>Innstillinger</span><button class="text-btn" id="closeSettingsBtn">Lukk</button></div>
   <div class="sheet-body">
+    <h3 class="settings-group">Utseende</h3>
     <section class="settings-section">
       <div class="settings-label">Tema</div>
       <div class="seg" id="themeOptions">
@@ -271,6 +272,7 @@
       <div class="toggle-row"><div><div class="tl" id="swamoledSwitch">Helt svart</div><div class="td">Ren svart bakgrunn i mørkt tema. Sparer strøm på OLED-skjermer.</div></div><button type="button" class="switch" id="amoledSwitch" role="switch" aria-checked="false" aria-labelledby="swamoledSwitch"></button></div>
       <div class="toggle-row"><div><div class="tl" id="swhcSwitch">Høy kontrast</div><div class="td">Hvit tekst på svart med tydelige kanter på tastene.</div></div><button type="button" class="switch" id="hcSwitch" role="switch" aria-checked="false" aria-labelledby="swhcSwitch"></button></div>
     </section>
+    <h3 class="settings-group">Tall</h3>
     <section class="settings-section">
       <div class="settings-label">Tallformat</div>
       <div class="seg seg-3" id="formatOptions">
@@ -286,35 +288,31 @@
       </div>
     </section>
     <section class="settings-section">
-      <div class="settings-label">Farge på svaret</div>
-      <div class="seg seg-3" id="answerColorOptions">
-        <button class="seg-btn" data-ac="neutral">Nøytral</button><button class="seg-btn" data-ac="accent">Modusfarge</button><button class="seg-btn" data-ac="red">Rød</button>
-      </div>
-    </section>
-    <section class="settings-section">
       <div class="settings-label">Vinkelmåte</div>
       <div class="seg seg-2" id="trigOptions"><button class="seg-btn" data-trig="deg">Grader</button><button class="seg-btn" data-trig="rad">Radianer</button></div>
     </section>
+    <h3 class="settings-group">Bruk</h3>
     <section class="settings-section">
       <div class="settings-label">Faner</div>
-      <p class="settings-note">RPN og Tape er spesialverktøy. Bruker du dem ikke, kan du slå dem av her — innholdet forsvinner ikke, fanen blir bare borte fra menyen.</p>
+      <p class="settings-note">RPN og Tape kan skjules fra fanelinjen. Innholdet blir liggende.</p>
       <div class="toggle-row"><div><div class="tl" id="swtabRpnSwitch">RPN</div><div class="td">Omvendt polsk notasjon: du taster tallene først og operatoren til slutt, uten parenteser.</div></div><button type="button" class="switch" id="tabRpnSwitch" role="switch" aria-checked="false" aria-labelledby="swtabRpnSwitch"></button></div>
       <div class="toggle-row"><div><div class="tl" id="swtabTapeSwitch">Tape</div><div class="td">En kvitteringsstrimmel der hver linje står igjen og summeres, med MVA-splitt.</div></div><button type="button" class="switch" id="tabTapeSwitch" role="switch" aria-checked="false" aria-labelledby="swtabTapeSwitch"></button></div>
     </section>
     <section class="settings-section">
-      <div class="settings-label">Oppførsel</div>
+      <div class="settings-label">Tastatur og svar</div>
       <div class="toggle-row"><div><div class="tl" id="swhapticSwitch">Vibrasjon</div><div class="td">Kort haptisk puls når du trykker på en tast.</div></div><button type="button" class="switch" id="hapticSwitch" role="switch" aria-checked="false" aria-labelledby="swhapticSwitch"></button></div>
       <div class="toggle-row"><div><div class="tl" id="swliveSwitch">Forhåndsvis svaret</div><div class="td">Viser resultatet mens du skriver uttrykket.</div></div><button type="button" class="switch" id="liveSwitch" role="switch" aria-checked="false" aria-labelledby="swliveSwitch"></button></div>
       <div class="toggle-row"><div><div class="tl" id="swkbdSwitch">Tastaturstøtte</div><div class="td">Regn med fysisk tastatur. Esc tømmer, Enter regner ut.</div></div><button type="button" class="switch" id="kbdSwitch" role="switch" aria-checked="false" aria-labelledby="swkbdSwitch"></button></div>
     </section>
+    <h3 class="settings-group">Valuta</h3>
     <section class="settings-section">
-      <div class="settings-label">Kilde for valutakurser</div>
-      <p class="settings-note">Norges Bank noterer offisiell midtkurs hver virkedag, basert på kursene kl. 14.15. Utfylling henter valutaer Norges Bank ikke noterer.</p>
+      <div class="settings-label">Kilde for kurser</div>
+      <p class="settings-note">Norges Bank noterer midtkurs hver virkedag kl. 14.15. Utfylling henter valutaer de ikke noterer.</p>
       <div class="seg seg-2" id="rateSrcOptions"><button class="seg-btn" data-src="nb">Norges Bank</button><button class="seg-btn" data-src="both">NB + utfylling</button></div>
     </section>
     <section class="settings-section">
       <div class="settings-label">Vekslingsgebyr</div>
-      <p class="settings-note">Norges Bank noterer midtkurs. Kort og vekslingskontor legger vanligvis på 1,5–2 %. Påslaget gjør den utenlandske valutaen tilsvarende dyrere: velger du 1,5 %, koster 1 USD 1,5 % mer i kroner. Midtkursen vises fortsatt under resultatet.</p>
+      <p class="settings-note">Kort og vekslingskontor legger vanligvis 1,5–2 % på midtkursen. Påslaget vises i kurssetningen.</p>
       <div class="seg seg-4" id="feeOptions">
         <button class="seg-btn" data-fee="0">Av</button><button class="seg-btn" data-fee="1.5">1,5 %</button>
         <button class="seg-btn" data-fee="1.75">1,75 %</button><button class="seg-btn" data-fee="2">2 %</button>
@@ -324,16 +322,16 @@
         <button id="feeCustomBtn">Bruk</button>
       </div>
     </section>
+    <h3 class="settings-group">Om appen</h3>
     <section class="settings-section">
-      <div class="settings-label">App</div>
       <button class="action-btn" id="installBtn" style="display:none;margin-top:0">Installer på hjemskjermen</button>
       <div class="io-row">
         <button class="action-btn" id="exportSettingsBtn">Lagre sikkerhetskopi</button>
         <button class="action-btn" id="importSettingsBtn">Hent inn kopi</button>
       </div>
       <input type="file" id="importFile" accept="application/json,.json" style="display:none">
-      <button class="action-btn quiet" id="runTestsBtn">Kjør testene</button>
-      <div class="hint" id="appVersion" style="text-align:center"></div>
+      <button class="action-btn quiet" id="runTestsBtn" hidden>Kjør testene</button>
+      <button type="button" class="version-btn" id="appVersion" aria-label="Versjon. Trykk for å vise testene"></button>
       <div class="hint" id="testSummary" style="text-align:center"></div>
       <div class="test-out" id="testOut" style="display:none"></div>
     </section>
