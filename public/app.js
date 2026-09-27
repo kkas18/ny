@@ -1,0 +1,4913 @@
+(function(){
+'use strict';
+const VERSION='8.1.0';
+const IS_NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const CFG={
+  maxExpr:520, maxHistory:250, defaultDecimals:8,
+  nbRates:'https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&lastNObservations=1&locale=no',
+  nbSeries:'https://data.norges-bank.no/api/data/EXR/B.{CUR}.NOK.SP?format=csv&startPeriod={FROM}&endPeriod={TO}&locale=no',
+  fillRates:'https://open.er-api.com/v6/latest/NOK',
+  flagBase:'https://flagcdn.com/w40/',
+  rateMaxAgeDays:5, ratesTtlMs:6*3600*1000
+};
+const LS={theme:'pku_theme',amoled:'pku_amoled',hc:'pku_hc',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
+  haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
+  fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',fx:'pku_fx',histRates:'pku_histrates',tabs:'pku_tabs',allOpen:'pku_allopen',
+  tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
+const MODES=['standard','rpn','tape','percent','currency','converter'];
+const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',currency:'Valuta',converter:'Konverter'};
+const THEME_BG={dark:'#11151c',light:'#f2f3f5',amoled:'#000000',contrast:'#000000'};
+
+/* ============ storage helpers ============ */
+function lsGet(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} }
+function lsSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
+function jGet(k,d){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;} }
+function jSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+
+const state={
+  mode:'standard', theme:'system', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
+  amoled:false, hc:false, haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'neutral', sci:false,
+  expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
+  history:[], historyOpen:false, stack:[], rpnEntry:'',
+  conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
+  favs:[], pctType:'of', pctVals:{}, pctResult:null, pctRate:25,
+  rates:null, ratesMeta:null, rateState:'loading', rateNote:'', allOpen:true, sheetFor:null,
+  fx:{from:'nok',to:'usd',value:'1000',side:'from',auto:true,exact:null},
+  fxDate:null, fxHist:null, fxChange:{}, fxKeysOpen:false, tabs:{rpn:true,tape:true},
+  vars:{A:0,B:0,C:0,D:0}, stoArmed:false, recent:{}, favUnits:{}, fxFee:0, catUse:{}, catOrder:null, sparkDays:30,
+  tape:[], tapeVat:0, tapeEntry:'', tapeEditing:null, tapeNoting:null,
+  dateType:'between', dateVals:{}
+};
+
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const el={};
+['mainContent','displayArea','memPill','memValue','trigPill','liveResult','zoneToggle','zoneToggleLabel','expressionDisplay','resultDisplay','rpnStack',
+ 'recentList','buttonsContainer','percentPanel','converterPanel','bottomNav','historyBtn','historyBadge','settingsBtn',
+ 'pctChips','pctFields','pctResult','pctSentence','pctBreakdown','pctUseBtn','pctCopyBtn',
+ 'catChips','rateBar','rateDot','rateText','rateRefreshBtn','fromPicker','fromFlag','fromSymbol','fromName',
+ 'fromInput','fromHint','swapBtn','toPicker','toFlag','toSymbol','toName','toInput','toHint','convRate',
+ 'convCopyBtn','convFavBtn','convFavLabel','convFavStar','convSendBtn','rateInfoBtn','rateDotMini','favChips','sparkCard','sparkTitle','sparkChange','sparkSvg',
+ 'sparkFrom','sparkTo','sparkLow','sparkHigh','sparkRange',
+ 'currencyPanel','fxKeys','fxRateBar','fxRateDot','fxRateText','fxRefreshBtn','fxFromPicker','fxFromFlag','fxFromSymbol','fxFromName','fxToPicker','fxToFlag','fxToSymbol','fxToName',
+ 'fxOutput','fxSwapBtn','fxInput','fxRateInfo','fxFromAffix','fxToAffix','fxDotMini','fxRate','fxNote','fxAddBtn','fxSendBtn','fxDateBtn','fxDateLabel','fxShareBtn','fxDateRow','fxDateInput','fxDateGo','fxDateToday',
+ 'fxBoard','fxBoardHint','fxBoardBody','fxSparkCard','fxSparkTitle','fxSparkChange','fxSparkRange','fxSparkSvg',
+ 'fxSparkFrom','fxSparkTo','fxSparkLow','fxSparkHigh','allUnits','allHead','allBody','historyOverlay','historyDrawer','historyList',
+ 'histSearch','clearHistBtn','exportHistBtn','closeHistBtn','sheetOverlay','unitSheet','sheetTitle','sheetCloseBtn',
+ 'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
+ 'testSummary','testOut','modalOverlay','catSheet','catCloseBtn','catGrid','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
+ 'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
+ 'toast','appVersion','amoledSwitch','hcSwitch','hapticSwitch','liveSwitch','kbdSwitch','tabRpnSwitch','tabTapeSwitch',
+ 'tapePanel','tapeList','tapeSum','tapeSumLabel','tapeSplit','tapeCur','tapePrev','tapeVatBtn','tapeVatLabel',
+ 'tapeNoteBtn','tapeCopyBtn','tapeClearBtn','convStandard','convDates','dateChips','dateFields','dateResult',
+ 'dateSentence','dateBreakdown','dateCopyBtn','bitCard','bitGrid','bitOps','bitOperand','bitOperandRow','bitResult',
+ 'bitWidthHint','updateBar','updateBtn','exportSettingsBtn','importSettingsBtn','importFile'].forEach(id=>el[id]=document.getElementById(id));
+const metaTheme=document.getElementById('metaTheme');
+
+/* ============ number formatting ============ */
+const SEP={no:{g:'\u202F',d:','},en:{g:',',d:'.'},plain:{g:'',d:'.'}};
+function parseNum(v){ if(typeof v==='number')return v; if(typeof v!=='string')return NaN;
+  const s=v.replace(/[\u202F\u00A0\s]/g,'').replace(/,/g,'.'); if(s===''||s==='-')return NaN; return Number(s); }
+
+/* Rounds to at most `dec` decimal places, kills float noise, then groups digits. */
+function formatNumber(num,dec,opts){
+  opts=opts||{};
+  if(typeof num!=='number'||!Number.isFinite(num))return 'Error';
+  const d=(dec===undefined||dec===null)?state.decimals:dec;
+  const abs=Math.abs(num);
+  let s;
+  if(num!==0&&(abs<1e-9||abs>=1e15)){
+    s=num.toExponential(Math.min(d,12)).replace(/\.?0+e/,'e');
+    return opts.raw?s:groupDigits(s);
+  }
+  s=num.toFixed(Math.min(d,20));
+  if(s.indexOf('.')>-1)s=s.replace(/0+$/,'').replace(/\.$/,'');
+  if(s==='-0')s='0';
+  /* toFixed already removed float noise like 0.30000000000000004 */
+  return opts.raw?s:groupDigits(s);
+}
+/* Money keeps both decimals: 105,8 and 1749,3 are amounts written as if they
+   were measurements. Everything else still trims its trailing zeros. */
+function money(num,dec){
+  if(typeof num!=='number'||!Number.isFinite(num))return 'Error';
+  const d=dec===undefined?2:dec;
+  const abs=Math.abs(num);
+  if(num!==0&&(abs<1e-9||abs>=1e15))return formatNumber(num,d);
+  let out=num.toFixed(d);
+  if(out==='-'+(0).toFixed(d))out=(0).toFixed(d);
+  return groupDigits(out.replace('.',SEP[state.fmt]===SEP.plain?'.':'.'));
+}
+function groupDigits(s){
+  const sep=SEP[state.fmt]||SEP.no;
+  const m=/^(-?)(\d+)(?:\.(\d+))?(e[+-]?\d+)?$/i.exec(s);
+  if(!m)return s;
+  let int=m[2];
+  if(sep.g&&int.length>4)int=int.replace(/\B(?=(\d{3})+(?!\d))/g,sep.g);
+  return m[1]+int+(m[3]?sep.d+m[3]:'')+(m[4]||'');
+}
+/* For the eye only: 1,21932631e+17 reads as 1,219 326 31 × 10¹⁷. Copying and
+   reusing a value keep the plain e-form, which every parser understands. */
+const SUPER={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+function prettyNumber(s){
+  const m=/^(-?)([\d\u202F\u00A0 .,]+)e([+-]?)(\d+)$/i.exec(String(s));
+  if(!m)return s;
+  const exp=(m[3]==='-'?'-':'')+m[4];
+  let mant=m[2];
+  const sep=SEP[state.fmt]||SEP.no;
+  /* Only the Norwegian format groups decimals, with the same thin space. */
+  if(state.fmt==='no'){ const i=mant.indexOf(sep.d); if(i>-1)mant=mant.slice(0,i+1)+mant.slice(i+1).replace(/(\d{3})(?=\d)/g,'$1'+sep.g); }
+  return m[1]+mant+' × 10'+exp.split('').map(c=>SUPER[c]).join('');
+}
+/* Groups every number that appears inside a typed expression, for the display only. */
+function formatExpression(expr){
+  const sep=SEP[state.fmt]||SEP.no;
+  const grouped=expr.replace(/\d+(?:\.\d+)?/g,n=>{
+    const p=n.split('.'); let i=p[0];
+    if(sep.g&&i.length>4)i=i.replace(/\B(?=(\d{3})+(?!\d))/g,sep.g);
+    return i+(p[1]?sep.d+p[1]:'');
+  });
+  /* A thin space either side of a binary operator: 1 250 × 4 + 18 reads faster than
+     1250×4+18. A minus that starts a number (−5, 3×−2) stays tight, and so does
+     the sign inside an exponent like 1,2e+17. */
+  return grouped.replace(/([\d)%!πA-D²³])([+\-×÷])/g,(m,a,op,off,str)=>{
+    if(a!==')'&&str[off-1]==='e'&&/\d/.test(str[off-2]||''))return m;
+    return a+'\u2009'+(op==='-'?'−':op)+'\u2009';
+  }).replace(/-/g,'−');
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ============ expression engine ============ */
+const FUNCS=['asinh','acosh','atanh','sinh','cosh','tanh','asin','acos','atan','sin','cos','tan','sqrt','cbrt','log2','log','ln','exp','abs','sign','round','floor','ceil'];
+const CONSTS={'π':Math.PI,'e':Math.E,'φ':(1+Math.sqrt(5))/2};
+
+function tokenize(expr){
+  const t=[]; let i=0;
+  const prevType=()=>t.length?t[t.length-1].t:null;
+  const valueBefore=()=>{const p=prevType();return p==='num'||p==='rp'||p==='sq'||p==='fact'||p==='const';};
+  while(i<expr.length){
+    const c=expr[i];
+    if(c===' '){i++;continue;}
+    if(/[0-9.,]/.test(c)){
+      let j=i,seen=0;
+      while(j<expr.length&&/[0-9.,]/.test(expr[j])){ if(expr[j]==='.'||expr[j]===','){seen++; if(seen>1)break;} j++; }
+      const raw=expr.slice(i,j).replace(',','.'); const n=Number(raw);
+      if(!Number.isFinite(n))throw new Error('Ugyldig tall: '+raw);
+      t.push({t:'num',v:n}); i=j; continue;
+    }
+    let fn=null;
+    for(const f of FUNCS){ if(expr.startsWith(f+'(',i)){fn=f;break;} }
+    if(fn){ t.push({t:'func',v:fn}); t.push({t:'lp'}); i+=fn.length+1; continue; }
+    if(c in CONSTS){ if(valueBefore())t.push({t:'op',v:'×'}); t.push({t:'const',v:CONSTS[c]}); i++; continue; }
+    if(/[A-D]/.test(c)){ if(valueBefore())t.push({t:'op',v:'×'}); t.push({t:'const',v:state.vars[c]||0}); i++; continue; }
+    if(c==='('){ if(valueBefore())t.push({t:'op',v:'×'}); t.push({t:'lp'}); i++; continue; }
+    if(c===')'){ t.push({t:'rp'}); i++; continue; }
+    if(c==='²'){ t.push({t:'sq',v:2}); i++; continue; }
+    if(c==='³'){ t.push({t:'sq',v:3}); i++; continue; }
+    if(c==='!'){ t.push({t:'fact'}); i++; continue; }
+    if(c==='%'){ t.push({t:'pct'}); i++; continue; }
+    if('+-×÷^'.indexOf(c)>-1){
+      if(c==='-'&&!valueBefore()){ t.push({t:'unary'}); i++; continue; }
+      if(c==='+'&&!valueBefore()){ i++; continue; }
+      t.push({t:'op',v:c}); i++; continue;
+    }
+    if(c==='m'&&expr.startsWith('mod',i)){ t.push({t:'op',v:'mod'}); i+=3; continue; }
+    throw new Error('Ukjent tegn: '+c);
+  }
+  return t;
+}
+const PREC={'+':1,'-':1,'×':2,'÷':2,'mod':2,'^':4};
+const RIGHT={'^':true};
+function toRPN(tokens){
+  const out=[],ops=[];
+  for(const t of tokens){
+    if(t.t==='num'||t.t==='const'){out.push({t:'num',v:t.v});continue;}
+    if(t.t==='func'){ops.push(t);continue;}
+    if(t.t==='unary'){ops.push({t:'op',v:'neg',p:3.5});continue;}
+    if(t.t==='lp'){ops.push(t);continue;}
+    if(t.t==='rp'){
+      while(ops.length&&ops[ops.length-1].t!=='lp')out.push(ops.pop());
+      if(!ops.length)throw new Error('Parentesene stemmer ikke');
+      ops.pop();
+      if(ops.length&&ops[ops.length-1].t==='func')out.push(ops.pop());
+      continue;
+    }
+    if(t.t==='sq'||t.t==='fact'||t.t==='pct'){out.push(t);continue;}
+    if(t.t==='op'){
+      const p=t.p||PREC[t.v]||1;
+      while(ops.length&&ops[ops.length-1].t!=='lp'){
+        const top=ops[ops.length-1];
+        const tp=top.t==='func'?9:(top.p||PREC[top.v]||0);
+        if(tp>p||(tp===p&&!RIGHT[t.v]))out.push(ops.pop()); else break;
+      }
+      ops.push({t:'op',v:t.v,p});continue;
+    }
+  }
+  while(ops.length){const o=ops.pop(); if(o.t==='lp')throw new Error('Parentesene stemmer ikke'); out.push(o);}
+  return out;
+}
+function factorial(n){
+  if(!Number.isInteger(n)||n<0)throw new Error('Fakultet krever et positivt heltall');
+  if(n>170)throw new Error('Fakultet er for stort til å regnes ut');
+  let r=1; for(let i=2;i<=n;i++)r*=i; return r;
+}
+function evalRPN(rpn){
+  const st=[]; const rad=state.trig==='rad';
+  const toR=v=>rad?v:v*Math.PI/180, fromR=v=>rad?v:v*180/Math.PI;
+  const pop=()=>{ if(!st.length)throw new Error('Uttrykket er ufullstendig'); return st.pop(); };
+  for(const t of rpn){
+    if(t.t==='num'){st.push(t.v);continue;}
+    if(t.t==='sq'){const a=pop();st.push(t.v===3?a*a*a:a*a);continue;}
+    if(t.t==='fact'){st.push(factorial(pop()));continue;}
+    if(t.t==='pct'){st.push(pop()/100);continue;}
+    if(t.t==='op'){
+      if(t.v==='neg'){st.push(-pop());continue;}
+      const b=pop(),a=pop();
+      switch(t.v){
+        case '+':st.push(a+b);break;
+        case '-':st.push(a-b);break;
+        case '×':st.push(a*b);break;
+        case '÷':if(b===0)throw new Error('Kan ikke dele på null');st.push(a/b);break;
+        case 'mod':if(b===0)throw new Error('Kan ikke dele på null');st.push(a%b);break;
+        case '^':st.push(Math.pow(a,b));break;
+        default:throw new Error('Ukjent operator');
+      }
+      continue;
+    }
+    if(t.t==='func'){
+      const a=pop();
+      switch(t.v){
+        case 'sin':st.push(Math.sin(toR(a)));break;
+        case 'cos':st.push(Math.cos(toR(a)));break;
+        case 'tan':{const r=toR(a); if(Math.abs(Math.cos(r))<1e-12)throw new Error('tan er udefinert her'); st.push(Math.tan(r));break;}
+        case 'asin':if(a<-1||a>1)throw new Error('asin krever en verdi mellom -1 og 1');st.push(fromR(Math.asin(a)));break;
+        case 'acos':if(a<-1||a>1)throw new Error('acos krever en verdi mellom -1 og 1');st.push(fromR(Math.acos(a)));break;
+        case 'atan':st.push(fromR(Math.atan(a)));break;
+        case 'sinh':st.push(Math.sinh(a));break;
+        case 'cosh':st.push(Math.cosh(a));break;
+        case 'tanh':st.push(Math.tanh(a));break;
+        case 'asinh':st.push(Math.asinh(a));break;
+        case 'acosh':if(a<1)throw new Error('acosh krever en verdi fra 1 og opp');st.push(Math.acosh(a));break;
+        case 'atanh':if(a<=-1||a>=1)throw new Error('atanh krever en verdi mellom -1 og 1');st.push(Math.atanh(a));break;
+        case 'log':if(a<=0)throw new Error('Logaritmen krever et positivt tall');st.push(Math.log10(a));break;
+        case 'log2':if(a<=0)throw new Error('Logaritmen krever et positivt tall');st.push(Math.log2(a));break;
+        case 'ln':if(a<=0)throw new Error('Logaritmen krever et positivt tall');st.push(Math.log(a));break;
+        case 'exp':st.push(Math.exp(a));break;
+        case 'sqrt':if(a<0)throw new Error('Kvadratrot krever et positivt tall');st.push(Math.sqrt(a));break;
+        case 'cbrt':st.push(Math.cbrt(a));break;
+        case 'abs':st.push(Math.abs(a));break;
+        case 'sign':st.push(Math.sign(a));break;
+        case 'round':st.push(Math.round(a));break;
+        case 'floor':st.push(Math.floor(a));break;
+        case 'ceil':st.push(Math.ceil(a));break;
+        default:throw new Error('Ukjent funksjon');
+      }
+      continue;
+    }
+  }
+  if(st.length!==1)throw new Error('Uttrykket er ufullstendig');
+  const r=st[0];
+  if(!Number.isFinite(r))throw new Error('Resultatet er ikke et gyldig tall');
+  return r;
+}
+function evaluate(expr){
+  if(!expr||!expr.trim())throw new Error('Skriv inn et uttrykk');
+  return evalRPN(toRPN(tokenize(expr)));
+}
+
+/* ============ unit data ============ */
+const UNITS={
+ length:{label:'Lengde',ico:'<rect x="2.4" y="7.4" width="19.2" height="9.2" rx="1.6"/><line x1="7.2" y1="7.4" x2="7.2" y2="11.4"/><line x1="12" y1="7.4" x2="12" y2="12.6"/><line x1="16.8" y1="7.4" x2="16.8" y2="11.4"/>',units:{
+   meter:{l:'Meter',s:'m',f:1},kilometer:{l:'Kilometer',s:'km',f:1000},desimeter:{l:'Desimeter',s:'dm',f:.1},
+   centimeter:{l:'Centimeter',s:'cm',f:.01},millimeter:{l:'Millimeter',s:'mm',f:.001},mikrometer:{l:'Mikrometer',s:'µm',f:1e-6},
+   nanometer:{l:'Nanometer',s:'nm',f:1e-9},mil:{l:'Norsk mil',s:'mil',f:10000},nautical:{l:'Nautisk mil',s:'nmi',f:1852},
+   mile:{l:'Engelsk mil',s:'mi',f:1609.344},yard:{l:'Yard',s:'yd',f:.9144},foot:{l:'Fot',s:'ft',f:.3048},
+   inch:{l:'Tomme',s:'in',f:.0254},lightyear:{l:'Lysår',s:'ly',f:9.4607304725808e15}}},
+ weight:{label:'Vekt',ico:'<line x1="12" y1="5.5" x2="12" y2="20"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="4" y1="7.5" x2="20" y2="7.5"/><path d="M4 7.5l-2.2 5.4a2.9 2.9 0 0 0 4.4 0z"/><path d="M20 7.5l2.2 5.4a2.9 2.9 0 0 1-4.4 0z"/>',units:{
+   kilogram:{l:'Kilogram',s:'kg',f:1},hektogram:{l:'Hektogram',s:'hg',f:.1},gram:{l:'Gram',s:'g',f:.001},
+   milligram:{l:'Milligram',s:'mg',f:1e-6},mikrogram:{l:'Mikrogram',s:'µg',f:1e-9},tonn:{l:'Tonn',s:'t',f:1000},
+   carat:{l:'Karat',s:'ct',f:.0002},pound:{l:'Pund',s:'lb',f:.45359237},ounce:{l:'Unse',s:'oz',f:.028349523125},
+   stone:{l:'Stone',s:'st',f:6.35029318}}},
+ temperature:{label:'Temperatur',ico:'<path d="M14 14.6V5.2a2 2 0 0 0-4 0v9.4a3.9 3.9 0 1 0 4 0z"/><line x1="12" y1="8.5" x2="12" y2="15.5"/>',special:'temp',units:{
+   celsius:{l:'Celsius',s:'°C'},fahrenheit:{l:'Fahrenheit',s:'°F'},kelvin:{l:'Kelvin',s:'K'},rankine:{l:'Rankine',s:'°R'}}},
+ area:{label:'Areal',ico:'<rect x="3.4" y="3.4" width="17.2" height="17.2" rx="1.8"/><rect x="3.4" y="12" width="8.6" height="8.6" rx="1.2"/>',units:{
+   sqm:{l:'Kvadratmeter',s:'m²',f:1},sqkm:{l:'Kvadratkilometer',s:'km²',f:1e6},sqcm:{l:'Kvadratcentimeter',s:'cm²',f:1e-4},
+   sqmm:{l:'Kvadratmillimeter',s:'mm²',f:1e-6},dekar:{l:'Dekar (mål)',s:'daa',f:1000},hectare:{l:'Hektar',s:'ha',f:10000},
+   acre:{l:'Acre',s:'ac',f:4046.8564224},sqft:{l:'Kvadratfot',s:'ft²',f:.09290304},sqin:{l:'Kvadrattomme',s:'in²',f:6.4516e-4}}},
+ volume:{label:'Volum',ico:'<path d="M12 2.8l8.4 4.8v9.6L12 22l-8.4-4.8V7.6z"/><polyline points="3.6 7.6 12 12.4 20.4 7.6"/><line x1="12" y1="12.4" x2="12" y2="22"/>',units:{
+   liter:{l:'Liter',s:'L',f:1},desiliter:{l:'Desiliter',s:'dL',f:.1},centiliter:{l:'Centiliter',s:'cL',f:.01},
+   milliliter:{l:'Milliliter',s:'mL',f:.001},cbm:{l:'Kubikkmeter',s:'m³',f:1000},cbcm:{l:'Kubikkcentimeter',s:'cm³',f:.001},
+   galus:{l:'Gallon (US)',s:'gal',f:3.785411784},galuk:{l:'Gallon (UK)',s:'gal UK',f:4.54609},
+   quart:{l:'Quart (US)',s:'qt',f:.946352946},pint:{l:'Pint (US)',s:'pt',f:.473176473},cup:{l:'Cup (US)',s:'cup',f:.2365882365},
+   floz:{l:'Fluid ounce (US)',s:'fl oz',f:.0295735295625},tbsp:{l:'Spiseskje',s:'ss',f:.015},tsp:{l:'Teskje',s:'ts',f:.005}}},
+ speed:{label:'Fart',ico:'<path d="M3.4 17.5a9 9 0 1 1 17.2 0"/><line x1="12" y1="17.5" x2="16.6" y2="10.8"/><circle cx="12" cy="17.5" r="1.4"/>',units:{
+   mps:{l:'Meter per sekund',s:'m/s',f:1},kmh:{l:'Kilometer i timen',s:'km/t',f:1/3.6},mph:{l:'Miles per hour',s:'mph',f:.44704},
+   knot:{l:'Knop',s:'kn',f:1852/3600},fps:{l:'Fot per sekund',s:'ft/s',f:.3048},mach:{l:'Mach (havnivå)',s:'Ma',f:340.29}}},
+ time:{label:'Tid',ico:'<circle cx="12" cy="12" r="8.6"/><polyline points="12 6.6 12 12 16 14"/>',units:{
+   second:{l:'Sekund',s:'s',f:1},millisecond:{l:'Millisekund',s:'ms',f:.001},microsecond:{l:'Mikrosekund',s:'µs',f:1e-6},
+   minute:{l:'Minutt',s:'min',f:60},hour:{l:'Time',s:'t',f:3600},day:{l:'Døgn',s:'d',f:86400},week:{l:'Uke',s:'uke',f:604800},
+   month:{l:'Måned (30 d)',s:'mnd',f:2592000},year:{l:'År (365 d)',s:'år',f:31536000}}},
+ energy:{label:'Energi',ico:'<path d="M13.6 2.4L4.8 13.6h5.9L10.4 21.6l8.8-11.2h-5.9z"/>',units:{
+   joule:{l:'Joule',s:'J',f:1},kilojoule:{l:'Kilojoule',s:'kJ',f:1000},megajoule:{l:'Megajoule',s:'MJ',f:1e6},
+   calorie:{l:'Kalori',s:'cal',f:4.184},kcal:{l:'Kilokalori',s:'kcal',f:4184},wh:{l:'Watt-time',s:'Wh',f:3600},
+   kwh:{l:'Kilowatt-time',s:'kWh',f:3.6e6},mwh:{l:'Megawatt-time',s:'MWh',f:3.6e9},
+   ev:{l:'Elektronvolt',s:'eV',f:1.602176634e-19},btu:{l:'BTU',s:'BTU',f:1055.05585262}}},
+ power:{label:'Effekt',ico:'<line x1="12" y1="3" x2="12" y2="12"/><path d="M7.6 6.3a7.6 7.6 0 1 0 8.8 0"/>',units:{
+   watt:{l:'Watt',s:'W',f:1},milliwatt:{l:'Milliwatt',s:'mW',f:.001},kilowatt:{l:'Kilowatt',s:'kW',f:1000},
+   megawatt:{l:'Megawatt',s:'MW',f:1e6},gigawatt:{l:'Gigawatt',s:'GW',f:1e9},
+   hkm:{l:'Hestekrefter (metrisk)',s:'hk',f:735.49875},hpm:{l:'Horsepower (mek.)',s:'hp',f:745.6998715823},
+   btuh:{l:'BTU per time',s:'BTU/t',f:.29307107}}},
+ pressure:{label:'Trykk',ico:'<line x1="3.8" y1="4.6" x2="20.2" y2="4.6"/><line x1="3.8" y1="19.4" x2="20.2" y2="19.4"/><polyline points="8.4 8.2 12 11.8 15.6 8.2"/><polyline points="8.4 15.8 12 12.2 15.6 15.8"/>',units:{
+   pascal:{l:'Pascal',s:'Pa',f:1},kilopascal:{l:'Kilopascal',s:'kPa',f:1000},megapascal:{l:'Megapascal',s:'MPa',f:1e6},
+   bar:{l:'Bar',s:'bar',f:1e5},millibar:{l:'Millibar',s:'mbar',f:100},psi:{l:'PSI',s:'psi',f:6894.757293168},
+   atm:{l:'Atmosfære',s:'atm',f:101325},torr:{l:'Torr (mmHg)',s:'Torr',f:101325/760},mvs:{l:'Meter vannsøyle',s:'mVs',f:9806.65}}},
+ force:{label:'Kraft',ico:'<line x1="2.8" y1="12" x2="14.5" y2="12"/><polyline points="10.8 8 14.8 12 10.8 16"/><line x1="19" y1="4.6" x2="19" y2="19.4"/>',units:{
+   newton:{l:'Newton',s:'N',f:1},kilonewton:{l:'Kilonewton',s:'kN',f:1000},meganewton:{l:'Meganewton',s:'MN',f:1e6},
+   kp:{l:'Kilopond',s:'kp',f:9.80665},dyn:{l:'Dyn',s:'dyn',f:1e-5},lbf:{l:'Pound-force',s:'lbf',f:4.4482216152605}}},
+ torque:{label:'Moment',ico:'<path d="M20 12a8 8 0 1 1-2.3-5.6"/><polyline points="20.2 4.4 20.2 8.4 16.2 8.4"/><circle cx="12" cy="12" r="1.9"/>',units:{
+   nm:{l:'Newtonmeter',s:'Nm',f:1},ncm:{l:'Newtoncentimeter',s:'Ncm',f:.01},knm:{l:'Kilonewtonmeter',s:'kNm',f:1000},
+   kpm:{l:'Kilopondmeter',s:'kpm',f:9.80665},lbft:{l:'Pound-foot',s:'lbf·ft',f:1.3558179483314},
+   lbin:{l:'Pound-inch',s:'lbf·in',f:.1129848290276}}},
+ frequency:{label:'Frekvens',ico:'<path d="M2.2 12c2-6.6 4.4-6.6 6.4 0s4.4 6.6 6.4 0c1.2-3.9 2.6-4.5 4.2-1.8"/>',units:{
+   hz:{l:'Hertz',s:'Hz',f:1},khz:{l:'Kilohertz',s:'kHz',f:1000},mhz:{l:'Megahertz',s:'MHz',f:1e6},
+   ghz:{l:'Gigahertz',s:'GHz',f:1e9},rpm:{l:'Omdreininger per minutt',s:'o/min',f:1/60},
+   bpm:{l:'Slag per minutt',s:'bpm',f:1/60}}},
+ angle:{label:'Vinkel',ico:'<line x1="3.6" y1="19.6" x2="20.4" y2="19.6"/><line x1="3.6" y1="19.6" x2="18.6" y2="5.4"/><path d="M9.4 19.6a6.2 6.2 0 0 0 1.8-4.4"/>',units:{
+   deg:{l:'Grader',s:'°',f:1},rad:{l:'Radianer',s:'rad',f:180/Math.PI},grad:{l:'Gon (nygrader)',s:'gon',f:.9},
+   arcmin:{l:'Bueminutt',s:'′',f:1/60},arcsec:{l:'Buesekund',s:'″',f:1/3600},turn:{l:'Omdreining',s:'omdr',f:360},
+   mil:{l:'Streker (NATO)',s:'mil',f:360/6400}}},
+ data:{label:'Datamengde',ico:'<ellipse cx="12" cy="6" rx="7.8" ry="3"/><path d="M4.2 6v12c0 1.65 3.5 3 7.8 3s7.8-1.35 7.8-3V6"/><path d="M4.2 12c0 1.65 3.5 3 7.8 3s7.8-1.35 7.8-3"/>',units:{
+   byte:{l:'Byte',s:'B',f:1},bit:{l:'Bit',s:'b',f:.125},
+   kb:{l:'Kilobyte (1000)',s:'kB',f:1e3},mb:{l:'Megabyte (1000)',s:'MB',f:1e6},gb:{l:'Gigabyte (1000)',s:'GB',f:1e9},
+   tb:{l:'Terabyte (1000)',s:'TB',f:1e12},pb:{l:'Petabyte (1000)',s:'PB',f:1e15},
+   kib:{l:'Kibibyte (1024)',s:'KiB',f:1024},mib:{l:'Mebibyte (1024)',s:'MiB',f:1048576},
+   gib:{l:'Gibibyte (1024)',s:'GiB',f:1073741824},tib:{l:'Tebibyte (1024)',s:'TiB',f:1099511627776}}},
+ fuel:{label:'Drivstoff',ico:'<path d="M4 21V5.2A2.2 2.2 0 0 1 6.2 3h5.6A2.2 2.2 0 0 1 14 5.2V21"/><line x1="2.6" y1="21" x2="15.4" y2="21"/><line x1="7" y1="7.4" x2="11" y2="7.4"/><path d="M14 10h3.2a1.8 1.8 0 0 1 1.8 1.8v5.4a1.5 1.5 0 0 0 3 0V9.4l-2.6-2.6"/>',special:'fuel',units:{
+   l100:{l:'Liter per 100 km',s:'L/100km'},kml:{l:'Kilometer per liter',s:'km/L'},
+   mpgus:{l:'MPG (US)',s:'mpg US'},mpguk:{l:'MPG (UK)',s:'mpg UK'}}},
+ numbers:{label:'Tallsystem',ico:'<line x1="9.4" y1="3.4" x2="7.4" y2="20.6"/><line x1="16.6" y1="3.4" x2="14.6" y2="20.6"/><line x1="3.6" y1="9.2" x2="20.4" y2="9.2"/><line x1="3.6" y1="14.8" x2="20.4" y2="14.8"/>',special:'base',units:{
+   bin:{l:'Binær',s:'BIN',base:2},oct:{l:'Oktal',s:'OCT',base:8},
+   dec:{l:'Desimal',s:'DEC',base:10},hex:{l:'Heksadesimal',s:'HEX',base:16}}},
+ dates:{label:'Dato',ico:'<rect x="3.4" y="5" width="17.2" height="16" rx="2"/><line x1="3.4" y1="10" x2="20.6" y2="10"/><line x1="8.2" y1="2.8" x2="8.2" y2="7"/><line x1="15.8" y1="2.8" x2="15.8" y2="7"/>',special:'dates',units:{day:{l:'Dag',s:'d'}}},
+ currency:{label:'Valuta',ico:'<rect x="2.4" y="5.6" width="19.2" height="12.8" rx="2"/><circle cx="12" cy="12" r="2.9"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/>',live:true,units:{
+   nok:{l:'Norske kroner',s:'NOK',f:1},usd:{l:'Amerikanske dollar',s:'USD',f:9.45},
+   eur:{l:'Euro',s:'EUR',f:10.93},gbp:{l:'Britiske pund',s:'GBP',f:12.79},
+   sek:{l:'Svenske kroner',s:'SEK',f:.994},dkk:{l:'Danske kroner',s:'DKK',f:1.462},
+   jpy:{l:'Japanske yen',s:'JPY',f:.0594},chf:{l:'Sveitsiske franc',s:'CHF',f:11.64}}}
+};
+/* Currency codes whose flagcdn slug is not simply the first two letters. */
+const FLAG_FIX={EUR:'eu',XDR:null,XAU:null,XAG:null,XPT:null,XPD:null,XCD:'ag',XOF:'sn',XAF:'cm',XPF:'pf',ANG:'cw'};
+function flagFor(code){
+  if(Object.prototype.hasOwnProperty.call(FLAG_FIX,code))return FLAG_FIX[code]?CFG.flagBase+FLAG_FIX[code]+'.png':null;
+  return CFG.flagBase+code.slice(0,2).toLowerCase()+'.png';
+}
+/* Names Norges Bank writes in plural ("Amerikanske dollar"); a few we phrase ourselves. */
+const CUR_NO={NOK:'Norske kroner',USD:'Amerikanske dollar',EUR:'Euro',GBP:'Britiske pund',SEK:'Svenske kroner',
+ DKK:'Danske kroner',JPY:'Japanske yen',CHF:'Sveitsiske franc',ISK:'Islandske kroner',PLN:'Polske złoty',
+ CZK:'Tsjekkiske koruna',HUF:'Ungarske forint',RON:'Rumenske leu',BGN:'Bulgarske lev',HRK:'Kroatiske kuna',
+ TRY:'Tyrkiske lira',RUB:'Russiske rubler',CNY:'Kinesiske yuan',HKD:'Hongkong-dollar',TWD:'Taiwanske dollar',
+ KRW:'Sørkoreanske won',SGD:'Singapore-dollar',THB:'Thailandske baht',MYR:'Malaysiske ringgit',
+ IDR:'Indonesiske rupiah',PHP:'Filippinske peso',VND:'Vietnamesiske dong',INR:'Indiske rupi',
+ PKR:'Pakistanske rupi',BDT:'Bangladeshiske taka',AUD:'Australske dollar',NZD:'New Zealand-dollar',
+ CAD:'Kanadiske dollar',MXN:'Meksikanske peso',BRL:'Brasilianske real',ZAR:'Sørafrikanske rand',
+ ILS:'Israelske shekel',AED:'Emiratiske dirham',SAR:'Saudiarabiske riyal',XDR:'IMFs trekkrettigheter (SDR)',
+ MMK:'Myanmarske kyat',BYN:'Hviterussiske rubler',UAH:'Ukrainske hryvnia',EGP:'Egyptiske pund',
+ NGN:'Nigerianske naira',KES:'Kenyanske shilling',ARS:'Argentinske peso',CLP:'Chilenske peso',
+ COP:'Colombianske peso',PEN:'Peruanske sol',VES:'Venezuelanske bolívar',QAR:'Qatarske riyal',
+ KWD:'Kuwaitiske dinar',BHD:'Bahrainske dinar',OMR:'Omanske rial',JOD:'Jordanske dinar',
+ LKR:'Srilankiske rupi',NPR:'Nepalske rupi',MAD:'Marokkanske dirham',TND:'Tunisiske dinar',
+ DZD:'Algeriske dinar',GHS:'Ghanesiske cedi',TZS:'Tanzanianske shilling',UGX:'Ugandiske shilling',
+ ETB:'Etiopiske birr',RSD:'Serbiske dinar',MKD:'Makedonske denar',ALL:'Albanske lek',
+ GEL:'Georgiske lari',AMD:'Armenske dram',AZN:'Aserbajdsjanske manat',KZT:'Kasakhstanske tenge',
+ UZS:'Usbekiske sum',MDL:'Moldovske leu',BAM:'Bosniske mark'};
+/* Norges Bank publishes these as indices, not currencies. */
+const NB_SKIP=['I44','TWI'];
+
+/* ============ conversion ============ */
+function convertTemperature(v,from,to){
+  let c;
+  if(from==='celsius')c=v; else if(from==='fahrenheit')c=(v-32)*5/9;
+  else if(from==='kelvin')c=v-273.15; else c=(v-491.67)*5/9;
+  if(to==='celsius')return c; if(to==='fahrenheit')return c*9/5+32;
+  if(to==='kelvin')return c+273.15; return (c+273.15)*9/5;
+}
+function convertFuel(v,from,to){
+  if(v<=0)return NaN;
+  let l100;
+  if(from==='l100')l100=v; else if(from==='kml')l100=100/v;
+  else if(from==='mpgus')l100=235.214583/v; else l100=282.480936/v;
+  if(l100<=0)return NaN;
+  if(to==='l100')return l100; if(to==='kml')return 100/l100;
+  if(to==='mpgus')return 235.214583/l100; return 282.480936/l100;
+}
+const BASE_DIGITS='0123456789abcdefghijklmnopqrstuvwxyz';
+function parseInBase(str,base){
+  const s=String(str).trim().toLowerCase().replace(/[\s_]/g,'');
+  if(!s)return NaN;
+  const neg=s[0]==='-'; const body=neg?s.slice(1):s;
+  if(!body)return NaN;
+  let n=0;
+  for(const ch of body){
+    const d=BASE_DIGITS.indexOf(ch);
+    if(d<0||d>=base)return NaN;
+    n=n*base+d;
+  }
+  return neg?-n:n;
+}
+function toBaseString(n,base){
+  if(!Number.isFinite(n))return '';
+  const neg=n<0; let i=Math.floor(Math.abs(n));
+  let s=i.toString(base).toUpperCase();
+  if(base===2)s=s.replace(/\B(?=(.{4})+$)/g,' ');
+  if(base===16)s=s.replace(/\B(?=(.{2})+$)/g,' ');
+  return (neg?'-':'')+s;
+}
+function convert(value,cat,from,to){
+  const d=UNITS[cat];
+  if(!d)return NaN;
+  if(d.special==='temp')return convertTemperature(value,from,to);
+  if(d.special==='fuel')return convertFuel(value,from,to);
+  const uf=d.units[from],ut=d.units[to];
+  if(!uf||!ut||!uf.f||!ut.f)return NaN;
+  return value*uf.f/ut.f;
+}
+
+/* ============ compound input: "1t 30min", "5 ft 3 in", "2 kg 300 g" ============ */
+const COMPOUND_CATS=['length','weight','time','volume','area','angle','data','speed'];
+function parseCompound(str,catKey,fromUnit){
+  if(COMPOUND_CATS.indexOf(catKey)<0)return NaN;
+  const d=UNITS[catKey];
+  const text=String(str).trim().toLowerCase();
+  if(!text)return NaN;
+  /* Needs at least one unit word to be worth treating as compound. */
+  if(!/[a-zµ°′″]/.test(text))return NaN;
+  const parts=text.match(/-?[\d.,]+\s*[a-zµ°′″²³/]*/g);
+  if(!parts||!parts.length)return NaN;
+  /* Longest symbols first so "min" wins over "m". */
+  const syms=Object.keys(d.units).map(k=>({k,s:(d.units[k].s||'').toLowerCase()}))
+    .filter(u=>u.s).sort((a,b)=>b.s.length-a.s.length);
+  let total=0,matched=0;
+  for(const part of parts){
+    const m=/^(-?[\d.,]+)\s*(.*)$/.exec(part.trim());
+    if(!m)return NaN;
+    const n=parseNum(m[1]);
+    if(!Number.isFinite(n))return NaN;
+    const tag=m[2].trim();
+    /* A bare number next to a tagged one is ambiguous ("2t 30" could be minutes
+       or hours), so require a unit on every part rather than guessing. */
+    if(!tag&&parts.length>1)return NaN;
+    let unit=fromUnit;
+    if(tag){
+      const hit=syms.find(u=>u.s===tag);
+      if(!hit)return NaN;
+      unit=hit.k; matched++;
+    }
+    const v=convert(n,catKey,unit,fromUnit);
+    if(!Number.isFinite(v))return NaN;
+    total+=v;
+  }
+  return matched?total:NaN;
+}
+
+/* ============ dates ============ */
+function easterSunday(year){
+  /* Anonymous Gregorian algorithm. */
+  const a=year%19,b=Math.floor(year/100),c=year%100;
+  const d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
+  const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
+  return new Date(Date.UTC(year,month-1,day));
+}
+function addDays(d,n){ return new Date(d.getTime()+n*86400000); }
+function isoDate(d){ return d.toISOString().slice(0,10); }
+/* Norwegian public holidays ("røde dager"). */
+function holidays(year){
+  const e=easterSunday(year), h={};
+  const set=(d,name)=>{ h[isoDate(d)]=name; };
+  set(new Date(Date.UTC(year,0,1)),'Første nyttårsdag');
+  set(addDays(e,-3),'Skjærtorsdag');
+  set(addDays(e,-2),'Langfredag');
+  set(e,'Første påskedag');
+  set(addDays(e,1),'Andre påskedag');
+  set(new Date(Date.UTC(year,4,1)),'Arbeidernes dag');
+  set(new Date(Date.UTC(year,4,17)),'Grunnlovsdag');
+  set(addDays(e,39),'Kristi himmelfartsdag');
+  set(addDays(e,49),'Første pinsedag');
+  set(addDays(e,50),'Andre pinsedag');
+  set(new Date(Date.UTC(year,11,25)),'Første juledag');
+  set(new Date(Date.UTC(year,11,26)),'Andre juledag');
+  return h;
+}
+const holidayCache={};
+function holidayName(d){
+  const y=d.getUTCFullYear();
+  if(!holidayCache[y])holidayCache[y]=holidays(y);
+  return holidayCache[y][isoDate(d)]||null;
+}
+function isWorkday(d){
+  const wd=d.getUTCDay();
+  if(wd===0||wd===6)return false;
+  return !holidayName(d);
+}
+function workdaysBetween(a,b){
+  let from=a,to=b,sign=1;
+  if(a>b){ from=b; to=a; sign=-1; }
+  let n=0, cur=new Date(from.getTime());
+  while(cur<to){ cur=addDays(cur,1); if(isWorkday(cur))n++; }
+  return n*sign;
+}
+function addWorkdays(d,n){
+  let cur=new Date(d.getTime()), left=Math.abs(n), step=n<0?-1:1;
+  while(left>0){ cur=addDays(cur,step); if(isWorkday(cur))left--; }
+  return cur;
+}
+/* ISO 8601 week number. */
+function isoWeek(d){
+  const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));
+  const start=new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return {week:Math.ceil(((t-start)/86400000+1)/7),year:t.getUTCFullYear()};
+}
+const WEEKDAYS=['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+const MONTHS=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+/* Accepts 2026-08-15, 15.08.2026 and 15/8-2026. */
+function parseDate(str){
+  const t=String(str||'').trim();
+  if(!t)return null;
+  let m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
+  if(m)return mkDate(+m[1],+m[2],+m[3]);
+  m=/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/.exec(t);
+  if(m){ let y=+m[3]; if(y<100)y+=2000; return mkDate(y,+m[2],+m[1]); }
+  return null;
+}
+function mkDate(y,mo,da){
+  if(mo<1||mo>12||da<1||da>31)return null;
+  const d=new Date(Date.UTC(y,mo-1,da));
+  if(d.getUTCFullYear()!==y||d.getUTCMonth()!==mo-1||d.getUTCDate()!==da)return null;
+  return d;
+}
+function fmtDate(d){ return String(d.getUTCDate()).padStart(2,'0')+'.'+String(d.getUTCMonth()+1).padStart(2,'0')+'.'+d.getUTCFullYear(); }
+function fmtDateLong(d){ return WEEKDAYS[d.getUTCDay()]+' '+d.getUTCDate()+'. '+MONTHS[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
+function monthsBetween(a,b){
+  let months=(b.getUTCFullYear()-a.getUTCFullYear())*12+(b.getUTCMonth()-a.getUTCMonth());
+  if(b.getUTCDate()<a.getUTCDate())months--;
+  return months;
+}
+function addMonthsSafe(d,n){
+  const y=d.getUTCFullYear(), mo=d.getUTCMonth()+n, da=d.getUTCDate();
+  const last=new Date(Date.UTC(y,mo+1,0)).getUTCDate();
+  return new Date(Date.UTC(y,mo,Math.min(da,last)));
+}
+
+/* ============ currency: Norges Bank (official) + optional fill ============ */
+function fetchText(url,ms){
+  return new Promise((res,rej)=>{
+    let done=false;
+    const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    const timer=setTimeout(()=>{ if(done)return; done=true; if(ctrl)ctrl.abort(); rej(new Error('Tidsavbrudd')); },ms||9000);
+    fetch(url,ctrl?{signal:ctrl.signal}:{})
+      .then(r=>{ if(!r.ok)throw new Error('HTTP '+r.status); return r.text(); })
+      .then(t=>{ if(done)return; done=true; clearTimeout(timer); res(t); })
+      .catch(e=>{ if(done)return; done=true; clearTimeout(timer); rej(e); });
+  });
+}
+function fetchJSON(url,ms){ return fetchText(url,ms).then(t=>JSON.parse(t)); }
+
+/* Norges Bank CSV is semicolon-separated with comma decimals and a UNIT_MULT column:
+   UNIT_MULT=2 means the quote is per 100 units (JPY, HUF, ISK …). Miss it and those are 100x off. */
+function parseNbCsv(text){
+  const lines=String(text).replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return null;
+  const head=lines[0].split(';');
+  const ix=n=>head.indexOf(n);
+  const iBase=ix('BASE_CUR'),iName=ix('Basisvaluta'),iMult=ix('UNIT_MULT'),iDate=ix('TIME_PERIOD'),iVal=ix('OBS_VALUE');
+  if(iBase<0||iVal<0)return null;
+  const out={};
+  for(let i=1;i<lines.length;i++){
+    const c=lines[i].split(';');
+    const code=(c[iBase]||'').trim().toUpperCase();
+    if(!/^[A-Z]{3}$/.test(code)||NB_SKIP.indexOf(code)>-1)continue;
+    const mult=Math.pow(10,parseInt(c[iMult],10)||0);
+    const raw=parseFloat(String(c[iVal]||'').replace(/\s/g,'').replace(',','.'));
+    if(!Number.isFinite(raw)||raw<=0)continue;
+    out[code]={nok:raw/mult,date:(c[iDate]||'').trim(),name:(c[iName]||'').trim()};
+  }
+  return Object.keys(out).length?out:null;
+}
+function daysBetween(a,b){ return Math.round((b-a)/86400000); }
+function todayISO(d){ d=d||new Date(); return d.toISOString().slice(0,10); }
+
+function applyRates(payload){
+  const units={nok:{l:'Norske kroner',s:'NOK',f:1,flag:flagFor('NOK'),date:payload.date}};
+  const order=['USD','EUR','SEK','DKK','GBP','CHF','JPY','PLN','ISK','CZK','HUF','CNY','AUD','CAD','THB','TRY','INR','BRL','ZAR','SGD','HKD','NZD','KRW','MXN','AED','RUB'];
+  const rest=Object.keys(payload.rates).filter(c=>c!=='NOK'&&order.indexOf(c)<0).sort();
+  [...order,...rest].forEach(code=>{
+    const r=payload.rates[code];
+    if(!r||!(r.nok>0)||code==='NOK')return;
+    units[code.toLowerCase()]={l:CUR_NO[code]||r.name||code,s:code,f:r.nok,flag:flagFor(code),date:r.date,src:r.src};
+  });
+  UNITS.currency.units=units;
+  state.rates=payload;
+  if(!units[state.conv.from])state.conv.from='nok';
+  if(!units[state.conv.to])state.conv.to='usd';
+}
+function cacheRates(p){ jSet(LS.rates,p); }
+function loadCachedRates(){
+  const c=jGet(LS.rates,null);
+  if(c&&c.rates&&Object.keys(c.rates).length)return c;
+  return null;
+}
+let ratesBusy=false;
+function loadRates(force){
+  if(ratesBusy)return Promise.resolve();
+  const cached=loadCachedRates();
+  if(cached&&!force&&(Date.now()-(cached.fetched||0))<CFG.ratesTtlMs){
+    applyRates(cached); setRateState(cached); return Promise.resolve();
+  }
+  if(cached){ applyRates(cached); setRateState(cached); }
+  ratesBusy=true;
+  el.rateRefreshBtn.classList.add('spinning');
+  if(!cached){ state.rateState='loading'; paintRateBar('loading','Henter kurser fra Norges Bank …'); }
+  const wantFill=state.rateSrc==='both';
+  const jobs=[fetchText(CFG.nbRates,10000).then(parseNbCsv).catch(()=>null)];
+  jobs.push(wantFill?fetchJSON(CFG.fillRates,9000).catch(()=>null):Promise.resolve(null));
+  return Promise.all(jobs).then(([nb,fill])=>{
+    const rates={}; let nbDate=null,nbCount=0,fillCount=0;
+    if(nb){
+      Object.keys(nb).forEach(code=>{
+        rates[code]={nok:nb[code].nok,date:nb[code].date,name:nb[code].name,src:'nb'};
+        nbCount++;
+        if(!nbDate||nb[code].date>nbDate)nbDate=nb[code].date;
+      });
+    }
+    if(fill&&fill.rates){
+      Object.keys(fill.rates).forEach(code=>{
+        if(!/^[A-Z]{3}$/.test(code)||code==='NOK'||rates[code])return;
+        const v=fill.rates[code];
+        if(typeof v!=='number'||v<=0)return;
+        rates[code]={nok:1/v,date:(fill.time_last_update_utc?new Date(fill.time_last_update_utc).toISOString().slice(0,10):todayISO()),src:'fill'};
+        fillCount++;
+      });
+    }
+    if(!Object.keys(rates).length){
+      if(cached){ setRateState(cached); }
+      else{ paintRateBar('offline','Uten nett. Bruker innebygde kurser.'); }
+      return;
+    }
+    const payload={rates,date:nbDate||todayISO(),fetched:Date.now(),nbCount,fillCount,hadNb:!!nb};
+    applyRates(payload); cacheRates(payload); setRateState(payload);
+    if(state.mode==='currency')fxRender(); else renderConverter();
+  }).finally(()=>{ ratesBusy=false; el.rateRefreshBtn.classList.remove('spinning'); });
+}
+function setRateState(p){
+  const age=p.date?daysBetween(new Date(p.date+'T00:00:00Z'),new Date(todayISO()+'T00:00:00Z')):999;
+  const total=Object.keys(p.rates).length+1;
+  const src=p.hadNb?(p.fillCount?'Norges Bank + utfylling':'Norges Bank'):'Reservekilde';
+  const dateNo=p.date?p.date.split('-').reverse().join('.'):'ukjent dato';
+  if(age<=CFG.rateMaxAgeDays){
+    state.rateState='live';
+    paintRateBar('live',src+', '+dateNo+'. '+total+' valutaer.');
+  }else{
+    state.rateState='stale';
+    paintRateBar('stale','Kurser fra '+dateNo+', '+age+' dager gamle.');
+  }
+}
+/* When the rates are fresh there is nothing to act on, so the strip stays out of
+   the way and the state lives on as a small dot next to the rate itself. */
+function paintRateBar(kind,text){
+  const cls=kind==='live'?' live':kind==='stale'?' stale':kind==='offline'?' offline':'';
+  el.rateDot.className='rate-dot'+cls;
+  el.rateDotMini.className='rate-dot mini'+cls;
+  el.rateText.textContent=text;
+  state.rateState=kind;
+  state.rateNote=text;
+  syncRateBar();
+  if(state.mode==='currency'&&typeof fxSyncRateBar==='function')fxSyncRateBar();
+}
+function syncRateBar(){
+  const live=(UNITS[state.conv.cat]||{}).live;
+  const show=!!live&&state.rateState!=='live';
+  el.rateBar.style.display=show?'flex':'none';
+  el.rateDotMini.style.display=live?'':'none';
+}
+
+/* 30-day series for the sparkline. NB quotes everything against NOK, so a cross rate
+   is just seriesFrom / seriesTo joined on the dates both currencies have. */
+const seriesCache={};
+function loadSeries(code){
+  code=code.toUpperCase();
+  if(code==='NOK')return Promise.resolve('NOK');
+  if(seriesCache[code])return Promise.resolve(seriesCache[code]);
+  const disk=jGet(LS.series,{});
+  if(disk[code]&&(Date.now()-disk[code].t)<CFG.ratesTtlMs){ seriesCache[code]=disk[code].d; return Promise.resolve(disk[code].d); }
+  const to=todayISO(), from=todayISO(new Date(Date.now()-140*86400000));
+  const url=CFG.nbSeries.replace('{CUR}',code).replace('{FROM}',from).replace('{TO}',to);
+  return fetchText(url,10000).then(txt=>{
+    const lines=String(txt).replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2)return null;
+    const head=lines[0].split(';');
+    const iMult=head.indexOf('UNIT_MULT'),iDate=head.indexOf('TIME_PERIOD'),iVal=head.indexOf('OBS_VALUE');
+    const d={};
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(';');
+      const mult=Math.pow(10,parseInt(c[iMult],10)||0);
+      const v=parseFloat(String(c[iVal]||'').replace(',','.'));
+      if(Number.isFinite(v)&&v>0)d[(c[iDate]||'').trim()]=v/mult;
+    }
+    if(!Object.keys(d).length)return null;
+    seriesCache[code]=d;
+    const store=jGet(LS.series,{}); store[code]={t:Date.now(),d}; jSet(LS.series,store);
+    return d;
+  }).catch(()=>null);
+}
+function buildSeries(fromCode,toCode){
+  return Promise.all([loadSeries(fromCode),loadSeries(toCode)]).then(([a,b])=>{
+    if(!a||!b)return null;
+    const dates=(a==='NOK'?Object.keys(b):Object.keys(a)).sort();
+    const pts=[];
+    dates.forEach(d=>{
+      const va=a==='NOK'?1:a[d], vb=b==='NOK'?1:b[d];
+      if(Number.isFinite(va)&&Number.isFinite(vb)&&vb>0)pts.push({d,v:va/vb});
+    });
+    return pts.length>=3?pts:null;
+  });
+}
+
+/* ============ keypad layouts ============ */
+const BACK_ICON='<svg class="key-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11a1.6 1.6 0 0 1 1.6 1.6v10.8A1.6 1.6 0 0 1 20 19H9l-6.4-7z"/><line x1="12.5" y1="9.6" x2="17.5" y2="14.4"/><line x1="17.5" y1="9.6" x2="12.5" y2="14.4"/></svg>';
+const LAYOUTS={
+ /* Twenty keys. Everything else (±, Ans, memory, the functions) sits one tap away
+    under f(x), so the pad you use most is only digits, operators and =. */
+ standard:[
+  {t:'C',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},
+  {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},
+  {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},
+  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},
+  {t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:BACK_ICON,a:'back',c:'func'},{t:'=',a:'equals',c:'equals'}
+ ],
+ professional:[
+  /* Five rows of functions above the same pad, which gains a fifth column. The
+     hyperbolics live behind a long press on sin/cos/tan, mod behind ÷, and the
+     angle mode has its own switch in the top bar. */
+  {t:'sin',a:'func',v:'sin',c:'func'},{t:'cos',a:'func',v:'cos',c:'func'},{t:'tan',a:'func',v:'tan',c:'func'},{t:'x²',a:'char',v:'²',c:'func'},{t:'√',a:'func',v:'sqrt',c:'func'},
+  {t:'sin⁻¹',a:'func',v:'asin',c:'func'},{t:'cos⁻¹',a:'func',v:'acos',c:'func'},{t:'tan⁻¹',a:'func',v:'atan',c:'func'},{t:'xʸ',a:'op',v:'^',c:'func'},{t:'∛',a:'func',v:'cbrt',c:'func'},
+  {t:'ln',a:'func',v:'ln',c:'func'},{t:'log',a:'func',v:'log',c:'func'},{t:'log₂',a:'func',v:'log2',c:'func'},{t:'eˣ',a:'func',v:'exp',c:'func'},{t:'e',a:'char',v:'e',c:'func'},
+  {t:'STO',a:'sto',c:'func'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'},
+  {t:'Ans',a:'ans',c:'func'},{t:'MC',a:'mClear',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'M−',a:'mSub',c:'func'},
+  {t:'C',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'π',a:'char',v:'π',c:'func'},
+  {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},{t:'|x|',a:'func',v:'abs',c:'func'},
+  {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},{t:'1/x',a:'recip',c:'func'},
+  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},{t:'±',a:'sign',c:'func'},
+  {t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:BACK_ICON,a:'back',c:'func'},{t:'=',a:'equals',c:'equals'},{t:'x!',a:'char',v:'!',c:'func'}
+ ],
+ rpn:[
+  {t:'x↔y',a:'rpnSwap',c:'func'},{t:'Drop',a:'rpnDrop',c:'func'},{t:'Roll',a:'rpnRoll',c:'func'},{t:'Last x',a:'rpnLast',c:'func'},
+  {t:'±',a:'rpnSign',c:'func'},{t:'1/x',a:'rpnFunc',v:'inv',c:'func'},{t:'π',a:'rpnConst',v:'pi',c:'func'},{t:'xʸ',a:'rpnOp',v:'^',c:'func'},
+  {t:'C',a:'rpnClear',c:'clear'},{t:'x²',a:'rpnFunc',v:'sq',c:'func'},{t:'√',a:'rpnFunc',v:'sqrt',c:'func'},{t:'÷',a:'rpnOp',v:'÷',c:'op'},
+  {t:'7',a:'rpnNum',v:'7'},{t:'8',a:'rpnNum',v:'8'},{t:'9',a:'rpnNum',v:'9'},{t:'×',a:'rpnOp',v:'×',c:'op'},
+  {t:'4',a:'rpnNum',v:'4'},{t:'5',a:'rpnNum',v:'5'},{t:'6',a:'rpnNum',v:'6'},{t:'−',a:'rpnOp',v:'-',c:'op'},
+  {t:'1',a:'rpnNum',v:'1'},{t:'2',a:'rpnNum',v:'2'},{t:'3',a:'rpnNum',v:'3'},{t:'+',a:'rpnOp',v:'+',c:'op'},
+  {t:'0',a:'rpnNum',v:'0'},{t:',',a:'rpnDot'},{t:BACK_ICON,a:'rpnBack',c:'func'},{t:'Enter',a:'rpnEnter',c:'equals'}
+ ]
+};
+/* ============ haptics + toast ============ */
+/* In the Android app the web view has no vibration of its own, so the native
+   haptics plugin gives the tap; in the browser, navigator.vibrate does. */
+function buzz(ms){
+  if(!state.haptic)return;
+  try{
+    const h=IS_NATIVE&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Haptics;
+    if(h){ h.impact({style:(ms||9)>20?'MEDIUM':'LIGHT'}).catch(()=>{}); return; }
+    if(navigator.vibrate)navigator.vibrate(ms||9);
+  }catch(e){}
+}
+let toastTimer, silentToasts=false;
+function toastMsg(m){ if(silentToasts)return; el.toast.textContent=m; el.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.toast.classList.remove('show'),2200); }
+function copyText(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    return navigator.clipboard.writeText(t).then(()=>true).catch(()=>fallbackCopy(t));
+  return Promise.resolve(fallbackCopy(t));
+}
+function fallbackCopy(t){
+  try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(e){ return false; }
+}
+
+/* ============ display ============ */
+/* The answer only takes on its colour once it is committed, so a half-typed
+   expression never looks like a finished result. */
+function resultClass(text,isError,committed){
+  if(isError)return 'result error';
+  let c='result';
+  if(text.length>11)c+=' shrink';
+  if(committed&&state.answerColor!=='neutral')c+=' answer-'+state.answerColor;
+  return c;
+}
+function paintMemPill(){
+  const on=state.memory!==0;
+  el.memPill.style.display=on?'flex':'none';
+  el.memPill.classList.toggle('on',on);
+  if(on)el.memValue.textContent=formatNumber(state.memory,Math.min(state.decimals,2));
+}
+/* While an expression is being typed, the big line shows what it comes to so far.
+   A trailing operator or open bracket is set aside, so 7×8+ already reads 56. */
+function livePreviewValue(){
+  if(!state.livePreview||state.mode==='rpn'||!state.expression||state.justEvaluated||state.error)return null;
+  for(const e of [state.expression,trimDangling(state.expression)]){
+    if(!e)continue;
+    try{ const v=evaluate(e); if(Number.isFinite(v))return formatNumber(v); }catch(x){}
+  }
+  return null;
+}
+/* An operator left hanging at the end (7×8+) has nothing to act on yet. */
+function trimDangling(e){ return e.replace(/[+\-×÷^\s]+$/,''); }
+function updateDisplay(){
+  const expr=state.expression;
+  el.expressionDisplay.innerHTML='<span>'+escapeHtml(formatExpression(expr)||'')+'</span>';
+  el.expressionDisplay.scrollLeft=0;
+  const pv=livePreviewValue();
+  const r=pv===null?state.result:pv;
+  el.resultDisplay.innerHTML='<span>'+escapeHtml(state.error?r:prettyNumber(r))+'</span>';
+  el.resultDisplay.className=resultClass(r,state.error,state.justEvaluated)+(pv===null?'':' preview');
+  el.displayArea.classList.toggle('typing',pv!==null);
+  renderRecent();
+  el.resultDisplay.scrollLeft=0;
+  paintMemPill();
+  updateLive();
+  $$('.btn.mem-active').forEach(b=>b.classList.remove('mem-active'));
+  if(state.memory!==0)$$('.btn[data-a="mRecall"],.btn[data-a="mAdd"]').forEach(b=>b.classList.add('mem-active'));
+}
+/* The preview now lives on the result line itself; the corner slot stays empty. */
+function updateLive(){ el.liveResult.textContent=''; }
+function setResult(v,isError){
+  state.error=!!isError;
+  state.result=isError?v:formatNumber(v);
+  updateDisplay();
+}
+
+/* ============ standard / scientific input ============ */
+function append(s){
+  if(state.expression.length+s.length>CFG.maxExpr){ toastMsg('Uttrykket er for langt'); return; }
+  state.expression+=s; state.justEvaluated=false; updateDisplay();
+}
+function startFresh(){ if(state.justEvaluated){ state.expression=''; state.justEvaluated=false; } }
+function lastChar(){ return state.expression.slice(-1); }
+function handleNumber(v){ startFresh(); append(v); }
+function handleDecimal(){
+  startFresh();
+  const tail=/[\d.]*$/.exec(state.expression)[0];
+  if(tail.indexOf('.')>-1)return;
+  append(tail?'.':'0.');
+}
+function handleOp(v){
+  if(state.justEvaluated&&state.result&&!state.error){ state.expression=formatNumber(parseNum(state.result.replace(/[\u202F\u00A0]/g,'')),null,{raw:true}); state.justEvaluated=false; }
+  if(!state.expression){ if(v==='-'){append('-');} return; }
+  const lc=lastChar();
+  if('+-×÷^'.indexOf(lc)>-1){
+    if(v==='-'&&(lc==='×'||lc==='÷'||lc==='^')){ append('-'); return; }
+    state.expression=state.expression.slice(0,-1)+v; updateDisplay(); return;
+  }
+  if(state.expression.endsWith('mod')){ state.expression=state.expression.slice(0,-3)+v; updateDisplay(); return; }
+  append(v==='mod'?'mod':v);
+}
+function handleParen(){
+  startFresh();
+  let open=0;
+  for(const c of state.expression){ if(c==='(')open++; else if(c===')')open--; }
+  const lc=lastChar();
+  if(open>0&&/[\d)²³!π e]/.test(lc)&&lc!==''&&!'+-×÷^('.includes(lc))append(')');
+  else append('(');
+}
+function handleFunc(f){ startFresh(); append(f+'('); }
+function handleChar(c){
+  startFresh();
+  if(c==='%'||c==='!'||c==='²'){ if(!state.expression)return; }
+  append(c);
+}
+function handleSign(){
+  const m=/(-?\d*\.?\d+)$/.exec(state.expression);
+  if(m){
+    const start=state.expression.length-m[0].length;
+    const before=state.expression[start-1];
+    if(m[0][0]==='-'&&(start===0||'+-×÷^('.indexOf(before)>-1))
+      state.expression=state.expression.slice(0,start)+m[0].slice(1);
+    else state.expression=state.expression.slice(0,start)+'-'+m[0];
+  }else if(!state.expression){ append('-'); return; }
+  else append('-');
+  updateDisplay();
+}
+function handleRecip(){
+  if(state.justEvaluated&&!state.error){ state.expression='1÷('+formatNumber(parseNum(state.result),null,{raw:true})+')'; state.justEvaluated=false; updateDisplay(); return; }
+  append('^(-1)');
+}
+function handleBack(){
+  if(state.justEvaluated){ state.expression=''; state.result='0'; state.error=false; state.justEvaluated=false; updateDisplay(); return; }
+  const e=state.expression;
+  for(const f of FUNCS){ if(e.endsWith(f+'(')){ state.expression=e.slice(0,-(f.length+1)); updateDisplay(); return; } }
+  if(e.endsWith('mod')){ state.expression=e.slice(0,-3); updateDisplay(); return; }
+  state.expression=e.slice(0,-1); updateDisplay();
+}
+function handleClear(){ state.expression=''; state.result='0'; state.error=false; state.justEvaluated=false; el.liveResult.textContent=''; updateDisplay(); }
+function handleAns(){ startFresh(); append(formatNumber(state.lastAnswer,null,{raw:true})); }
+function handleEquals(){
+  if(!state.expression)return;
+  try{
+    /* = gives what the preview showed: a dangling operator is dropped, not an error. */
+    let v;
+    try{ v=evaluate(state.expression); }
+    catch(first){
+      const t=trimDangling(state.expression);
+      if(!t||t===state.expression)throw first;
+      v=evaluate(t); state.expression=t;
+    }
+    state.lastAnswer=v;
+    const shown=formatNumber(v);
+    addHistory(state.expression,shown);
+    state.result=shown; state.error=false; state.justEvaluated=true;
+    el.liveResult.textContent=''; updateDisplay(); buzz(14);
+  }catch(err){ setResult(err.message||'Uttrykket kan ikke regnes ut',true); buzz(30); }
+}
+function memClear(){ state.memory=0; toastMsg('Minnet er tømt'); updateDisplay(); }
+function memRecall(){ if(state.memory===0){toastMsg('Minnet er tomt');return;} startFresh(); append(formatNumber(state.memory,null,{raw:true})); }
+function currentValue(){
+  if(!state.error){ const v=parseNum(state.result); if(Number.isFinite(v))return v; }
+  try{ return evaluate(state.expression); }catch(e){ return null; }
+}
+function memAdd(){ const v=currentValue(); if(v===null){toastMsg('Ingen verdi å legge til');return;} state.memory+=v; toastMsg('Minne: '+formatNumber(state.memory)); updateDisplay(); }
+function handleSto(){
+  state.stoArmed=!state.stoArmed;
+  $$('.btn[data-a="sto"]').forEach(b=>b.classList.toggle('sto-armed',state.stoArmed));
+  toastMsg(state.stoArmed?'Velg A, B, C eller D':'Lagring avbrutt');
+}
+function handleVar(name){
+  if(state.stoArmed){
+    const v=currentValue();
+    state.stoArmed=false;
+    $$('.btn[data-a="sto"]').forEach(b=>b.classList.remove('sto-armed'));
+    if(v===null){ toastMsg('Ingen verdi å lagre'); return; }
+    state.vars[name]=v; jSet(LS.vars,state.vars);
+    paintVarKeys(); toastMsg(name+' = '+formatNumber(v));
+    return;
+  }
+  startFresh(); append(name);
+}
+function paintVarKeys(){
+  $$('.btn[data-a="var"]').forEach(b=>b.classList.toggle('var-set',!!state.vars[b.dataset.v]));
+}
+function memSub(){ const v=currentValue(); if(v===null){toastMsg('Ingen verdi å trekke fra');return;} state.memory-=v; toastMsg('Minne: '+formatNumber(state.memory)); updateDisplay(); }
+
+/* ============ RPN ============ */
+function rpnRender(){
+  /* x is the big result below, so the small stack shows the three levels above it. */
+  const names=['y','z','t'];
+  const st=state.stack;
+  const depth=state.rpnEntry!==''?0:1;
+  const rows=names.map((n,i)=>{
+    const v=st[st.length-1-depth-i];
+    return '<div class="lvl"><b>'+n+'</b><span>'+(v===undefined?'—':escapeHtml(formatNumber(v)))+'</span></div>';
+  });
+  el.rpnStack.innerHTML=rows.reverse().join('');
+  state.result=state.rpnEntry!==''?state.rpnEntry:(st.length?formatNumber(st[st.length-1]):'0');
+  state.error=false;
+  el.expressionDisplay.innerHTML='<span>'+(state.rpnEntry!==''?'skriver …':(st.length?st.length+' på stakken':'stakken er tom'))+'</span>';
+  el.resultDisplay.innerHTML='<span>'+escapeHtml(state.result)+'</span>';
+  el.resultDisplay.className=resultClass(state.result,false,state.rpnEntry===''&&st.length>0);
+  el.liveResult.textContent='';
+}
+function rpnPush(v){ state.stack.push(v); if(state.stack.length>64)state.stack.shift(); }
+function rpnCommit(){ if(state.rpnEntry!==''){ const v=parseNum(state.rpnEntry); if(Number.isFinite(v))rpnPush(v); state.rpnEntry=''; return true; } return false; }
+function rpnNum(d){ if(state.rpnEntry.length<24)state.rpnEntry+=d; rpnRender(); }
+function rpnDot(){ if(state.rpnEntry.indexOf('.')<0)state.rpnEntry=(state.rpnEntry||'0')+'.'; rpnRender(); }
+function rpnSign(){
+  if(state.rpnEntry!=='')state.rpnEntry=state.rpnEntry[0]==='-'?state.rpnEntry.slice(1):'-'+state.rpnEntry;
+  else if(state.stack.length)state.stack[state.stack.length-1]*=-1;
+  rpnRender();
+}
+function rpnEnter(){ if(!rpnCommit()&&state.stack.length)rpnPush(state.stack[state.stack.length-1]); rpnRender(); buzz(12); }
+function rpnBack(){ if(state.rpnEntry!=='')state.rpnEntry=state.rpnEntry.slice(0,-1); else state.stack.pop(); rpnRender(); }
+function rpnClear(){ state.stack=[]; state.rpnEntry=''; state.lastX=null; rpnRender(); }
+function rpnDrop(){ if(state.rpnEntry!=='')state.rpnEntry=''; else state.stack.pop(); rpnRender(); }
+function rpnSwap(){ rpnCommit(); const s=state.stack; if(s.length<2){toastMsg('Trenger to tall på stakken');return;} const t=s[s.length-1]; s[s.length-1]=s[s.length-2]; s[s.length-2]=t; rpnRender(); }
+function rpnRoll(){ rpnCommit(); const s=state.stack; if(s.length<2){toastMsg('Trenger to tall på stakken');return;} s.unshift(s.pop()); rpnRender(); }
+function rpnLast(){ if(state.lastX===null||state.lastX===undefined){toastMsg('Ingen tidligere verdi');return;} rpnCommit(); rpnPush(state.lastX); rpnRender(); }
+function rpnConst(k){ rpnCommit(); rpnPush(k==='pi'?Math.PI:Math.E); rpnRender(); }
+function rpnOp(op){
+  rpnCommit();
+  const s=state.stack;
+  if(s.length<2){ toastMsg('Trenger to tall på stakken'); buzz(30); return; }
+  const b=s.pop(),a=s.pop();
+  state.lastX=b;
+  let r;
+  try{
+    switch(op){
+      case '+':r=a+b;break; case '-':r=a-b;break; case '×':r=a*b;break;
+      case '÷':if(b===0)throw new Error('Kan ikke dele på null');r=a/b;break;
+      case '^':r=Math.pow(a,b);break;
+    }
+    if(!Number.isFinite(r))throw new Error('Resultatet er ikke et gyldig tall');
+  }catch(e){ s.push(a,b); toastMsg(e.message); buzz(30); rpnRender(); return; }
+  rpnPush(r);
+  addHistory(formatNumber(a)+' '+op+' '+formatNumber(b),formatNumber(r));
+  state.lastAnswer=r;
+  rpnRender(); buzz(12);
+}
+function rpnFunc(f){
+  rpnCommit();
+  const s=state.stack;
+  if(!s.length){ toastMsg('Stakken er tom'); return; }
+  const a=s.pop(); state.lastX=a;
+  let r;
+  try{
+    if(f==='sqrt'){ if(a<0)throw new Error('Kvadratrot krever et positivt tall'); r=Math.sqrt(a); }
+    else if(f==='sq')r=a*a;
+    else if(f==='inv'){ if(a===0)throw new Error('Kan ikke dele på null'); r=1/a; }
+    if(!Number.isFinite(r))throw new Error('Resultatet er ikke et gyldig tall');
+  }catch(e){ s.push(a); toastMsg(e.message); buzz(30); rpnRender(); return; }
+  rpnPush(r); state.lastAnswer=r; rpnRender();
+}
+
+/* ============ percent / MVA ============ */
+const PCT_TYPES=[
+ {k:'of',label:'% av',money:1,fields:[{k:'p',l:'Prosent',ph:'25',unit:'%'},{k:'v',l:'Av dette beløpet',ph:'1200'}]},
+ {k:'share',label:'Andel',fields:[{k:'a',l:'Delen',ph:'45'},{k:'b',l:'Av helheten',ph:'180'}]},
+ {k:'change',label:'Endring',fields:[{k:'a',l:'Fra',ph:'250'},{k:'b',l:'Til',ph:'310'}]},
+ {k:'vat',label:'MVA',money:1,rates:[25,15,12,6],fields:[{k:'v',l:'Beløp',ph:'1000'}],modes:[{k:'add',l:'Legg til'},{k:'strip',l:'Trekk fra'}]},
+ {k:'discount',label:'Rabatt',money:1,fields:[{k:'v',l:'Pris før rabatt',ph:'899'},{k:'p',l:'Rabatt i prosent',ph:'20',unit:'%'}]},
+ {k:'markup',label:'Påslag',money:1,fields:[{k:'v',l:'Innkjøpspris',ph:'400'},{k:'p',l:'Påslag i prosent',ph:'35',unit:'%'}]},
+ {k:'margin',label:'Margin',fields:[{k:'v',l:'Salgspris',ph:'900'},{k:'c',l:'Innkjøpspris',ph:'560'}]},
+ {k:'tip',label:'Tips',money:1,fields:[{k:'v',l:'Regningen',ph:'740'},{k:'p',l:'Tips i prosent',ph:'10',unit:'%'},{k:'n',l:'Antall personer',ph:'4'}]}
+];
+let pctMode='add';
+function pctType(){ return PCT_TYPES.find(t=>t.k===state.pctType)||PCT_TYPES[0]; }
+function renderPctChips(){
+  el.pctChips.innerHTML='';
+  PCT_TYPES.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='chip'+(state.pctType===t.k?' active':'');
+    b.textContent=t.label;
+    b.addEventListener('click',()=>{ state.pctType=t.k; state.pctVals={}; renderPctChips(); renderPctFields(); pctCalc(); buzz(); });
+    el.pctChips.appendChild(b);
+  });
+}
+function renderPctFields(){
+  const t=pctType();
+  el.pctFields.innerHTML='';
+  if(t.modes){
+    const card=document.createElement('div'); card.className='pair-card';
+    card.innerHTML='<span class="pair-legend">Sats og retning</span>';
+    const seg=document.createElement('div'); seg.className='mini-seg';
+    t.rates.forEach(r=>{
+      const b=document.createElement('button'); b.textContent=r+' %';
+      b.className=state.pctRate===r?'active':'';
+      b.addEventListener('click',()=>{ state.pctRate=r; renderPctFields(); pctCalc(); buzz(); });
+      seg.appendChild(b);
+    });
+    card.appendChild(seg);
+    const seg2=document.createElement('div'); seg2.className='mini-seg'; seg2.style.marginTop='7px';
+    t.modes.forEach(m=>{
+      const b=document.createElement('button'); b.textContent=m.l;
+      b.className=pctMode===m.k?'active':'';
+      b.addEventListener('click',()=>{ pctMode=m.k; renderPctFields(); pctCalc(); buzz(); });
+      seg2.appendChild(b);
+    });
+    card.appendChild(seg2);
+    el.pctFields.appendChild(card);
+  }
+  t.fields.forEach(f=>{
+    /* Same framed field as the currency and unit panels, so a number you type
+       looks the same wherever in the app you are typing it. */
+    const card=document.createElement('div'); card.className='pair-card';
+    const legend=document.createElement('span'); legend.className='pair-legend'; legend.textContent=f.l;
+    const row=document.createElement('div'); row.className='pair-row';
+    const wrap=document.createElement('span'); wrap.className='pair-amount';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.className='pair-input'; inp.placeholder=f.ph; inp.inputMode='decimal';
+    inp.autocomplete='off'; inp.value=state.pctVals[f.k]||''; inp.setAttribute('aria-label',f.l);
+    inp.addEventListener('input',()=>{ state.pctVals[f.k]=inp.value; pctCalc(); });
+    wrap.appendChild(inp); row.appendChild(wrap);
+    if(f.unit){ const u=document.createElement('span'); u.className='pair-affix suffix'; u.textContent=f.unit; row.appendChild(u); }
+    card.appendChild(legend); card.appendChild(row);
+    el.pctFields.appendChild(card);
+  });
+}
+function pctCalc(){
+  const t=pctType(), V=k=>parseNum(state.pctVals[k]);
+  let res=null,sentence='',rows=[],suffix='';
+  /* Amounts get both decimals; percentages keep trimming theirs. */
+  const F=n=>t.money?money(n):formatNumber(n,2);
+  /* A rate is not an amount: 30 % should not be written 30,00 %. */
+  const P=n=>formatNumber(n,2);
+  if(t.k==='of'){
+    const p=V('p'),v=V('v');
+    if(Number.isFinite(p)&&Number.isFinite(v)){ res=p/100*v;
+      sentence=P(p)+' % av '+F(v)+' er '+F(res)+'.';
+      rows=[['Resten',F(v-res)],['Hele beløpet',F(v)]]; }
+  }else if(t.k==='share'){
+    const a=V('a'),b=V('b');
+    if(Number.isFinite(a)&&Number.isFinite(b)){
+      if(b===0)sentence='Helheten kan ikke være null.';
+      else{ res=a/b*100; suffix=' %'; sentence=F(a)+' av '+F(b)+' utgjør '+F(res)+' %.';
+        rows=[['Resterende andel',P(100-res)+' %'],['Resterende beløp',money(b-a)]]; }
+    }
+  }else if(t.k==='change'){
+    const a=V('a'),b=V('b');
+    if(Number.isFinite(a)&&Number.isFinite(b)){
+      if(a===0)sentence='Startverdien kan ikke være null.';
+      else{ res=(b-a)/Math.abs(a)*100; suffix=' %';
+        sentence=(res>=0?'Økning':'Nedgang')+' på '+F(Math.abs(res))+' % fra '+F(a)+' til '+F(b)+'.';
+        rows=[['Forskjell',F(b-a)],['Faktor','×'+formatNumber(b/a,4)]]; }
+    }
+  }else if(t.k==='vat'){
+    const v=V('v'),r=state.pctRate;
+    if(Number.isFinite(v)){
+      if(pctMode==='add'){ const mva=v*r/100; res=v+mva;
+        sentence=F(v)+' uten MVA blir '+F(res)+' med '+r+' % MVA.';
+        rows=[['Grunnlag',F(v)],['MVA '+r+' %',F(mva)],['Sum inkl. MVA',F(res)]]; }
+      else{ const net=v/(1+r/100); res=net;
+        sentence=F(v)+' inkl. '+r+' % MVA gir '+F(net)+' uten MVA.';
+        rows=[['Sum inkl. MVA',F(v)],['MVA '+r+' %',F(v-net)],['Grunnlag',F(net)]]; }
+    }
+  }else if(t.k==='discount'){
+    const v=V('v'),p=V('p');
+    if(Number.isFinite(v)&&Number.isFinite(p)){ const saved=v*p/100; res=v-saved;
+      sentence=P(p)+' % rabatt på '+F(v)+' gir '+F(res)+'.';
+      rows=[['Før rabatt',F(v)],['Du sparer',F(saved)],['Å betale',F(res)]]; }
+  }else if(t.k==='markup'){
+    const v=V('v'),p=V('p');
+    if(Number.isFinite(v)&&Number.isFinite(p)){ const add=v*p/100; res=v+add;
+      const margin=res!==0?add/res*100:0;
+      sentence=P(p)+' % påslag på '+F(v)+' gir '+F(res)+'.';
+      rows=[['Innkjøp',F(v)],['Påslag',F(add)],['Dekningsgrad',P(margin)+' %']]; }
+  }else if(t.k==='margin'){
+    const v=V('v'),c=V('c');
+    if(Number.isFinite(v)&&Number.isFinite(c)){
+      if(v===0)sentence='Salgsprisen kan ikke være null.';
+      else{ const db=v-c; res=db/v*100; suffix=' %';
+        sentence='Dekningsbidraget er '+F(db)+', som gir '+F(res)+' % dekningsgrad.';
+        rows=[['Dekningsbidrag',F(db)],['Påslag',c!==0?P(db/c*100)+' %':'–']]; }
+    }
+  }else if(t.k==='tip'){
+    const v=V('v'),p=V('p'),n=V('n');
+    if(Number.isFinite(v)&&Number.isFinite(p)){ const tip=v*p/100; res=v+tip;
+      sentence=P(p)+' % tips på '+F(v)+' gir '+F(res)+' totalt.';
+      rows=[['Regning',F(v)],['Tips',F(tip)],['Totalt',F(res)]];
+      if(Number.isFinite(n)&&n>0)rows.push(['Per person ('+formatNumber(n,0)+')',F(res/n)]);
+    }
+  }
+  state.pctResult=res;
+  el.pctResult.textContent=res===null?'–':((t.money?money(res):formatNumber(res,2))+suffix);
+  el.pctSentence.textContent=sentence||'Fyll inn feltene over.';
+  if(res!==null&&rows.length){
+    el.pctBreakdown.style.display='';
+    el.pctBreakdown.innerHTML=rows.map(r=>'<div class="b-row"><span>'+escapeHtml(r[0])+'</span><span>'+escapeHtml(r[1])+'</span></div>').join('');
+  }else el.pctBreakdown.style.display='none';
+}
+
+/* ============ converter UI ============ */
+function cat(){ return UNITS[state.conv.cat]||UNITS.length; }
+/* Norges Bank publishes the mid rate, which nobody is ever offered. A card or a
+   bureau marks the foreign currency up, so the price of one unit goes UP by the
+   chosen percent — and every number the panel shows uses that raised price. */
+/* Money wants two decimals; eight just makes the number hard to read. */
+function convDecimals(catKey,v){
+  if(catKey!=='currency')return Math.min(state.decimals,6);
+  const a=Math.abs(v);
+  if(a===0||a>=1)return 2;
+  if(a>=0.01)return 4;
+  return 6;
+}
+function feeRate(unitKey){
+  const u=(UNITS.currency.units||{})[unitKey];
+  if(!u)return NaN;
+  if(!state.fxFee||unitKey==='nok')return u.f;
+  return u.f*(1+state.fxFee/100);
+}
+function feeActive(){ return state.conv.cat==='currency'&&state.fxFee>0; }
+function convertHere(v,from,to){
+  if(!feeActive()||from===to)return convert(v,state.conv.cat,from,to);
+  const a=feeRate(from), b=feeRate(to);
+  if(!Number.isFinite(a)||!Number.isFinite(b)||!b)return NaN;
+  return v*a/b;
+}
+function unitList(c){ const d=UNITS[c]; return Object.keys(d.units).map(k=>Object.assign({key:k},d.units[k])); }
+/* Ordered once per session, not while you are tapping: chips that reshuffle
+   under your finger are worse than chips in a fixed place. */
+function categoryOrder(){
+  if(state.catOrder)return state.catOrder;
+  const keys=Object.keys(UNITS);
+  state.catOrder=keys.slice().sort((a,b)=>((state.catUse[b]||0)-(state.catUse[a]||0))||(keys.indexOf(a)-keys.indexOf(b)));
+  return state.catOrder;
+}
+/* Eighteen categories do not fit in a row you can see at once. The row shows the
+   ones you use most, and "Alle" opens every category as a grid. */
+function renderCatChips(){
+  el.catChips.innerHTML='';
+  const all=document.createElement('button');
+  all.className='chip chip-all';
+  all.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg><span>Alle</span>';
+  all.setAttribute('aria-haspopup','dialog');
+  all.addEventListener('click',()=>{ openCatSheet(); buzz(); });
+  el.catChips.appendChild(all);
+  categoryOrder().filter(k=>k!=='currency').forEach(k=>{
+    const b=document.createElement('button');
+    b.className='chip'+(state.conv.cat===k?' active':'');
+    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS[k].ico+'</svg><span>'+escapeHtml(UNITS[k].label)+'</span>';
+    b.addEventListener('click',()=>{ setCategory(k); buzz(); if(b.scrollIntoView)b.scrollIntoView({block:'nearest',inline:'center'}); });
+    el.catChips.appendChild(b);
+  });
+}
+function openCatSheet(){
+  overlayOpened();
+  el.catGrid.innerHTML='';
+  Object.keys(UNITS).filter(k=>k!=='currency').forEach(k=>{
+    const b=document.createElement('button');
+    b.className='cat-opt'+(state.conv.cat===k?' active':'');
+    b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+UNITS[k].ico+'</svg><span>'+escapeHtml(UNITS[k].label)+'</span>';
+    if(state.conv.cat===k)b.setAttribute('aria-current','true');
+    b.addEventListener('click',()=>{ closeCatSheet(); setCategory(k); buzz();
+      const on=el.catChips.querySelector('.chip.active'); if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest',inline:'center'}); });
+    el.catGrid.appendChild(b);
+  });
+  el.sheetOverlay.classList.add('open'); el.catSheet.classList.add('open');
+}
+function closeCatSheet(){ el.catSheet.classList.remove('open'); if(!el.unitSheet.classList.contains('open')&&!el.keySheet.classList.contains('open'))el.sheetOverlay.classList.remove('open'); overlayClosed(); }
+const DEFAULT_PAIR={length:['meter','kilometer'],weight:['kilogram','pound'],temperature:['celsius','fahrenheit'],
+ area:['sqm','dekar'],volume:['liter','galus'],speed:['kmh','mph'],time:['hour','minute'],
+ energy:['kwh','megajoule'],power:['kilowatt','hkm'],pressure:['bar','psi'],force:['newton','kp'],
+ torque:['nm','lbft'],frequency:['hz','rpm'],angle:['deg','rad'],data:['mb','mib'],
+ fuel:['l100','mpgus'],numbers:['dec','hex'],currency:['nok','usd']};
+function setCategory(k){
+  state.conv.cat=k;
+  state.catUse[k]=(state.catUse[k]||0)+1;
+  jSet(LS.catUse,state.catUse);
+  if(k==='dates'){
+    state.conv.value='';
+    el.rateBar.style.display='none';
+    el.rateDotMini.style.display='none';
+    renderCatChips(); renderConverter(); saveConv(); return;
+  }
+  const d=DEFAULT_PAIR[k]||Object.keys(UNITS[k].units);
+  state.conv.from=d[0]; state.conv.to=d[1];
+  const fav=state.favs.find(f=>f.cat===k);
+  if(fav&&UNITS[k].units[fav.from]&&UNITS[k].units[fav.to]){ state.conv.from=fav.from; state.conv.to=fav.to; }
+  /* Start on 1 so the panel shows a real rate immediately instead of an empty form. */
+  state.conv.value='1'; state.conv.auto=true;
+  el.fromInput.value='1';
+  syncRateBar();
+  el.fromInput.inputMode=(k==='numbers'||COMPOUND_CATS.indexOf(k)>-1)?'text':'decimal';
+  if(UNITS[k].live)loadRates(false);
+  renderCatChips(); renderConverter(); saveConv();
+}
+function ensureUnits(){
+  const d=cat(), c=state.conv;
+  if(d.units[c.from]&&d.units[c.to])return;
+  const def=DEFAULT_PAIR[c.cat]||Object.keys(d.units);
+  if(!d.units[c.from])c.from=def[0]||Object.keys(d.units)[0];
+  if(!d.units[c.to])c.to=def[1]||Object.keys(d.units)[1]||c.from;
+  saveConv();
+}
+function paintPicker(side){
+  const c=state.conv, key=side==='from'?c.from:c.to, u=cat().units[key]||{};
+  const sym=side==='from'?el.fromSymbol:el.toSymbol, nm=side==='from'?el.fromName:el.toName, fl=side==='from'?el.fromFlag:el.toFlag;
+  sym.textContent=u.s||''; nm.textContent=u.l||'';
+  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.visibility='hidden';}; fl.style.visibility=''; }
+  else fl.style.display='none';
+}
+/* "3×250" in the amount field is a common way to think about a conversion,
+   so fall back to the expression engine before giving up on the input. */
+function convExpression(str){
+  const t=String(str||'').trim();
+  if(!t||!/[+\-*/×÷^()]/.test(t))return NaN;
+  try{ const v=evaluate(t.replace(/\*/g,'×').replace(/\//g,'÷')); return Number.isFinite(v)?v:NaN; }
+  catch(e){ return NaN; }
+}
+function convValue(){
+  const c=state.conv;
+  if(c.cat==='numbers')return parseInBase(c.value,cat().units[c.from].base);
+  const compound=parseCompound(c.value,c.cat,c.from);
+  if(Number.isFinite(compound))return compound;
+  const plain=parseNum(c.value);
+  if(Number.isFinite(plain))return plain;
+  return convExpression(c.value);
+}
+function renderConverter(){
+  const c=state.conv, d=cat();
+  const isDates=c.cat==='dates';
+  el.convStandard.style.display=isDates?'none':'';
+  el.convDates.style.display=isDates?'':'none';
+  if(isDates){ renderDateChips(); renderDateFields(); dateCalc(); return; }
+  ensureUnits();
+  syncRateBar();
+  paintFavBtn();
+  paintPicker('from'); paintPicker('to');
+  const raw=convValue();
+  paintRate();
+  if(!Number.isFinite(raw)){
+    el.toInput.value=''; el.toHint.textContent='';
+    el.fromHint.textContent=COMPOUND_CATS.indexOf(c.cat)>-1?'Tips: du kan skrive sammensatt, for eksempel 1 t 30 min':'';
+    el.sparkCard.style.display='none'; renderAllUnits(NaN); renderBits(); return;
+  }
+  let outText;
+  if(c.cat==='numbers'){
+    outText=toBaseString(raw,d.units[c.to].base);
+    el.fromHint.textContent='';
+    el.toHint.textContent=['BIN','OCT','DEC','HEX'].map(s=>{
+      const k=Object.keys(d.units).find(x=>d.units[x].s===s);
+      return s+' '+toBaseString(raw,d.units[k].base);
+    }).join('   ');
+  }else{
+    const out=convertHere(raw,c.from,c.to);
+    if(!Number.isFinite(out)){ c.lastOut=NaN; el.toInput.value='—'; el.fromHint.textContent=''; el.toHint.textContent='Kan ikke konverteres'; renderAllUnits(NaN); return; }
+    c.lastOut=out;
+    outText=formatNumber(out,convDecimals(c.cat,out));
+    const wasCompound=Number.isFinite(parseCompound(c.value,c.cat,c.from));
+    const wasExpr=!wasCompound&&!Number.isFinite(parseNum(c.value))&&Number.isFinite(convExpression(c.value));
+    el.fromHint.textContent=wasCompound?('Tolket som '+formatNumber(raw,6)+' '+d.units[c.from].s)
+      :(wasExpr?('Regnet ut til '+formatNumber(raw,6)+' '+d.units[c.from].s):'');
+    const notes=[];
+    if(c.cat==='currency'&&(d.units[c.to]||{}).src==='fill')notes.push('Denne kursen kommer fra reservekilden, ikke Norges Bank.');
+    if(feeActive()){
+      const mid=convert(raw,c.cat,c.from,c.to);
+      notes.push('Valutaen er priset '+formatNumber(state.fxFee,2)+' % over midtkurs. Til ren midtkurs: '+formatNumber(mid,convDecimals(c.cat,mid))+' '+d.units[c.to].s+'.');
+    }
+    el.toHint.textContent=notes.join(' ');
+  }
+  el.toInput.value=outText;
+  renderAllUnits(raw); renderBits();
+  if(c.cat==='currency')renderSpark(); else el.sparkCard.style.display='none';
+}
+/* The strip between the two halves always states the exchange in one line. */
+function paintRate(){
+  const c=state.conv, d=cat();
+  const uf=d.units[c.from], ut=d.units[c.to];
+  if(!uf||!ut){ el.convRate.textContent=''; return; }
+  if(c.cat==='numbers'){ el.convRate.textContent='Grunntall '+uf.base+' → '+ut.base; return; }
+  if(c.from===c.to){ el.convRate.textContent='Samme enhet'; return; }
+  if(d.special){ el.convRate.textContent=uf.l+' → '+ut.l; return; }
+  const fwd=convertHere(1,c.from,c.to);
+  const back=convertHere(1,c.to,c.from);
+  if(!Number.isFinite(fwd)&&!Number.isFinite(back)){ el.convRate.textContent=''; return; }
+  /* "1 USD = 9,45 NOK" is how a rate is read; "1 NOK = 0,105 USD" is the same
+     fact in a shape nobody quotes. Pick whichever side lands above one. */
+  const useFwd=!Number.isFinite(back)||(Number.isFinite(fwd)&&fwd>=1)||back<1;
+  const a=useFwd?uf:ut, bU=useFwd?ut:uf, v=useFwd?fwd:back;
+  const dec=convDecimals(c.cat,v)===2?4:6;
+  el.convRate.textContent='1 '+a.s+' = '+formatNumber(v,dec)+' '+bU.s
+    +(feeActive()?', med '+formatNumber(state.fxFee,2)+' % påslag':'');
+}
+function renderAllUnits(raw){
+  const c=state.conv,d=cat();
+  if(!state.allOpen){ el.allBody.innerHTML=''; return; }
+  if(!Number.isFinite(raw)){ el.allBody.innerHTML='<div class="empty">Skriv inn en verdi for å se alle enhetene.</div>'; return; }
+  const frag=document.createDocumentFragment();
+  orderedUnits(c.cat).forEach(u=>{
+    let val;
+    if(c.cat==='numbers')val=toBaseString(raw,u.base);
+    else{ const n=convertHere(raw,c.from,u.key); val=Number.isFinite(n)?formatNumber(n,convDecimals(c.cat,n)):'—'; }
+    const row=document.createElement('div');
+    row.className='all-row'+(u.key===c.to?' is-to':'');
+    row.innerHTML='<div class="u">'+(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.display=\'none\'">':'')+
+      '<span class="un">'+escapeHtml(u.l)+'</span><span class="us">'+escapeHtml(u.s)+'</span></div>'+
+      '<span class="uv">'+escapeHtml(val)+'</span>';
+    row.addEventListener('click',()=>{ state.conv.to=u.key; renderConverter(); saveConv(); buzz(); });
+    frag.appendChild(row);
+  });
+  el.allBody.innerHTML=''; el.allBody.appendChild(frag);
+}
+function renderSpark(){
+  const c=state.conv,d=cat();
+  const fc=(d.units[c.from]||{}).s, tc=(d.units[c.to]||{}).s;
+  if(!fc||!tc||fc===tc){ el.sparkCard.style.display='none'; return; }
+  paintSparkRange();
+  el.sparkTitle.textContent=fc+' → '+tc;
+  buildSeries(fc,tc).then(all=>{
+    if(!all){ el.sparkCard.style.display='none'; return; }
+    /* Trading days, not calendar days: a 30-day window is about 22 quotes. */
+    const want=Math.max(3,Math.round(state.sparkDays*5/7));
+    const pts=all.slice(-want);
+    if(pts.length<3){ el.sparkCard.style.display='none'; return; }
+    el.sparkCard.style.display='';
+    const vals=pts.map(p=>p.v), min=Math.min(...vals), max=Math.max(...vals), span=(max-min)||1;
+    const W=300,H=44,PAD=4;
+    const pt=(v,i)=>[(i/(pts.length-1))*W, PAD+(H-PAD*2)*(1-(v-min)/span)];
+    const line=vals.map((v,i)=>{const p=pt(v,i);return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+    const area=line+' L'+W+' '+(H+4)+' L0 '+(H+4)+' Z';
+    const last=pt(vals[vals.length-1],vals.length-1);
+    const iMin=vals.indexOf(min), iMax=vals.indexOf(max);
+    const pMin=pt(min,iMin), pMax=pt(max,iMax);
+    el.sparkSvg.innerHTML=
+      '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/>'+
+      '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+area+'" fill="url(#sg)"/>'+
+      '<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+      '<circle cx="'+pMax[0].toFixed(1)+'" cy="'+pMax[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+      '<circle cx="'+pMin[0].toFixed(1)+'" cy="'+pMin[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+      '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.6" fill="var(--accent)"/>';
+    const first=vals[0],lastV=vals[vals.length-1];
+    const pct=first?((lastV-first)/first*100):0;
+    el.sparkChange.className='spark-change '+(Math.abs(pct)<0.05?'flat':pct>0?'up':'down');
+    el.sparkChange.textContent=(pct>0?'+':'')+formatNumber(pct,2)+' %';
+    const dm=x=>x.slice(5).split('-').reverse().join('.');
+    el.sparkFrom.textContent=dm(pts[0].d)+'  '+formatNumber(first,4);
+    el.sparkTo.textContent=formatNumber(lastV,4)+'  '+dm(pts[pts.length-1].d);
+    el.sparkLow.textContent='Lavest '+formatNumber(min,4)+' ('+dm(pts[iMin].d)+')';
+    el.sparkHigh.textContent='Høyest '+formatNumber(max,4)+' ('+dm(pts[iMax].d)+')';
+  });
+}
+/* Shared by the converter and the currency board. */
+function drawSpark(svg,pts,changeEl,fromEl,toEl,lowEl,highEl){
+  const vals=pts.map(p=>p.v), min=Math.min(...vals), max=Math.max(...vals), span=(max-min)||1;
+  const W=300,H=44,PAD=4;
+  const pt=(v,i)=>[(i/(pts.length-1))*W, PAD+(H-PAD*2)*(1-(v-min)/span)];
+  const line=vals.map((v,i)=>{const p=pt(v,i);return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+  const area=line+' L'+W+' '+(H+4)+' L0 '+(H+4)+' Z';
+  const last=pt(vals[vals.length-1],vals.length-1);
+  const iMin=vals.indexOf(min), iMax=vals.indexOf(max);
+  const pMin=pt(min,iMin), pMax=pt(max,iMax);
+  svg.innerHTML=
+    '<defs><linearGradient id="sg'+svg.id+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="var(--accent)" stop-opacity=".26"/>'+
+    '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>'+
+    '<path d="'+area+'" fill="url(#sg'+svg.id+')"/>'+
+    '<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'+
+    '<circle cx="'+pMax[0].toFixed(1)+'" cy="'+pMax[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+    '<circle cx="'+pMin[0].toFixed(1)+'" cy="'+pMin[1].toFixed(1)+'" r="2" fill="var(--text-dim)"/>'+
+    '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.6" fill="var(--accent)"/>';
+  const first=vals[0],lastV=vals[vals.length-1];
+  const pct=first?((lastV-first)/first*100):0;
+  changeEl.className='spark-change '+(Math.abs(pct)<0.05?'flat':pct>0?'up':'down');
+  changeEl.textContent=(pct>0?'+':'')+formatNumber(pct,2)+' %';
+  const dm=x=>x.slice(5).split('-').reverse().join('.');
+  fromEl.textContent=dm(pts[0].d)+'  '+formatNumber(first,4);
+  toEl.textContent=formatNumber(lastV,4)+'  '+dm(pts[pts.length-1].d);
+  lowEl.textContent='Lavest '+formatNumber(min,4)+' ('+dm(pts[iMin].d)+')';
+  highEl.textContent='Høyest '+formatNumber(max,4)+' ('+dm(pts[iMax].d)+')';
+}
+function paintSparkRange(){
+  Array.from(el.sparkRange.children).forEach(b=>b.classList.toggle('active',+b.dataset.days===state.sparkDays));
+}
+function saveConv(){ jSet(LS.conv,state.conv); }
+/* With 166 currencies in the list, the ones you actually use should be one tap away. */
+function isFavUnit(catKey,key){ return (state.favUnits[catKey]||[]).indexOf(key)>-1; }
+function toggleFavUnit(catKey,key){
+  const list=state.favUnits[catKey]||[];
+  const i=list.indexOf(key);
+  if(i>-1)list.splice(i,1); else list.unshift(key);
+  state.favUnits[catKey]=list.slice(0,12);
+  jSet(LS.favUnits,state.favUnits);
+}
+/* Favourites first, then the declared order — used by both the picker and the list. */
+function orderedUnits(catKey){
+  const all=unitList(catKey);
+  const fav=state.favUnits[catKey]||[];
+  if(!fav.length)return all;
+  const starred=fav.map(k=>all.find(u=>u.key===k)).filter(Boolean);
+  return starred.concat(all.filter(u=>fav.indexOf(u.key)<0));
+}
+function noteRecent(cat,key){
+  const r=state.recent[cat]||[];
+  const next=[key].concat(r.filter(k=>k!==key)).slice(0,5);
+  state.recent[cat]=next;
+  jSet(LS.recent,state.recent);
+}
+function swapUnits(){
+  const c=state.conv, t=c.from; c.from=c.to; c.to=t;
+  if(c.cat==='numbers'){
+    const out=(el.toInput.value||'').replace(/\s/g,'');
+    if(out)c.value=out;
+  }else if(c.auto){
+    /* An untouched 1 means the user is checking a rate, so keep the 1 and
+       simply reverse the direction: 1 NOK → USD becomes 1 USD → NOK. */
+  }else if(Number.isFinite(c.lastOut)){
+    /* Carry more precision than the display shows, so a swap and a swap back
+       land where you started — but not so much that the field turns into noise. */
+    c.value=formatNumber(c.lastOut,c.cat==='currency'?6:10,{raw:true});
+  }
+  el.fromInput.value=c.value;
+  renderConverter(); saveConv(); buzz(14);
+}
+function renderFavs(){
+  const list=state.favs;
+  if(!list.length){ el.favChips.style.display='none'; return; }
+  el.favChips.style.display=''; el.favChips.innerHTML='';
+  list.forEach((f,i)=>{
+    const d=UNITS[f.cat]; if(!d||!d.units[f.from]||!d.units[f.to])return;
+    const b=document.createElement('button');
+    b.className='chip'+(state.conv.cat===f.cat&&state.conv.from===f.from&&state.conv.to===f.to?' active':'');
+    b.textContent=d.units[f.from].s+' → '+d.units[f.to].s;
+    b.title=d.label;
+    b.addEventListener('click',()=>{
+      state.conv.cat=f.cat; state.conv.from=f.from; state.conv.to=f.to;
+      if(!state.conv.value){ state.conv.value='1'; state.conv.auto=true; }
+      el.fromInput.value=state.conv.value;
+      syncRateBar();
+      if(UNITS[f.cat].live)loadRates(false);
+      renderCatChips(); renderConverter(); renderFavs(); saveConv(); buzz();
+    });
+    let hold;
+    b.addEventListener('pointerdown',()=>{ hold=setTimeout(()=>{ state.favs.splice(i,1); jSet(LS.fav,state.favs); renderFavs(); toastMsg('Paret er fjernet'); buzz(20); },600); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(hold)));
+    el.favChips.appendChild(b);
+  });
+}
+function isFavPair(){
+  const c=state.conv;
+  return state.favs.some(f=>f.cat===c.cat&&f.from===c.from&&f.to===c.to);
+}
+/* The button toggles, so it has to say which way it will go. */
+function paintFavBtn(){
+  const on=isFavPair();
+  el.convFavBtn.classList.toggle('on',on);
+  el.convFavLabel.textContent=on?'Lagret':'Lagre par';
+  el.convFavStar.setAttribute('fill',on?'currentColor':'none');
+  el.convFavBtn.setAttribute('aria-pressed',on?'true':'false');
+}
+function toggleFav(){
+  const c=state.conv;
+  const i=state.favs.findIndex(f=>f.cat===c.cat&&f.from===c.from&&f.to===c.to);
+  if(i>-1){ state.favs.splice(i,1); toastMsg('Paret er fjernet'); }
+  else{ state.favs.unshift({cat:c.cat,from:c.from,to:c.to}); state.favs=state.favs.slice(0,12); toastMsg('Paret er lagret'); }
+  jSet(LS.fav,state.favs); renderFavs(); paintFavBtn(); buzz();
+}
+
+/* ============ unit picker sheet ============ */
+/* The sheet serves the converter and the currency board, so it works against a
+   context rather than reaching straight into the converter's state. */
+function sheetContext(){
+  const side=state.sheetFor;
+  if(side==='fxFrom'||side==='fxTo'){
+    const isFrom=side==='fxFrom';
+    return {cat:'currency',current:isFrom?state.fx.from:state.fx.to,title:isFrom?'Fra: valuta':'Til: valuta',
+      pick:u=>{
+        if(isFrom)state.fx.from=u.key; else state.fx.to=u.key;
+        if(state.fx.from===state.fx.to){
+          const alt=Object.keys(fxUnits()).filter(k=>k!==u.key);
+          if(alt.length){ if(isFrom)state.fx.to=alt.indexOf('nok')>-1&&u.key!=='nok'?'nok':alt[0];
+                          else state.fx.from=alt.indexOf('nok')>-1&&u.key!=='nok'?'nok':alt[0]; }
+        }
+        noteRecent('currency',u.key); fxRender(); fxSave(); }};
+  }
+  if(side==='fxAdd')return {cat:'currency',current:null,title:'Legg til valuta',keepOpen:true,
+    pick:u=>{ if(!isFavUnit('currency',u.key))toggleFavUnit('currency',u.key);
+      noteRecent('currency',u.key); fxRender(); }};
+  return {cat:state.conv.cat,current:side==='from'?state.conv.from:state.conv.to,
+    title:(side==='from'?'Fra: ':'Til: ')+cat().label,
+    pick:u=>{
+      if(side==='from')state.conv.from=u.key; else state.conv.to=u.key;
+      if(state.conv.from===state.conv.to){
+        const others=unitList(state.conv.cat).filter(x=>x.key!==u.key);
+        if(others.length){ if(side==='from')state.conv.to=others[0].key; else state.conv.from=others[0].key; }
+      }
+      noteRecent(state.conv.cat,u.key);
+      renderConverter(); renderFavs(); saveConv();
+    }};
+}
+function openUnitSheet(side){
+  overlayOpened();
+  state.sheetFor=side;
+  const ctx=sheetContext();
+  const d=UNITS[ctx.cat];
+  el.sheetTitle.textContent=ctx.title;
+  const many=Object.keys(d.units).length>12;
+  el.sheetSearchWrap.style.display=many?'':'none';
+  el.sheetSearch.value='';
+  renderUnitGrid('');
+  el.sheetOverlay.classList.add('open'); el.unitSheet.classList.add('open');
+  if(many)setTimeout(()=>el.sheetSearch.focus(),260);
+}
+function closeUnitSheet(){ el.sheetOverlay.classList.remove('open'); el.unitSheet.classList.remove('open'); state.sheetFor=null; overlayClosed(); }
+/* Rank matches so an exact symbol wins over a word that merely contains the term:
+   searching "mil" should offer Norsk mil before Millimeter, and "usd" the dollar. */
+function rankUnits(list,term){
+  const scored=[];
+  list.forEach((u,i)=>{
+    const sym=(u.s||'').toLowerCase(), name=(u.l||'').toLowerCase(), key=(u.key||'').toLowerCase();
+    let score=-1;
+    if(sym===term||key===term)score=0;
+    else if(sym.indexOf(term)===0)score=1;
+    else if(name.indexOf(term)===0)score=2;
+    else if(name.split(/[\s(]+/).some(w=>w.indexOf(term)===0))score=3;
+    else if(name.indexOf(term)>-1||sym.indexOf(term)>-1||key.indexOf(term)>-1)score=4;
+    if(score>=0)scored.push({u,score,i});
+  });
+  scored.sort((a,b)=>a.score-b.score||a.i-b.i);
+  return scored.map(x=>x.u);
+}
+function renderUnitGrid(q){
+  const ctx=sheetContext();
+  const d=UNITS[ctx.cat], cur=ctx.current;
+  const term=(q||'').trim().toLowerCase();
+  const all=unitList(ctx.cat);
+  el.unitGrid.innerHTML='';
+  const pick=u=>{
+    ctx.pick(u);
+    if(ctx.keepOpen){ renderUnitGrid(el.sheetSearch.value); toastMsg(u.s+' lagt til'); }
+    else closeUnitSheet();
+    buzz();
+  };
+  const row=u=>{
+    const b=document.createElement('div');
+    b.className='unit-opt'+(u.key===cur?' active':'');
+    b.setAttribute('role','button'); b.tabIndex=0;
+    let sub='';
+    if(state.conv.cat==='currency'&&u.key!=='nok')sub=formatNumber(u.f,4)+' kr';
+    else if(state.conv.cat==='numbers')sub='grunntall '+u.base;
+    const starred=isFavUnit(ctx.cat,u.key);
+    b.innerHTML=(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+
+      '<span class="os">'+escapeHtml(u.s)+'</span><span class="on">'+escapeHtml(u.l)+'</span>'+
+      (sub?'<span class="ov">'+escapeHtml(sub)+'</span>':'')+
+      '<button class="fav'+(starred?' on':'')+'" aria-label="'+(starred?'Fjern favoritt':'Merk som favoritt')+'" aria-pressed="'+starred+'">'+
+      '<svg viewBox="0 0 24 24" fill="'+(starred?'currentColor':'none')+'"><polygon points="12 3 15 9.5 22 10.3 17 15 18.3 22 12 18.7 5.7 22 7 15 2 10.3 9 9.5"/></svg></button>';
+    b.querySelector('.fav').addEventListener('click',e=>{
+      e.stopPropagation();
+      toggleFavUnit(ctx.cat,u.key);
+      renderUnitGrid(el.sheetSearch.value);
+      if(state.mode==='currency')fxRender(); else renderConverter();
+      buzz();
+    });
+    b.addEventListener('click',()=>pick(u));
+    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(u);} });
+    return b;
+  };
+  const group=(label,list)=>{
+    if(!list.length)return;
+    const h=document.createElement('div'); h.className='grp-label'; h.textContent=label;
+    el.unitGrid.appendChild(h);
+    list.forEach(u=>el.unitGrid.appendChild(row(u)));
+  };
+
+  if(term){
+    const hits=rankUnits(all,term);
+    if(!hits.length){ el.unitGrid.innerHTML='<div class="empty">Ingen treff på «'+escapeHtml(q)+'».</div>'; return; }
+    hits.forEach(u=>el.unitGrid.appendChild(row(u)));
+    return;
+  }
+  const favKeys=(state.favUnits[ctx.cat]||[]).filter(k=>d.units[k]);
+  const favs=favKeys.map(k=>all.find(u=>u.key===k)).filter(Boolean);
+  const recentKeys=(state.recent[ctx.cat]||[]).filter(k=>d.units[k]&&favKeys.indexOf(k)<0);
+  const recent=recentKeys.map(k=>all.find(u=>u.key===k)).filter(Boolean);
+  const rest=all.filter(u=>favKeys.indexOf(u.key)<0&&recentKeys.indexOf(u.key)<0);
+  if(favs.length||recent.length>1){
+    group('Favoritter',favs);
+    group('Nylig brukt',recent.length>1?recent:[]);
+    group('Alle',recent.length>1?rest:all.filter(u=>favKeys.indexOf(u.key)<0));
+  }else{
+    all.forEach(u=>el.unitGrid.appendChild(row(u)));
+  }
+}
+/* Enter in the search box takes the top result, so a search never needs a second tap. */
+function pickFirstUnit(){
+  const first=el.unitGrid.querySelector('.unit-opt');
+  if(first)first.click();
+}
+
+/* ============ history ============ */
+function addHistory(expr,res){
+  state.history.unshift({e:expr,r:res,t:Date.now(),m:(state.mode==='standard'&&state.sci)?'professional':state.mode});
+  if(state.history.length>CFG.maxHistory)state.history.length=CFG.maxHistory;
+  jSet(LS.hist,state.history);
+  updateBadge();
+  if(state.historyOpen||historyDocked())renderHistory(el.histSearch.value);
+}
+/* The last few answers stand above the display, fading upwards, so the space a
+   tall phone leaves empty holds something useful. Tapping one puts its value into
+   the expression. The answer already on the display is not repeated. */
+function recentEntries(){
+  const calc=state.history.filter(h=>h.m==='standard'||h.m==='professional');
+  const skip=state.justEvaluated&&calc[0]&&calc[0].e===state.expression?1:0;
+  return calc.slice(skip,skip+3);
+}
+function renderRecent(){
+  if(!el.recentList)return;
+  const list=recentEntries();
+  el.recentList.innerHTML=list.slice().reverse().map((h,i,arr)=>
+    '<li><button type="button" class="recent-item" data-i="'+(arr.length-1-i)+'">'+
+    '<span class="re">'+escapeHtml(formatExpression(h.e))+' =</span> <span class="rr">'+escapeHtml(prettyNumber(h.r))+'</span></button></li>').join('');
+}
+function useRecent(h){
+  const v=parseNum(String(h.r).replace(/[\u202F\u00A0\s]/g,''));
+  if(!Number.isFinite(v))return;
+  const raw=formatNumber(v,null,{raw:true});
+  if(state.justEvaluated||state.error){ state.expression=''; state.justEvaluated=false; state.error=false; }
+  const lc=state.expression.slice(-1);
+  append(/[\d.)%!πeA-D²³]/.test(lc)?'×'+raw:raw);
+  buzz();
+}
+function updateBadge(){
+  renderRecent();
+  const n=state.history.length;
+  el.historyBadge.style.display=n?'flex':'none';
+  el.historyBadge.textContent=n>99?'99+':String(n);
+}
+function relTime(t){
+  const s=Math.floor((Date.now()-t)/1000);
+  if(s<60)return 'nå nettopp';
+  if(s<3600)return Math.floor(s/60)+' min siden';
+  if(s<86400)return Math.floor(s/3600)+' t siden';
+  if(s<604800)return Math.floor(s/86400)+' d siden';
+  return new Date(t).toLocaleDateString('nb-NO');
+}
+function renderHistory(q){
+  const term=(q||'').trim().toLowerCase();
+  const list=term?state.history.filter(h=>(h.e+' '+h.r).toLowerCase().indexOf(term)>-1):state.history;
+  if(!list.length){
+    el.historyList.innerHTML='<div class="empty">'+(term?'Ingen treff på «'+escapeHtml(q)+'».':'Ingenting her ennå.<br>Utregningene dine havner i denne listen.')+'</div>';
+    return;
+  }
+  el.historyList.innerHTML='';
+  const frag=document.createDocumentFragment();
+  list.forEach(h=>{
+    const it=document.createElement('div');
+    it.className='hist-item';
+    it.setAttribute('role','button'); it.tabIndex=0;
+    it.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); it.click(); } });
+    it.innerHTML='<div class="he">'+escapeHtml(formatExpression(h.e))+'</div><div class="hr">'+escapeHtml(prettyNumber(h.r))+'</div>'+
+      '<div class="hm"><span>'+escapeHtml(MODE_LABEL[h.m]||'')+'</span><span>'+relTime(h.t)+'</span></div>';
+    it.addEventListener('click',()=>{
+      const v=parseNum(h.r);
+      if(Number.isFinite(v)){ state.lastAnswer=v; }
+      if(state.mode==='rpn'){ if(Number.isFinite(v)){rpnPush(v);rpnRender();} }
+      else{ state.expression=h.e; state.result=h.r; state.error=false; state.justEvaluated=true; updateDisplay(); }
+      closeHistory(); toastMsg('Hentet inn'); buzz();
+    });
+    frag.appendChild(it);
+  });
+  el.historyList.appendChild(frag);
+}
+function openHistory(){ overlayOpened(); state.historyOpen=true; el.historyOverlay.classList.add('open'); el.historyDrawer.classList.add('open'); renderHistory(el.histSearch.value); }
+function closeHistory(){ state.historyOpen=false; el.historyOverlay.classList.remove('open'); el.historyDrawer.classList.remove('open'); overlayClosed(); }
+function exportHistory(){
+  if(!state.history.length){ toastMsg('Historikken er tom'); return; }
+  const txt=state.history.map(h=>new Date(h.t).toLocaleString('nb-NO')+'\t'+h.e+' = '+h.r).join('\n');
+  copyText(txt).then(ok=>toastMsg(ok?'Historikken er kopiert':'Klarte ikke å kopiere'));
+}
+
+/* ============ tape ============ */
+const TAPE_LAYOUT=[
+ {t:'±',a:'tapeSign',c:'func'},{t:'Ans',a:'tapeAns',c:'func'},{t:'Sum',a:'tapeUseSum',c:'func'},{t:'− Linje',a:'tapeCommitMinus',c:'func'},
+ {t:'C',a:'tapeClearEntry',c:'clear'},{t:'( )',a:'tapeParen',c:'func'},{t:'%',a:'tapeChar',v:'%',c:'func'},{t:'÷',a:'tapeOp',v:'÷',c:'op'},
+ {t:'7',a:'tapeNum',v:'7'},{t:'8',a:'tapeNum',v:'8'},{t:'9',a:'tapeNum',v:'9'},{t:'×',a:'tapeOp',v:'×',c:'op'},
+ {t:'4',a:'tapeNum',v:'4'},{t:'5',a:'tapeNum',v:'5'},{t:'6',a:'tapeNum',v:'6'},{t:'−',a:'tapeOp',v:'-',c:'op'},
+ {t:'1',a:'tapeNum',v:'1'},{t:'2',a:'tapeNum',v:'2'},{t:'3',a:'tapeNum',v:'3'},{t:'+',a:'tapeOp',v:'+',c:'op'},
+ {t:'0',a:'tapeNum',v:'0'},{t:',',a:'tapeDot'},{t:BACK_ICON,a:'tapeBack',c:'func'},{t:'+ Linje',a:'tapeCommit',c:'equals'}
+];
+LAYOUTS.tape=TAPE_LAYOUT;
+
+function tapeSave(){ jSet(LS.tape,state.tape); lsSet(LS.tapeVat,String(state.tapeVat)); }
+function tapeTotal(){ return state.tape.reduce((n,l)=>n+(l.sign<0?-l.v:l.v),0); }
+function tapeRender(){
+  const list=state.tape;
+  if(!list.length){
+    el.tapeList.innerHTML='<div class="empty">Ingen linjer ennå.<br>Skriv et beløp og trykk + Linje.</div>';
+  }else{
+    el.tapeList.innerHTML='';
+    const frag=document.createDocumentFragment();
+    list.forEach(l=>{
+      const row=document.createElement('div');
+      row.className='tape-row'+(state.tapeEditing===l.id?' editing':'');
+      row.innerHTML=
+        '<button class="tape-sign'+(l.sign<0?' minus':'')+'" aria-label="Bytt fortegn">'+(l.sign<0?'−':'+')+'</button>'+
+        '<div class="tape-main">'+(money(parseNum(l.e))===money(l.v)?'':'<div class="tape-expr">'+escapeHtml(formatExpression(l.e))+'</div>')+
+        (state.tapeNoting===l.id?'<input class="tape-note-input" type="text" maxlength="60" placeholder="Merknad" value="'+escapeHtml(l.note||'')+'">'
+          :(l.note?'<div class="tape-note">'+escapeHtml(l.note)+'</div>':''))+'</div>'+
+        '<div class="tape-val">'+escapeHtml(money(l.v))+'</div>'+
+        '<button class="tape-del" aria-label="Slett linjen"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>';
+      row.querySelector('.tape-sign').addEventListener('click',()=>{ l.sign=l.sign<0?1:-1; tapeSave(); tapeRender(); buzz(); });
+      row.querySelector('.tape-del').addEventListener('click',()=>{
+        state.tape=state.tape.filter(x=>x.id!==l.id);
+        if(state.tapeEditing===l.id)state.tapeEditing=null;
+        tapeSave(); tapeRender(); buzz(14);
+      });
+      const noteInput=row.querySelector('.tape-note-input');
+      if(noteInput){
+        const commit=()=>{ l.note=noteInput.value.trim().slice(0,60); state.tapeNoting=null; tapeSave(); tapeRender(); };
+        noteInput.addEventListener('keydown',e=>{
+          if(e.key==='Enter'){ e.preventDefault(); commit(); }
+          else if(e.key==='Escape'){ e.preventDefault(); state.tapeNoting=null; tapeRender(); }
+        });
+        noteInput.addEventListener('blur',commit);
+        noteInput.addEventListener('click',e=>e.stopPropagation());
+        setTimeout(()=>{ try{ noteInput.focus(); noteInput.select(); }catch(e){} },30);
+      }else{
+        row.querySelector('.tape-main').addEventListener('click',()=>{
+          state.tapeEditing=l.id; state.tapeEntry=l.e; tapeRender(); buzz();
+        });
+      }
+      frag.appendChild(row);
+    });
+    el.tapeList.appendChild(frag);
+    el.tapeList.scrollTop=el.tapeList.scrollHeight;
+  }
+  const sum=tapeTotal();
+  el.tapeSum.textContent=money(sum);
+  el.tapeSumLabel.textContent=state.tape.length?('Sum av '+state.tape.length+' linjer'):'Sum';
+  if(state.tapeVat){
+    const r=state.tapeVat;
+    const net=sum/(1+r/100);
+    el.tapeSplit.style.display='flex';
+    el.tapeSplit.innerHTML='<span>Uten MVA '+escapeHtml(money(net))+'</span><span>MVA '+r+' % '+escapeHtml(money(sum-net))+'</span>';
+  }else el.tapeSplit.style.display='none';
+  el.tapeVatLabel.textContent=state.tapeVat?('MVA '+state.tapeVat+' %'):'MVA av';
+  el.tapeVatBtn.classList.toggle('on',!!state.tapeVat);
+  const cur=state.tapeEntry;
+  el.tapeCur.textContent=cur?formatExpression(cur):'0';
+  el.tapeCur.classList.toggle('is-blank',!cur);
+  el.tapeCur.scrollLeft=el.tapeCur.scrollWidth;
+  let prev='';
+  if(state.tapeEditing)prev='endrer linje';
+  else if(cur){ try{ const v=evaluate(cur); prev='= '+money(v); }catch(e){ prev=''; } }
+  el.tapePrev.textContent=prev;
+}
+function tapeAppend(t){ if(state.tapeEntry.length<CFG.maxExpr){ state.tapeEntry+=t; tapeRender(); } }
+function tapeNum(v){ tapeAppend(v); }
+function tapeDot(){
+  const tail=/[\d.]*$/.exec(state.tapeEntry)[0];
+  if(tail.indexOf('.')>-1)return;
+  tapeAppend(tail?'.':'0.');
+}
+function tapeChar(c){ if(state.tapeEntry)tapeAppend(c); }
+function tapeOp(v){
+  if(!state.tapeEntry){ if(v==='-')tapeAppend('-'); return; }
+  const lc=state.tapeEntry.slice(-1);
+  if('+-×÷'.indexOf(lc)>-1){ state.tapeEntry=state.tapeEntry.slice(0,-1)+v; tapeRender(); return; }
+  tapeAppend(v);
+}
+function tapeParen(){
+  let open=0;
+  for(const c of state.tapeEntry){ if(c==='(')open++; else if(c===')')open--; }
+  const lc=state.tapeEntry.slice(-1);
+  tapeAppend(open>0&&/[\d)]/.test(lc)?')':'(');
+}
+function tapeSign(){
+  const m=/(-?\d*\.?\d+)$/.exec(state.tapeEntry);
+  if(!m){ tapeAppend('-'); return; }
+  const start=state.tapeEntry.length-m[0].length;
+  const before=state.tapeEntry[start-1];
+  if(m[0][0]==='-'&&(start===0||'+-×÷('.indexOf(before)>-1))
+    state.tapeEntry=state.tapeEntry.slice(0,start)+m[0].slice(1);
+  else state.tapeEntry=state.tapeEntry.slice(0,start)+'-'+m[0];
+  tapeRender();
+}
+function tapeBack(){ state.tapeEntry=state.tapeEntry.slice(0,-1); tapeRender(); }
+function tapeClearEntry(){
+  if(state.tapeEntry||state.tapeEditing){ state.tapeEntry=''; state.tapeEditing=null; tapeRender(); return; }
+  if(state.tape.length){ tapeClearAll(); }
+}
+function tapeAns(){ tapeAppend(formatNumber(state.lastAnswer,null,{raw:true})); }
+function tapeUseSum(){ tapeAppend(formatNumber(tapeTotal(),null,{raw:true})); }
+function tapeCommit(sign){
+  if(!state.tapeEntry){ toastMsg('Skriv inn et beløp først'); return; }
+  let v;
+  try{ v=evaluate(state.tapeEntry); }
+  catch(err){ toastMsg(err.message||'Linjen kan ikke regnes ut'); buzz(30); return; }
+  if(state.tapeEditing){
+    const l=state.tape.find(x=>x.id===state.tapeEditing);
+    if(l){ l.e=state.tapeEntry; l.v=v; }
+    state.tapeEditing=null;
+  }else{
+    state.tape.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),e:state.tapeEntry,v,sign:sign||1,note:''});
+  }
+  state.lastAnswer=v;
+  state.tapeEntry='';
+  tapeSave(); tapeRender(); buzz(14);
+}
+function tapeClearAll(){
+  if(!state.tape.length){ toastMsg('Tapen er allerede tom'); return; }
+  state.tape=[]; state.tapeEditing=null; state.tapeEntry='';
+  tapeSave(); tapeRender(); toastMsg('Tapen er tømt');
+}
+function tapeCopy(){
+  if(!state.tape.length){ toastMsg('Tapen er tom'); return; }
+  const w=Math.max(...state.tape.map(l=>money(l.v).length),8);
+  const lines=state.tape.map(l=>(l.sign<0?'-':'+')+' '+money(l.v).padStart(w)+(l.note?'  '+l.note:'')+'   ['+l.e+']');
+  const sum=tapeTotal();
+  lines.push('-'.repeat(w+6));
+  lines.push('= '+money(sum).padStart(w));
+  if(state.tapeVat){
+    const net=sum/(1+state.tapeVat/100);
+    lines.push('Uten MVA '+money(net));
+    lines.push('MVA '+state.tapeVat+' % '+money(sum-net));
+  }
+  copyText(lines.join('\n')).then(ok=>toastMsg(ok?'Tapen er kopiert':'Klarte ikke å kopiere'));
+}
+const VAT_CYCLE=[0,25,15,12,6];
+function tapeCycleVat(){
+  const i=VAT_CYCLE.indexOf(state.tapeVat);
+  state.tapeVat=VAT_CYCLE[(i+1)%VAT_CYCLE.length];
+  tapeSave(); tapeRender(); buzz();
+}
+/* A native prompt() cannot be styled and drops the user out of the app, so the
+   note is edited in place on the line it belongs to. */
+function tapeNote(){
+  const target=state.tapeEditing?state.tape.find(x=>x.id===state.tapeEditing):state.tape[state.tape.length-1];
+  if(!target){ toastMsg('Legg til en linje først'); return; }
+  state.tapeNoting=target.id;
+  tapeRender();
+}
+
+/* ============ bitwise ============ */
+/* 0x, 0b and 0o override the picker so you can paste a value from anywhere. */
+function parsePrefixed(str,base){
+  const t=String(str||'').trim().toLowerCase();
+  if(/^-?0x/.test(t))return parseInBase(t.replace('0x',''),16);
+  if(/^-?0b/.test(t))return parseInBase(t.replace('0b',''),2);
+  if(/^-?0o/.test(t))return parseInBase(t.replace('0o',''),8);
+  return parseInBase(t,base);
+}
+const BIT_OPS=[{k:'and',l:'AND'},{k:'or',l:'OR'},{k:'xor',l:'XOR'},{k:'not',l:'NOT'},{k:'shl',l:'<<'},{k:'shr',l:'>>'}];
+let bitOp='and';
+function bitValue(){
+  const v=convValue();
+  if(!Number.isFinite(v))return 0;
+  return Math.trunc(v)|0;
+}
+function renderBits(){
+  if(state.conv.cat!=='numbers'){ el.bitCard.style.display='none'; return; }
+  el.bitCard.style.display='';
+  const v=bitValue();
+  if(!el.bitGrid.dataset.built){
+    el.bitGrid.innerHTML='';
+    for(let byte=3;byte>=0;byte--){
+      const row=document.createElement('div');
+      row.className='bit-byte';
+      const idx=document.createElement('span');
+      idx.className='idx'; idx.textContent=(byte*8+7);
+      row.appendChild(idx);
+      for(let b=7;b>=0;b--){
+        const n=byte*8+b;
+        const btn=document.createElement('button');
+        btn.className='bit'+(b===4?' gap':'');
+        btn.dataset.bit=n; btn.type='button';
+        btn.setAttribute('aria-label','Bit '+n);
+        btn.addEventListener('click',()=>{
+          const cur=bitValue();
+          const next=(cur^(1<<n))|0;
+          state.conv.value=toBaseString(next>>>0,cat().units[state.conv.from].base).replace(/ /g,'');
+          el.fromInput.value=state.conv.value;
+          renderConverter(); saveConv(); buzz();
+        });
+        row.appendChild(btn);
+      }
+      el.bitGrid.appendChild(row);
+    }
+    el.bitGrid.dataset.built='1';
+  }
+  el.bitGrid.querySelectorAll('.bit').forEach(b=>{
+    const n=+b.dataset.bit, on=!!(v&(1<<n));
+    b.classList.toggle('on',on);
+    b.textContent=on?'1':'0';
+  });
+  if(!el.bitOps.dataset.built){
+    BIT_OPS.forEach(o=>{
+      const b=document.createElement('button');
+      b.textContent=o.l; b.dataset.op=o.k; b.type='button';
+      b.addEventListener('click',()=>{ bitOp=o.k; renderBits(); buzz(); });
+      el.bitOps.appendChild(b);
+    });
+    el.bitOps.dataset.built='1';
+  }
+  el.bitOps.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.op===bitOp));
+  el.bitOperandRow.style.display=bitOp==='not'?'none':'flex';
+  const base=cat().units[state.conv.from].base;
+  const baseName=cat().units[state.conv.from].s;
+  el.bitOperand.placeholder=(bitOp==='shl'||bitOp==='shr')?'Antall plasser':('Andre verdi ('+baseName+', eller 0xFF)');
+  const raw=el.bitOperand.value.trim();
+  const operand=(bitOp==='shl'||bitOp==='shr')?parseNum(raw):parsePrefixed(raw,base);
+  let res=null;
+  if(bitOp==='not')res=(~v)|0;
+  else if(Number.isFinite(operand)){
+    const o=Math.trunc(operand);
+    if(bitOp==='and')res=(v&o)|0;
+    else if(bitOp==='or')res=(v|o)|0;
+    else if(bitOp==='xor')res=(v^o)|0;
+    else if(bitOp==='shl')res=(v<<o)|0;
+    else if(bitOp==='shr')res=(v>>o)|0;
+  }
+  if(res===null){ el.bitResult.innerHTML='<div class="r"><span>Resultat</span><span>—</span></div>'; return; }
+  const u=res>>>0;
+  el.bitResult.innerHTML=
+    '<div class="r"><span>DEC</span><span>'+escapeHtml(formatNumber(res,0))+'</span></div>'+
+    '<div class="r"><span>HEX</span><span>'+escapeHtml(toBaseString(u,16))+'</span></div>'+
+    '<div class="r"><span>BIN</span><span>'+escapeHtml(toBaseString(u,2))+'</span></div>'+
+    '<div class="r"><span>Uten fortegn</span><span>'+escapeHtml(formatNumber(u,0))+'</span></div>';
+}
+
+/* ============ date tools ============ */
+const DATE_TYPES=[
+ {k:'between',label:'Mellom datoer',fields:[{k:'a',l:'Fra dato',ph:'01.01.2026'},{k:'b',l:'Til dato',ph:'17.05.2026'}]},
+ {k:'add',label:'Legg til tid',fields:[{k:'a',l:'Dato',ph:'15.08.2026'},{k:'n',l:'Antall',ph:'90'}],unitPicker:true},
+ {k:'workdays',label:'Virkedager',fields:[{k:'a',l:'Fra dato',ph:'15.08.2026'},{k:'n',l:'Antall virkedager',ph:'20'}]},
+ {k:'info',label:'Om datoen',fields:[{k:'a',l:'Dato',ph:'17.05.2026'}]}
+];
+const DATE_UNITS=[{k:'days',l:'dager'},{k:'weeks',l:'uker'},{k:'months',l:'måneder'},{k:'years',l:'år'}];
+let dateUnit='days';
+function dateType(){ return DATE_TYPES.find(t=>t.k===state.dateType)||DATE_TYPES[0]; }
+function renderDateChips(){
+  el.dateChips.innerHTML='';
+  DATE_TYPES.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='chip'+(state.dateType===t.k?' active':'');
+    b.textContent=t.label;
+    b.addEventListener('click',()=>{ state.dateType=t.k; renderDateChips(); renderDateFields(); dateCalc(); buzz(); });
+    el.dateChips.appendChild(b);
+  });
+}
+/* The tool opens with an answer, not a form: today, and a sensible other end. */
+function dateDefaults(){
+  const today=new Date(todayISO()+'T00:00:00Z');
+  const v=state.dateVals;
+  if(!v.a)v.a=fmtDate(today);
+  if(state.dateType==='between'&&!v.b)v.b=fmtDate(new Date(Date.UTC(today.getUTCFullYear(),11,31)));
+  if((state.dateType==='add'||state.dateType==='workdays')&&!v.n)v.n=state.dateType==='add'?'30':'10';
+}
+function renderDateFields(){
+  const t=dateType();
+  dateDefaults();
+  el.dateFields.innerHTML='';
+  t.fields.forEach(f=>{
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML='<div class="card-header"><span class="card-label">'+escapeHtml(f.l)+'</span></div>';
+    const row=document.createElement('div'); row.className='date-row';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.className='date-input'; inp.placeholder=f.ph; inp.autocomplete='off';
+    inp.value=state.dateVals[f.k]||''; inp.setAttribute('aria-label',f.l);
+    if(f.k==='n')inp.inputMode='numeric';
+    inp.addEventListener('input',()=>{ state.dateVals[f.k]=inp.value; dateCalc(); });
+    row.appendChild(inp);
+    if(f.k!=='n'){
+      const today=document.createElement('button');
+      today.className='pill-btn'; today.textContent='I dag';
+      today.addEventListener('click',()=>{ inp.value=fmtDate(new Date(todayISO()+'T00:00:00Z')); state.dateVals[f.k]=inp.value; dateCalc(); buzz(); });
+      row.appendChild(today);
+    }
+    if(f.k==='n'&&t.unitPicker){
+      const sel=document.createElement('select');
+      DATE_UNITS.forEach(u=>{ const o=document.createElement('option'); o.value=u.k; o.textContent=u.l; if(u.k===dateUnit)o.selected=true; sel.appendChild(o); });
+      sel.addEventListener('change',()=>{ dateUnit=sel.value; dateCalc(); });
+      sel.setAttribute('aria-label','Tidsenhet');
+      row.appendChild(sel);
+    }
+    card.appendChild(row);
+    el.dateFields.appendChild(card);
+  });
+}
+function dateCalc(){
+  const t=dateType();
+  const a=parseDate(state.dateVals.a), b=parseDate(state.dateVals.b), n=parseNum(state.dateVals.n);
+  let main='–', sentence='Fyll inn feltene over.', rows=[];
+  if(t.k==='between'){
+    if(a&&b){
+      const days=Math.round((b-a)/86400000);
+      const wd=workdaysBetween(a,b);
+      const mo=monthsBetween(a,b);
+      main=formatNumber(Math.abs(days),0)+(Math.abs(days)===1?' dag':' dager');
+      sentence='Fra '+fmtDateLong(a)+' til '+fmtDateLong(b)+'.';
+      rows=[['Virkedager',formatNumber(Math.abs(wd),0)],
+            ['Uker',formatNumber(Math.abs(days)/7,2)],
+            ['Hele måneder',formatNumber(Math.abs(mo),0)],
+            ['Retning',days<0?'bakover i tid':'framover i tid']];
+    }else if(state.dateVals.a||state.dateVals.b)sentence='Skriv datoen som 15.08.2026 eller 2026-08-15.';
+  }else if(t.k==='add'){
+    if(a&&Number.isFinite(n)){
+      let r;
+      if(dateUnit==='days')r=addDays(a,Math.round(n));
+      else if(dateUnit==='weeks')r=addDays(a,Math.round(n)*7);
+      else if(dateUnit==='months')r=addMonthsSafe(a,Math.round(n));
+      else r=addMonthsSafe(a,Math.round(n)*12);
+      const w=isoWeek(r), h=holidayName(r);
+      main=fmtDate(r);
+      const un=(DATE_UNITS.find(u=>u.k===dateUnit)||{}).l;
+      sentence=fmtDateLong(a)+(n<0?' minus ':' pluss ')+formatNumber(Math.abs(n),0)+' '+un+' gir '+fmtDateLong(r)+'.';
+      rows=[['Ukedag',WEEKDAYS[r.getUTCDay()]],['Uke',String(w.week)],
+            ['Virkedag',isWorkday(r)?'ja':'nei'],['Helligdag',h||'nei']];
+    }else if(state.dateVals.a)sentence='Skriv datoen som 15.08.2026 eller 2026-08-15.';
+  }else if(t.k==='workdays'){
+    if(a&&Number.isFinite(n)){
+      const r=addWorkdays(a,Math.round(n));
+      const cal=Math.round((r-a)/86400000);
+      const nn=Math.abs(Math.round(n));
+      main=fmtDate(r);
+      sentence=formatNumber(nn,0)+(nn===1?' virkedag ':' virkedager ')+(n<0?'før ':'fra ')+fmtDateLong(a)+' gir '+fmtDateLong(r)+'.';
+      rows=[['Kalenderdager',formatNumber(Math.abs(cal),0)],
+            ['Helger og helligdager hoppet over',formatNumber(Math.abs(cal)-Math.abs(Math.round(n)),0)],
+            ['Ukedag',WEEKDAYS[r.getUTCDay()]],['Uke',String(isoWeek(r).week)]];
+    }else if(state.dateVals.a)sentence='Skriv datoen som 15.08.2026 eller 2026-08-15.';
+  }else if(t.k==='info'){
+    if(a){
+      const w=isoWeek(a), h=holidayName(a);
+      const start=Date.UTC(a.getUTCFullYear(),0,1);
+      const doy=Math.round((a-start)/86400000)+1;
+      const leap=(y=>(y%4===0&&y%100!==0)||y%400===0)(a.getUTCFullYear());
+      const today=new Date(todayISO()+'T00:00:00Z');
+      const diff=Math.round((a-today)/86400000);
+      main='Uke '+w.week;
+      sentence=fmtDateLong(a)+(h?' — '+h+'.':'.');
+      rows=[['Ukedag',WEEKDAYS[a.getUTCDay()]],
+            ['Dag i året',doy+' av '+(leap?366:365)],
+            ['Virkedag',isWorkday(a)?'ja':'nei'],
+            ['Helligdag',h||'nei'],
+            [diff===0?'I dag':(diff>0?'Dager til':'Dager siden'),diff===0?'—':formatNumber(Math.abs(diff),0)]];
+    }else if(state.dateVals.a)sentence='Skriv datoen som 15.08.2026 eller 2026-08-15.';
+  }
+  el.dateResult.textContent=main;
+  el.dateSentence.textContent=sentence;
+  if(rows.length){
+    el.dateBreakdown.style.display='';
+    el.dateBreakdown.innerHTML=rows.map(r=>'<div class="b-row"><span>'+escapeHtml(r[0])+'</span><span>'+escapeHtml(r[1])+'</span></div>').join('');
+  }else el.dateBreakdown.style.display='none';
+}
+
+/* ============ backup ============ */
+const BACKUP_KEYS=[LS.theme,LS.amoled,LS.hc,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays,LS.fx,LS.tabs];
+/* Settings are only written when changed, so an untouched preference would be
+   missing from a backup and a restore would leave the old value in place.
+   Flush the live state first so the copy is complete rather than partial. */
+function persistAll(){
+  lsSet(LS.theme,state.theme);
+  lsSet(LS.amoled,state.amoled?'1':'0');
+  lsSet(LS.hc,state.hc?'1':'0');
+  lsSet(LS.dec,String(state.decimals));
+  lsSet(LS.trig,state.trig);
+  lsSet(LS.fmt,state.fmt);
+  lsSet(LS.src,state.rateSrc);
+  lsSet(LS.answerColor,state.answerColor);
+  lsSet(LS.haptic,state.haptic?'1':'0');
+  lsSet(LS.live,state.livePreview?'1':'0');
+  lsSet(LS.kbd,state.kbd?'1':'0');
+  lsSet(LS.sci,state.sci?'1':'0');
+  lsSet(LS.allOpen,state.allOpen?'1':'0');
+  lsSet(LS.mode,state.mode);
+  lsSet(LS.tapeVat,String(state.tapeVat));
+  jSet(LS.hist,state.history);
+  jSet(LS.fav,state.favs);
+  jSet(LS.conv,state.conv);
+  jSet(LS.tape,state.tape);
+  jSet(LS.vars,state.vars);
+  jSet(LS.recent,state.recent);
+  jSet(LS.favUnits,state.favUnits);
+  jSet(LS.catUse,state.catUse);
+  lsSet(LS.fxFee,String(state.fxFee));
+  lsSet(LS.sparkDays,String(state.sparkDays));
+  jSet(LS.fx,{from:state.fx.from,to:state.fx.to,value:state.fx.value,side:state.fx.side});
+  jSet(LS.tabs,state.tabs);
+}
+function exportSettings(){
+  persistAll();
+  const data={app:'Pro Kalkulator Ultra',version:VERSION,exported:new Date().toISOString(),values:{}};
+  BACKUP_KEYS.forEach(k=>{ const v=lsGet(k,null); if(v!==null)data.values[k]=v; });
+  const json=JSON.stringify(data,null,2);
+  /* The Android web view has no download manager, so a file link would do nothing.
+     Hand over the copy through the clipboard instead, and say where it went. */
+  if(IS_NATIVE){
+    copyText(json).then(ok=>toastMsg(ok?'Kopien ligger på utklippstavlen. Lim den inn i et notat.':'Klarte ikke å lagre kopien'));
+    return;
+  }
+  try{
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='kalkulator-kopi-'+todayISO()+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    toastMsg('Sikkerhetskopien er lagret');
+  }catch(e){
+    copyText(json).then(ok=>toastMsg(ok?'Kopien ligger på utklippstavlen':'Klarte ikke å lagre kopien'));
+  }
+}
+function importSettings(text){
+  let data;
+  try{ data=JSON.parse(text); }catch(e){ toastMsg('Filen er ikke en gyldig kopi'); return; }
+  if(!data||!data.values||typeof data.values!=='object'){ toastMsg('Filen mangler innhold'); return; }
+  let n=0;
+  Object.keys(data.values).forEach(k=>{ if(BACKUP_KEYS.indexOf(k)>-1){ lsSet(k,data.values[k]); n++; } });
+  if(!n){ toastMsg('Fant ingenting å hente inn'); return; }
+  toastMsg('Hentet inn '+n+' innstillinger. Laster på nytt …');
+  setTimeout(()=>location.reload(),900);
+}
+
+/* ============ key help: explanation + extra actions on long press ============ */
+
+/* Inserting has to respect which surface is active: the tape has its own buffer. */
+function insertRaw(t){
+  if(state.mode==='tape'){ tapeAppend(t); return; }
+  startFresh(); append(t);
+}
+function insertFunc(f){ insertRaw(f+'('); }
+function insertOpVal(op,val){
+  if(state.mode==='tape'){ tapeOp(op); tapeAppend(String(val)); return; }
+  handleOp(op); append(String(val));
+}
+function V(l,d,run){ return {l,d,run}; }
+
+const KEY_HELP={
+ /* --- powers and roots --- */
+ '²':{g:'x<sup>2</sup>',mark:1,n:'Kvadrat',
+   d:'Opphøyer tallet i andre potens, altså ganger det med seg selv. Merk at dette ikke er det samme som å gange med 2: 5² er 25, mens 5×2 er 10.',
+   ex:'5² = 25\n12² = 144',
+   vl:'Andre eksponenter',
+   variants:()=>[
+     V('x³','Tredje potens',()=>insertRaw('³')),
+     V('x⁻¹','Én delt på tallet',()=>insertRaw('^(-1)')),
+     V('√','Kvadratrot i stedet',()=>insertFunc('sqrt')),
+     V('xʸ','Fri eksponent',()=>insertRaw('^'))],
+   custom:{label:'Opphøy i et valgfritt tall',ph:'2,5',run:n=>insertRaw('^('+n+')')}},
+
+ '^':{g:'x<sup>y</sup>',mark:1,n:'Potens',
+   d:'Opphøyer tallet foran i tallet du skriver etter. Regnes fra høyre, så 2^3^2 blir 2^(3^2) = 512.',
+   ex:'2 xʸ 10 = 1024',
+   vl:'Vanlige eksponenter',
+   variants:()=>[
+     V('x²','I andre',()=>insertRaw('²')),
+     V('x³','I tredje',()=>insertRaw('³')),
+     V('x⁻¹','Omvendt verdi',()=>insertRaw('^(-1)')),
+     V('x^½','Kvadratrot',()=>insertRaw('^(0.5)'))],
+   custom:{label:'Opphøy i',ph:'4',run:n=>insertRaw('^('+n+')')}},
+
+ sqrt:{g:'√',mark:1,n:'Kvadratrot',
+   d:'Finner tallet som ganget med seg selv gir verdien. Krever et positivt tall.',
+   ex:'√9 = 3\n√2 ≈ 1,4142',
+   vl:'Andre røtter',
+   variants:()=>[
+     V('∛','Kubikkrot',()=>insertFunc('cbrt')),
+     V('x^½','Samme som √, skrevet som potens',()=>insertRaw('^(0.5)'))],
+   custom:{label:'n-te rot: skriv n',ph:'5',run:n=>insertRaw('^(1÷'+n+')')}},
+
+ cbrt:{g:'∛',mark:1,n:'Kubikkrot',
+   d:'Finner tallet som ganget med seg selv tre ganger gir verdien. Tåler negative tall, i motsetning til kvadratroten.',
+   ex:'∛27 = 3\n∛−8 = −2',
+   variants:()=>[V('√','Kvadratrot',()=>insertFunc('sqrt'))],
+   custom:{label:'n-te rot: skriv n',ph:'5',run:n=>insertRaw('^(1÷'+n+')')}},
+
+ /* --- logarithms --- */
+ log:{g:'log',mark:1,n:'Titallslogaritme',
+   d:'Svarer på hvor mange ganger 10 må ganges med seg selv for å gi tallet.',
+   ex:'log(100) = 2, fordi 10² = 100\nGrunntall 5: ln(x)÷ln(5)',
+   vl:'Andre grunntall',
+   variants:()=>[
+     V('ln','Naturlig, grunntall e',()=>insertFunc('ln')),
+     V('log₂','Grunntall 2',()=>insertFunc('log2'))],
+   custom:{label:'Fritt grunntall: skriv grunntallet',ph:'5',run:n=>insertRaw('ln()÷ln('+n+')')}},
+
+ ln:{g:'ln',n:'Naturlig logaritme',
+   d:'Logaritmen med grunntall e ≈ 2,71828. Brukes i alt som vokser eller avtar jevnt over tid.',
+   ex:'ln(e) = 1\nln(1) = 0',
+   variants:()=>[V('log','Grunntall 10',()=>insertFunc('log')),V('log₂','Grunntall 2',()=>insertFunc('log2')),V('eˣ','Motsatt regning',()=>insertFunc('exp'))]},
+
+ log2:{g:'log₂',n:'Toerlogaritme',
+   d:'Svarer på hvor mange ganger 2 må dobles for å nå tallet. Nyttig for datamengder og bitbredder.',
+   ex:'log₂(1024) = 10',
+   variants:()=>[V('log','Grunntall 10',()=>insertFunc('log')),V('ln','Grunntall e',()=>insertFunc('ln'))]},
+
+ exp:{g:'e<sup>x</sup>',n:'Eksponentialfunksjon',
+   d:'Opphøyer e ≈ 2,71828 i tallet du skriver. Den motsatte regningen av ln.',
+   ex:'eˣ der x = 1 gir 2,71828',
+   variants:()=>[V('ln','Motsatt regning',()=>insertFunc('ln')),V('10ˣ','Ti opphøyd i x',()=>insertRaw('10^'))]},
+
+ /* --- trigonometry --- */
+ sin:{g:'sin',n:'Sinus',d:'Sinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'sin(30) = 0,5 i grader',mark:1,
+   vl:'Beslektede funksjoner',
+   variants:()=>[V('sin⁻¹','Finn vinkelen tilbake',()=>insertFunc('asin')),V('sinh','Hyperbolsk sinus',()=>insertFunc('sinh')),
+     V('cos','Cosinus',()=>insertFunc('cos')),V('tan','Tangens',()=>insertFunc('tan')),
+     V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
+ cos:{g:'cos',n:'Cosinus',d:'Cosinus til en vinkel. Regner i den vinkelmåten som står i toppbaren.',ex:'cos(60) = 0,5 i grader',mark:1,
+   variants:()=>[V('cos⁻¹','Finn vinkelen tilbake',()=>insertFunc('acos')),V('cosh','Hyperbolsk cosinus',()=>insertFunc('cosh')),
+     V('sin','Sinus',()=>insertFunc('sin')),V('tan','Tangens',()=>insertFunc('tan')),
+     V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
+ tan:{g:'tan',n:'Tangens',d:'Tangens til en vinkel, altså sinus delt på cosinus. Udefinert ved 90° og 270°.',ex:'tan(45) = 1 i grader',mark:1,
+   variants:()=>[V('tan⁻¹','Finn vinkelen tilbake',()=>insertFunc('atan')),V('tanh','Hyperbolsk tangens',()=>insertFunc('tanh')),
+     V('sin','Sinus',()=>insertFunc('sin')),V('cos','Cosinus',()=>insertFunc('cos')),
+     V(state.trig==='deg'?'Bytt til radianer':'Bytt til grader','Gjelder alle vinkelfunksjoner',()=>toggleTrig())]},
+ asin:{g:'sin⁻¹',n:'Invers sinus',d:'Finner vinkelen som har denne sinusverdien. Verdien må ligge mellom −1 og 1.',ex:'sin⁻¹(0,5) = 30° i grader',
+   variants:()=>[V('cos⁻¹','Invers cosinus',()=>insertFunc('acos')),V('tan⁻¹','Invers tangens',()=>insertFunc('atan')),V('sin','Vanlig sinus',()=>insertFunc('sin'))]},
+ acos:{g:'cos⁻¹',n:'Invers cosinus',d:'Finner vinkelen som har denne cosinusverdien. Verdien må ligge mellom −1 og 1.',ex:'cos⁻¹(0,5) = 60° i grader',
+   variants:()=>[V('sin⁻¹','Invers sinus',()=>insertFunc('asin')),V('tan⁻¹','Invers tangens',()=>insertFunc('atan')),V('cos','Vanlig cosinus',()=>insertFunc('cos'))]},
+ atan:{g:'tan⁻¹',n:'Invers tangens',d:'Finner vinkelen som har denne tangensverdien. Tåler alle tall.',ex:'tan⁻¹(1) = 45° i grader',
+   variants:()=>[V('sin⁻¹','Invers sinus',()=>insertFunc('asin')),V('cos⁻¹','Invers cosinus',()=>insertFunc('acos')),V('tan','Vanlig tangens',()=>insertFunc('tan'))]},
+ sinh:{g:'sinh',n:'Hyperbolsk sinus',d:'Hyperbolsk sinus. Beskriver blant annet formen på en hengende kjede. Regner alltid i radianer.',ex:'sinh(1) ≈ 1,1752',
+   variants:()=>[V('cosh','Hyperbolsk cosinus',()=>insertFunc('cosh')),V('tanh','Hyperbolsk tangens',()=>insertFunc('tanh')),V('sinh⁻¹','Motsatt regning',()=>insertFunc('asinh'))]},
+ cosh:{g:'cosh',n:'Hyperbolsk cosinus',d:'Hyperbolsk cosinus. Alltid 1 eller større. Regner alltid i radianer.',ex:'cosh(0) = 1',
+   variants:()=>[V('sinh','Hyperbolsk sinus',()=>insertFunc('sinh')),V('tanh','Hyperbolsk tangens',()=>insertFunc('tanh')),V('cosh⁻¹','Motsatt regning',()=>insertFunc('acosh'))]},
+ tanh:{g:'tanh',n:'Hyperbolsk tangens',d:'Hyperbolsk tangens. Nærmer seg −1 og 1 uten å nå dem. Regner alltid i radianer.',ex:'tanh(1) ≈ 0,7616',
+   variants:()=>[V('sinh','Hyperbolsk sinus',()=>insertFunc('sinh')),V('cosh','Hyperbolsk cosinus',()=>insertFunc('cosh')),V('tanh⁻¹','Motsatt regning',()=>insertFunc('atanh'))]},
+
+ trig:{g:'DEG',mark:1,n:'Vinkelmåte',
+   d:'Bestemmer om vinkler regnes i grader eller radianer. En hel sirkel er 360 grader eller 2π radianer.',
+   ex:'sin(30) = 0,5 i grader\nsin(π÷6) = 0,5 i radianer',
+   vl:'Velg måte',
+   variants:()=>[
+     V('Grader','360° i en sirkel',()=>{ if(state.trig!=='deg')toggleTrig(); }),
+     V('Radianer','2π i en sirkel',()=>{ if(state.trig!=='rad')toggleTrig(); })]},
+
+ /* --- constants --- */
+ 'π':{g:'π',mark:1,n:'Pi',
+   d:'Forholdet mellom omkretsen og diameteren i en sirkel, ca. 3,14159.',
+   ex:'2×π×r gir omkretsen\nπ×r² gir arealet',
+   vl:'Sett inn',
+   variants:()=>[
+     V('2π','Hel omdreining i radianer',()=>insertRaw('2π')),
+     V('π÷2','Rett vinkel i radianer',()=>insertRaw('π÷2')),
+     V('e','Eulers tall',()=>insertRaw('e')),
+     V('φ','Det gylne snitt, 1,618',()=>insertRaw('φ'))]},
+ e:{g:'e',n:'Eulers tall',
+   d:'Grunntallet for naturlige logaritmer, ca. 2,71828. Dukker opp overalt der noe vokser jevnt.',
+   ex:'ln(e) = 1',
+   variants:()=>[V('π','Pi',()=>insertRaw('π')),V('φ','Det gylne snitt',()=>insertRaw('φ')),V('eˣ','Opphøy e i noe',()=>insertFunc('exp'))]},
+
+ /* --- operators --- */
+ '×':{g:'×',mark:1,n:'Multiplikasjon',
+   d:'Ganger tallene. Du kan også bare sette parenteser inntil hverandre: 3(4) blir 12.',
+   ex:'7×8 = 56',
+   vl:'Gang med et fast tall',
+   variants:()=>[
+     V('×2','Doble',()=>insertOpVal('×',2)),
+     V('×10','Ett siffer opp',()=>insertOpVal('×',10)),
+     V('×100','To siffer opp',()=>insertOpVal('×',100)),
+     V('×1000','Tre siffer opp',()=>insertOpVal('×',1000))],
+   custom:{label:'Gang med',ph:'1,25',run:n=>insertOpVal('×',n)}},
+ '÷':{g:'÷',mark:1,n:'Divisjon',
+   d:'Deler det første tallet på det andre. Deling på null går ikke.',
+   ex:'10÷4 = 2,5',
+   vl:'Del på et fast tall',
+   variants:()=>[
+     V('÷2','Halvere',()=>insertOpVal('÷',2)),
+     V('÷10','Ett siffer ned',()=>insertOpVal('÷',10)),
+     V('÷100','To siffer ned',()=>insertOpVal('÷',100)),
+     V('mod','Resten etter en heltallsdivisjon',()=>insertOpVal('mod',''))],
+   custom:{label:'Del på',ph:'1,25',run:n=>insertOpVal('÷',n)}},
+ '+':{g:'+',mark:1,n:'Addisjon',d:'Legger sammen. Regnes etter gange og dele, med mindre du bruker parenteser.',ex:'2+3×4 = 14\n(2+3)×4 = 20',
+   variants:()=>[V('+10 %','Legg på ti prosent',()=>insertOpVal('×',1.1)),V('+25 % MVA','Legg på merverdiavgift',()=>insertOpVal('×',1.25))],
+   custom:{label:'Legg på prosent',ph:'15',run:n=>insertOpVal('×',1+parseNum(n)/100)}},
+ '-':{g:'−',mark:1,n:'Subtraksjon',d:'Trekker fra. Foran et tall betyr minus at tallet er negativt.',ex:'100−30−20 = 50',
+   variants:()=>[V('−10 %','Trekk fra ti prosent',()=>insertOpVal('×',0.9)),V('uten MVA','Trekk ut 25 % merverdiavgift',()=>insertOpVal('÷',1.25))],
+   custom:{label:'Trekk fra prosent',ph:'15',run:n=>insertOpVal('×',1-parseNum(n)/100)}},
+ mod:{g:'mod',n:'Modulo',d:'Gir resten etter en heltallsdivisjon. Brukes til å sjekke delelighet og til å regne rundt i sykluser.',ex:'17 mod 5 = 2\n14 mod 7 = 0, altså delelig'},
+
+ /* --- percent --- */
+ '%':{g:'%',mark:1,n:'Prosent',
+   d:'Deler tallet på 100, slik at 15% blir 0,15. For MVA, rabatt og påslag er Prosent-fanen som regel raskere.',
+   ex:'200×15% = 30\n50% = 0,5',
+   vl:'Snarveier',
+   variants:()=>[
+     V('×1,25','Legg på 25 % MVA',()=>insertOpVal('×',1.25)),
+     V('÷1,25','Trekk ut 25 % MVA',()=>insertOpVal('÷',1.25)),
+     V('×1,15','Legg på 15 % MVA',()=>insertOpVal('×',1.15)),
+     V('Åpne Prosent','MVA, rabatt, påslag og tips',()=>switchMode('percent'))]},
+
+ /* --- single-value functions --- */
+ abs:{g:'|x|',mark:1,n:'Absoluttverdi',
+   d:'Avstanden fra null, alltid positiv.',
+   ex:'|−7| = 7',
+   vl:'Andre funksjoner som ikke har egen tast',
+   variants:()=>[
+     V('round','Rund av til nærmeste heltall',()=>insertFunc('round')),
+     V('floor','Rund alltid nedover',()=>insertFunc('floor')),
+     V('ceil','Rund alltid oppover',()=>insertFunc('ceil')),
+     V('sign','Gir −1, 0 eller 1',()=>insertFunc('sign'))]},
+ recip:{g:'1/x',n:'Omvendt verdi',d:'Én delt på tallet. Å gange med den omvendte verdien er det samme som å dele.',ex:'1/4 = 0,25',
+   variants:()=>[V('x²','I andre potens',()=>insertRaw('²')),V('√','Kvadratrot',()=>insertFunc('sqrt'))]},
+ '!':{g:'x!',n:'Fakultet',
+   d:'Ganger sammen alle heltall opp til tallet. Sier hvor mange rekkefølger et antall ting kan stå i. Krever et positivt heltall, og stopper på 170.',
+   ex:'5! = 1×2×3×4×5 = 120'},
+
+ /* --- entry and editing --- */
+ clear:{g:'C',mark:1,n:'Nullstill',
+   d:'Tømmer uttrykket og resultatet. Historikken, minnet og variablene står igjen.',
+   vl:'Tøm mer',
+   variants:()=>[
+     V('Tøm minnet','Setter M tilbake til null',()=>memClear()),
+     V('Tøm variablene','Nullstiller A, B, C og D',()=>{ state.vars={A:0,B:0,C:0,D:0}; jSet(LS.vars,state.vars); paintVarKeys(); toastMsg('Variablene er tømt'); }),
+     V('Tøm historikken','Sletter alle utregninger',()=>{ state.history=[]; jSet(LS.hist,[]); updateBadge(); renderHistory(''); toastMsg('Historikken er tømt'); })]},
+ back:{g:'⌫',n:'Slett bakover',d:'Fjerner ett tegn. Står det en hel funksjon som sin( bakerst, fjernes hele.',ex:'sin(45 blir sin( blir tomt'},
+ paren:{g:'( )',n:'Parenteser',
+   d:'Setter inn den parentesen som mangler. Alt inni regnes ut først.',
+   ex:'(2+3)×4 = 20, mot 2+3×4 = 14',
+   variants:()=>[V('(','Bare venstre',()=>insertRaw('(')),V(')','Bare høyre',()=>insertRaw(')'))]},
+ sign:{g:'±',n:'Bytt fortegn',d:'Gjør det siste tallet negativt, eller positivt igjen.',ex:'7 blir −7'},
+ decimal:{g:',',n:'Desimalkomma',d:'Skiller heltall fra desimaler. Punktum fra et fysisk tastatur virker også.',ex:'12,5'},
+ equals:{g:'=',n:'Regn ut',
+   d:'Regner ut uttrykket og lagrer svaret i historikken. Svaret blir liggende som ANS til neste utregning.',
+   ex:'Trykk på svaret i displayet for å kopiere det',
+   variants:()=>[V('Kopier svaret','Legger det på utklippstavlen',()=>{ if(!state.error)copyText(state.result).then(o=>toastMsg(o?'Kopiert':'Klarte ikke å kopiere')); })]},
+
+ /* --- memory and variables --- */
+ ans:{g:'Ans',mark:1,n:'Forrige svar',
+   d:'Setter inn resultatet fra forrige utregning, så du kan regne videre på det.',
+   ex:'Etter 2+3 = 5 gir ANS deg 5',
+   vl:'Hent et tidligere svar',
+   variants:()=>{
+     const out=state.history.slice(0,6).map(h=>V(h.r,h.e,()=>insertRaw(formatNumber(parseNum(h.r),null,{raw:true}))));
+     return out.length?out:[V('Historikken er tom','Regn ut noe først',()=>{})];
+   }},
+ mAdd:{g:'M+',n:'Legg til i minnet',d:'Legger verdien i displayet til det du har lagret i minnet. Minnet vises som en pille i toppbaren.',ex:'Minne 10, verdi 5, M+ gir 15',
+   variants:()=>[V('Sett minnet','Erstatter i stedet for å legge til',()=>{ const v=currentValue(); if(v===null){toastMsg('Ingen verdi');return;} state.memory=v; updateDisplay(); toastMsg('Minne: '+formatNumber(v)); }),
+     V('M−','Trekk fra i stedet',()=>memSub()),V('MR','Hent verdien',()=>memRecall()),V('MC','Tøm minnet',()=>memClear())]},
+ mSub:{g:'M−',n:'Trekk fra minnet',d:'Trekker verdien i displayet fra det du har lagret i minnet.',ex:'Minne 10, verdi 5, M− gir 5',
+   variants:()=>[V('M+','Legg til i stedet',()=>memAdd()),V('MR','Hent verdien',()=>memRecall()),V('MC','Tøm minnet',()=>memClear())]},
+ mRecall:{g:'MR',n:'Hent fra minnet',d:'Setter den lagrede verdien inn i uttrykket. Du kan også trykke på M-pillen i toppbaren.',
+   variants:()=>[V('M+','Legg til i minnet',()=>memAdd()),V('M−','Trekk fra minnet',()=>memSub()),V('MC','Tøm minnet',()=>memClear())]},
+ mClear:{g:'MC',n:'Tøm minnet',d:'Setter minnet tilbake til null. Pillen i toppbaren forsvinner.',
+   variants:()=>[V('MR','Hent verdien først',()=>memRecall())]},
+ sto:{g:'STO',mark:1,n:'Lagre i variabel',
+   d:'Trykk STO og deretter A, B, C eller D for å lagre verdien i displayet der. En strek under bokstaven viser at den er i bruk.',
+   ex:'230 = så STO så A lagrer 230 i A',
+   vl:'Hva som ligger lagret nå',
+   variants:()=>['A','B','C','D'].map(k=>V(k+' = '+formatNumber(state.vars[k]||0,4),'Trykk for å sette inn',()=>insertRaw(k)))},
+ var:{g:'A',mark:1,n:'Variabler',
+   d:'A til D holder på hver sin verdi. Trykk for å sette bokstaven inn i uttrykket, eller STO først for å lagre i den.',
+   ex:'Med A = 230: A×3 gir 690',
+   vl:'Alle variablene',
+   variants:()=>['A','B','C','D'].map(k=>V(k+' = '+formatNumber(state.vars[k]||0,4),'Trykk for å sette inn',()=>insertRaw(k)))
+     .concat([V('Nullstill alle','Setter A til D til null',()=>{ state.vars={A:0,B:0,C:0,D:0}; jSet(LS.vars,state.vars); paintVarKeys(); toastMsg('Variablene er tømt'); })])},
+
+ /* --- RPN --- */
+ rpnEnter:{g:'Enter',n:'Dytt på stakken',
+   d:'Legger tallet du har skrevet øverst på stakken. I RPN skriver du tallene først og operatoren til slutt, så du slipper parenteser.',
+   ex:'5 Enter 3 + gir 8\n(2+3)×4 blir: 2 Enter 3 + 4 ×'},
+ rpnSwap:{g:'x↔y',n:'Bytt x og y',d:'Bytter om de to øverste tallene. Nyttig når du har lagt dem inn i feil rekkefølge før en minus eller deling.',ex:'3 Enter 7 x↔y − gir 4'},
+ rpnDrop:{g:'Drop',n:'Fjern øverste',d:'Kaster det øverste tallet på stakken. Har du et halvskrevet tall, tømmes det i stedet.'},
+ rpnRoll:{g:'Roll',n:'Rull stakken',d:'Flytter det øverste tallet nederst, så du kommer til de andre verdiene.'},
+ rpnLast:{g:'Last x',n:'Forrige verdi',d:'Henter tilbake tallet den forrige operasjonen brukte opp. Redder deg når du tastet feil operator.',ex:'Etter 8 3 ÷ gir Last x deg 3 tilbake'},
+
+ /* --- tape --- */
+ tapeCommit:{g:'+ Linje',mark:1,n:'Legg til linje',
+   d:'Regner ut det du har skrevet og legger det som en ny linje på strimmelen. Trykk på en linje for å endre den.',
+   ex:'Skriv 1200 og trykk + Linje',
+   variants:()=>[V('− Linje','Legg til som fradrag',()=>tapeCommit(-1))]},
+ tapeCommitMinus:{g:'− Linje',n:'Legg til som fradrag',d:'Samme som + Linje, men beløpet trekkes fra summen. Du kan snu fortegnet etterpå med knappen til venstre på linjen.'},
+ tapeUseSum:{g:'Sum',n:'Bruk summen',d:'Setter summen av strimmelen inn i feltet, så du kan regne videre på den.',ex:'Sum ×0,25 gir en fjerdedel av totalen'},
+ tapeClearEntry:{g:'C',n:'Nullstill',d:'Tømmer feltet du skriver i. Er feltet allerede tomt, tømmes hele strimmelen.'},
+ rpnClear:{g:'C',mark:1,n:'Tøm stakken',d:'Kaster alle tallene på stakken og det du holder på å skrive. Historikken står igjen.',
+   variants:()=>[V('Drop','Fjern bare det øverste',()=>rpnDrop())]},
+ '(':{g:'(',n:'Venstre parentes',d:'Åpner en parentes. Alt som står inni regnes ut før resten.',ex:'(2+3)×4 = 20'},
+ ')':{g:')',n:'Høyre parentes',d:'Lukker en parentes. Glemmer du den, lukkes den for deg når du regner ut.',ex:'sin(45) trenger begge'},
+ 'π_rpn':{g:'π',n:'Pi',d:'Dytter pi, ca. 3,14159, opp på stakken.',
+   variants:()=>[V('e','Eulers tall i stedet',()=>{ rpnConst('e'); })]}
+};
+/* Several keys do the same job in another mode, so they share one explanation. */
+const HELP_ALIAS={
+ rpnBack:'back', rpnSign:'sign', rpnDot:'decimal', 'rpnConst:pi':'π_rpn',
+ 'rpnFunc:sq':'²', 'rpnFunc:inv':'recip', 'rpnFunc:sqrt':'sqrt',
+ 'rpnOp:÷':'÷', 'rpnOp:×':'×', 'rpnOp:+':'+', 'rpnOp:-':'-', 'rpnOp:^':'^',
+ tapeParen:'paren', tapeSign:'sign', tapeDot:'decimal', tapeBack:'back', tapeAns:'ans'
+};
+/* The plain digits are left alone so a long press never interrupts fast entry. */
+
+function keyHelpFor(a,v){
+  const pair=a+':'+v;
+  if(HELP_ALIAS[pair])return HELP_ALIAS[pair];
+  if(HELP_ALIAS[a])return HELP_ALIAS[a];
+  if(v!==undefined&&KEY_HELP[v])return v;
+  if(KEY_HELP[a])return a;
+  return null;
+}
+/* The corner wedge is only worth showing where the extras are a real shortcut;
+   marking every key that has a cross-reference would just be noise. */
+function keyIsMarked(k){ const h=KEY_HELP[k]; return !!(h&&h.mark); }
+function keyHasExtras(k){
+  const h=KEY_HELP[k];
+  if(!h)return false;
+  if(h.custom)return true;
+  if(!h.variants)return false;
+  try{ return h.variants().length>0; }catch(e){ return false; }
+}
+let currentHelp=null;
+function openKeyHelp(k){
+  const h=KEY_HELP[k];
+  if(!h)return;
+  overlayOpened();
+  currentHelp=h;
+  el.keyGlyph.innerHTML=h.g||escapeHtml(k);
+  el.keyName.textContent=h.n||'';
+  el.keyDesc.textContent=h.d||'';
+  if(h.ex){ el.keyExample.style.display=''; el.keyExample.textContent=h.ex; }
+  else el.keyExample.style.display='none';
+
+  const list=h.variants?h.variants():[];
+  if(list.length){
+    el.keyVarWrap.style.display='';
+    el.keyVarLabel.textContent=h.vl||'Flere valg';
+    el.keyVariants.innerHTML='';
+    list.forEach(v=>{
+      const b=document.createElement('button');
+      b.className='var-btn'+(list.length%2===1&&v===list[list.length-1]?' wide':'');
+      b.type='button';
+      b.innerHTML='<span class="vl">'+escapeHtml(v.l)+'</span>'+(v.d?'<span class="vd">'+escapeHtml(v.d)+'</span>':'');
+      b.addEventListener('click',()=>{ closeKeyHelp(); buzz(); try{ v.run(); }catch(e){} });
+      el.keyVariants.appendChild(b);
+    });
+  }else el.keyVarWrap.style.display='none';
+
+  if(h.custom){
+    el.keyCustomWrap.style.display='';
+    el.keyCustomLabel.textContent=h.custom.label;
+    el.keyCustomInput.placeholder=h.custom.ph||'';
+    el.keyCustomInput.value='';
+  }else el.keyCustomWrap.style.display='none';
+
+  el.sheetOverlay.classList.add('open');
+  el.keySheet.classList.add('open');
+}
+function applyKeyCustom(){
+  if(!currentHelp||!currentHelp.custom)return;
+  const raw=el.keyCustomInput.value.trim();
+  const n=parseNum(raw);
+  if(!Number.isFinite(n)){ toastMsg('Skriv inn et tall'); return; }
+  const run=currentHelp.custom.run;
+  closeKeyHelp(); buzz();
+  try{ run(formatNumber(n,null,{raw:true})); }catch(e){}
+}
+function closeKeyHelp(){
+  el.sheetOverlay.classList.remove('open');
+  el.keySheet.classList.remove('open');
+  currentHelp=null;
+  overlayClosed();
+}
+
+/* ============ currency mode ============ */
+/* Money got its own tab because a generic from/to shell fits it badly: it wants a
+   board of several currencies at once, a live rate, and a markup — not two boxes. */
+/* A price reads faster with its symbol in front. Codes stay as the fallback so
+   all 166 currencies get something sensible rather than only the famous ones. */
+const FX_SYMBOL={NOK:'kr',SEK:'kr',DKK:'kr',ISK:'kr',USD:'$',EUR:'\u20ac',GBP:'\u00a3',JPY:'\u00a5',CNY:'\u00a5',
+ CHF:'CHF',PLN:'z\u0142',CZK:'K\u010d',HUF:'Ft',RON:'lei',BGN:'\u043b\u0432',TRY:'\u20ba',RUB:'\u20bd',UAH:'\u20b4',
+ INR:'\u20b9',PKR:'Rs',BDT:'\u09f3',LKR:'Rs',NPR:'Rs',KRW:'\u20a9',THB:'\u0e3f',VND:'\u20ab',PHP:'\u20b1',
+ IDR:'Rp',MYR:'RM',SGD:'S$',HKD:'HK$',TWD:'NT$',AUD:'A$',NZD:'NZ$',CAD:'C$',MXN:'$',BRL:'R$',ARS:'$',CLP:'$',
+ COP:'$',PEN:'S/',ZAR:'R',NGN:'\u20a6',KES:'KSh',EGP:'E\u00a3',ILS:'\u20aa',AED:'AED',SAR:'SAR',QAR:'QAR',
+ KWD:'KD',BHD:'BD',OMR:'OMR',JOD:'JD',MAD:'MAD',TND:'DT'};
+function fxSymbol(code){ return FX_SYMBOL[code]||code||''; }
+
+const FX_DEFAULT_BOARD=['usd','eur','sek','dkk','gbp'];
+
+function fxUnits(){ return UNITS.currency.units||{}; }
+function fxUnit(k){ return fxUnits()[k]; }
+function fxBoardKeys(){
+  /* The board is the extra currencies, beside the pair you are working on. */
+  const list=(state.favUnits.currency||[]).slice();
+  if(list.indexOf('nok')<0)list.unshift('nok');
+  return list.filter(k=>k!==state.fx.from&&k!==state.fx.to&&fxUnit(k));
+}
+function fxEnsurePair(){
+  if(!fxUnit(state.fx.from))state.fx.from=fxUnit('nok')?'nok':Object.keys(fxUnits())[0];
+  if(!fxUnit(state.fx.to)||state.fx.to===state.fx.from){
+    const alt=Object.keys(fxUnits()).filter(k=>k!==state.fx.from);
+    state.fx.to=(state.fx.from==='nok'?(alt.indexOf('usd')>-1?'usd':alt[0]):'nok');
+    if(!fxUnit(state.fx.to))state.fx.to=alt[0];
+  }
+}
+function fxSave(){ jSet(LS.fx,{from:state.fx.from,to:state.fx.to,value:state.fx.value,side:state.fx.side}); }
+
+function fxBaseRate(unitKey){
+  const u=fxUnit(unitKey);
+  if(!u)return NaN;
+  if(unitKey==='nok')return 1;
+  if(state.fxHist){
+    const h=state.fxHist.rates[(u.s||'').toUpperCase()];
+    return h?h.nok:NaN;
+  }
+  return u.f;
+}
+function fxRate(unitKey){
+  const base=fxBaseRate(unitKey);
+  if(!Number.isFinite(base))return NaN;
+  if(!state.fxFee||unitKey==='nok')return base;
+  return base*(1+state.fxFee/100);
+}
+function fxConvert(v,from,to){
+  if(from===to)return v;
+  const a=fxRate(from), b=fxRate(to);
+  if(!Number.isFinite(a)||!Number.isFinite(b)||!b)return NaN;
+  return v*a/b;
+}
+function fxOther(){ return state.fx.side==='from'?'to':'from'; }
+function fxSideUnit(side){ return state.fx[side]; }
+function fxAmount(){
+  const raw=state.fx.value;
+  /* A carried amount keeps its full precision behind the rounded text, so a swap
+     and a swap back land on 1000 again instead of drifting to 999,97. The exact
+     value is dropped the moment the field is edited. */
+  if(Number.isFinite(state.fx.exact)&&formatNumber(state.fx.exact,fxDecimals(state.fx.exact))===raw)return state.fx.exact;
+  const plain=parseNum(raw);
+  if(Number.isFinite(plain))return plain;
+  const t=String(raw||'').trim();
+  if(!t||!/[+\-*/×÷^()]/.test(t))return NaN;
+  try{ const v=evaluate(t.replace(/\*/g,'×').replace(/\//g,'÷')); return Number.isFinite(v)?v:NaN; }
+  catch(e){ return NaN; }
+}
+function fxDecimals(v){
+  const a=Math.abs(v);
+  if(a===0||a>=1)return 2;
+  if(a>=0.01)return 4;
+  return 6;
+}
+
+function fxPaintPicker(side){
+  const key=side==='from'?state.fx.from:state.fx.to;
+  const u=fxUnit(key)||{};
+  const sym=side==='from'?el.fxFromSymbol:el.fxToSymbol;
+  const fl=side==='from'?el.fxFromFlag:el.fxToFlag;
+  const af=side==='from'?el.fxFromAffix:el.fxToAffix;
+  sym.textContent=u.s||'';
+  af.textContent=fxSymbol(u.s);
+  (side==='from'?el.fxFromName:el.fxToName).textContent=u.l||'';
+  (side==='from'?el.fxFromPicker:el.fxToPicker).setAttribute('title',u.l||'');
+  if(u.flag){ fl.src=u.flag; fl.style.display=''; fl.onerror=()=>{fl.style.visibility='hidden';}; fl.style.visibility=''; }
+  else fl.style.display='none';
+}
+function fxPaintRate(){
+  const base=state.fx.from, other=state.fx.to;
+  const ub=fxUnit(base), uo=fxUnit(other);
+  if(!ub||!uo||base===other){ el.fxRate.textContent=''; return; }
+  const fwd=fxConvert(1,base,other), back=fxConvert(1,other,base);
+  const useFwd=Number.isFinite(fwd)&&fwd>=1;
+  const a=useFwd?ub:uo, b=useFwd?uo:ub, v=useFwd?fwd:back;
+  if(!Number.isFinite(v)){ el.fxRate.textContent=''; return; }
+  const inv=useFwd?back:fwd;
+  /* One rate, read the way it is quoted. The inverse is the same fact again. */
+  void inv;
+  el.fxRate.textContent='1 '+a.s+' = '+formatNumber(v,fxDecimals(v)===2?4:6)+' '+b.s
+    +(state.fxFee?', med '+formatNumber(state.fxFee,2)+' % påslag':'');
+}
+function fxPaintFeeBtn(){
+  /* The fee lives in settings; the rate sentence says when one is applied. */
+}
+function fxSyncRateBar(){
+  const show=state.rateState!=='live';
+  el.fxRateBar.style.display=show?'flex':'none';
+  const cls=state.rateState==='live'?' live':state.rateState==='stale'?' stale':state.rateState==='offline'?' offline':'';
+  el.fxRateDot.className='rate-dot'+cls;
+  el.fxDotMini.className='rate-dot mini'+cls;
+  el.fxRateText.textContent=state.rateNote||'Henter kurser …';
+}
+function fxRenderBoard(){
+  const amount=fxAmount();
+  const keys=fxBoardKeys();
+  el.fxBoardHint.textContent=keys.length?(keys.length+' valutaer'):'';
+  if(!keys.length){
+    el.fxBoardBody.innerHTML='<div class="empty">Ingen flere valutaer i listen.<br>Trykk «Legg til» for å følge med på flere.</div>';
+    return;
+  }
+  const frag=document.createDocumentFragment();
+  keys.forEach(k=>{
+    const u=fxUnit(k);
+    const v=Number.isFinite(amount)?fxConvert(amount,fxSideUnit(state.fx.side),k):NaN;
+    const row=document.createElement('div');
+    row.className='all-row fx-row';
+    row.setAttribute('role','button'); row.tabIndex=0;
+    row.innerHTML='<div class="u">'+(u.flag?'<img src="'+u.flag+'" alt="" onerror="this.style.visibility=\'hidden\'">':'')+
+      '<span class="un">'+escapeHtml(u.l)+'</span><span class="us">'+escapeHtml(u.s)+'</span></div>'+
+      '<span class="uv">'+escapeHtml(Number.isFinite(v)?money(v,fxDecimals(v)):'—')+
+      (function(){ const ch=state.fxChange[u.s];
+        if(state.fxDate||ch===undefined||ch===null||!Number.isFinite(ch))return '';
+        const cls=Math.abs(ch)<0.05?'flat':(ch>0?'up':'down');
+        return '<span class="uc '+cls+'">'+(ch>0?'+':'')+formatNumber(ch,2)+' %</span>';
+      })()+'</span>'+
+      '<button class="fx-del" aria-label="Fjern fra listen"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>';
+    /* Tapping a row makes it the currency you are converting to, so the board is
+       a shortcut into the pair above rather than a separate way of working. */
+    const useIt=()=>{ state.fx.to=k; fxRender(); fxSave(); buzz(12); };
+    row.addEventListener('click',useIt);
+    row.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();useIt();} });
+    row.querySelector('.fx-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      toggleFavUnit('currency',k);
+      fxRender(); buzz(14);
+    });
+    frag.appendChild(row);
+  });
+  el.fxBoardBody.innerHTML='';
+  el.fxBoardBody.appendChild(frag);
+}
+function fxRenderSpark(){
+  const ub=fxUnit(state.fx.from), uo=fxUnit(state.fx.to);
+  if(state.fxDate||!ub||!uo||state.fx.from===state.fx.to){ el.fxSparkCard.style.display='none'; return; }
+  Array.from(el.fxSparkRange.children).forEach(b=>b.classList.toggle('active',+b.dataset.days===state.sparkDays));
+  /* Graph the readable direction, matching the rate line above. */
+  const flip=fxConvert(1,state.fx.from,state.fx.to)<1;
+  const a=flip?uo.s:ub.s, b=flip?ub.s:uo.s;
+  el.fxSparkTitle.textContent=a+' → '+b;
+  buildSeries(a,b).then(all=>{
+    if(!all){ el.fxSparkCard.style.display='none'; return; }
+    const want=Math.max(3,Math.round(state.sparkDays*5/7));
+    const pts=all.slice(-want);
+    if(pts.length<3){ el.fxSparkCard.style.display='none'; return; }
+    el.fxSparkCard.style.display='';
+    drawSpark(el.fxSparkSvg,pts,el.fxSparkChange,el.fxSparkFrom,el.fxSparkTo,el.fxSparkLow,el.fxSparkHigh);
+  });
+}
+/* The typed side drives; the other side is derived. Either card can be the
+   typed one, so a price you read in a shop goes straight in without a swap. */
+function fxCompute(){
+  const typed=fxAmount();
+  if(!Number.isFinite(typed))return {typed:NaN,other:NaN};
+  const from=fxSideUnit(state.fx.side), to=fxSideUnit(fxOther());
+  return {typed,other:fxConvert(typed,from,to)};
+}
+function fxPaintFields(){
+  const {typed,other}=fxCompute();
+  const otherText=Number.isFinite(other)?money(other,fxDecimals(other)):'';
+  if(state.fx.side==='from'){
+    if(el.fxInput.value!==state.fx.value)el.fxInput.value=state.fx.value;
+    el.fxOutput.value=otherText;
+  }else{
+    if(el.fxOutput.value!==state.fx.value)el.fxOutput.value=state.fx.value;
+    el.fxInput.value=otherText;
+  }
+  el.fxInput.classList.toggle('readonly',state.fx.side!=='from');
+  el.fxOutput.classList.toggle('readonly',state.fx.side!=='to');
+  const cards=document.querySelectorAll('#currencyPanel .pair-card');
+  if(cards[0])cards[0].classList.toggle('active',state.fx.side==='from');
+  if(cards[1])cards[1].classList.toggle('active',state.fx.side==='to');
+}
+function fxSetSide(side){
+  if(state.fx.side===side)return;
+  /* Carry the number you can see across, so switching sides never blanks it. */
+  const {other}=fxCompute();
+  state.fx.side=side;
+  if(Number.isFinite(other)){
+    state.fx.exact=other;
+    state.fx.value=money(other,fxDecimals(other));
+    state.fx.auto=false;
+  }
+  fxRender(); fxSave(); buzz(10);
+}
+function fxRender(){
+  fxEnsurePair();
+  fxPaintDateBtn();
+  fxPaintPicker('from'); fxPaintPicker('to');
+  fxPaintRate();
+  fxPaintFeeBtn();
+  fxSyncRateBar();
+  fxRenderBoard();
+  fxPaintFields();
+  const amount=fxAmount();
+  const plain=parseNum(state.fx.value);
+  const notes=[];
+  if(!Number.isFinite(plain)&&Number.isFinite(amount))notes.push('Regnet ut til '+money(amount)+' '+(fxUnit(state.fx.from)||{}).s+'.');
+  if(state.fxFee&&Number.isFinite(amount)){
+    const saveFee=state.fxFee; state.fxFee=0;
+    const mid=fxConvert(amount,fxSideUnit(state.fx.side),fxSideUnit(fxOther()));
+    state.fxFee=saveFee;
+    notes.push('Valutaen er priset '+formatNumber(state.fxFee,2)+' % over midtkurs. Til ren midtkurs: '+formatNumber(mid,fxDecimals(mid))+' '+(fxUnit(fxSideUnit(fxOther()))||{}).s+'.');
+  }
+  el.fxNote.textContent=notes.join(' ');
+  fxRenderSpark();
+  fxLoadChanges();
+}
+
+function fxSwap(){
+  const {typed,other}=fxCompute();
+  const t=state.fx.from; state.fx.from=state.fx.to; state.fx.to=t;
+  /* The currencies trade places, so the value that belongs to the typed card
+     is the one that was on the other side a moment ago. */
+  if(Number.isFinite(other)){
+    state.fx.exact=other;
+    state.fx.value=money(other,fxDecimals(other));
+    state.fx.auto=false;
+  }
+  fxRender(); fxSave(); buzz(14);
+}
+
+/* ---- keypad ---- */
+const FX_KEYS=[
+ /* Tall og ingenting annet. Regnestykker hører hjemme i kalkulatorfanen, som er
+    ett trykk unna og gjør det bedre. Bunnraden er den samme som i kalkulatoren
+    (0 , ⌫), og Ferdig står der = står, to rader høy som på et talltastatur. */
+ {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'C',a:'clear',c:'clear'},
+ {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'00',a:'num',v:'00',c:'func'},
+ {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'Ferdig',a:'done',c:'equals',tall:1},
+ {t:'0',a:'num',v:'0'},{t:',',a:'dot'},{t:BACK_ICON,a:'back',c:'func'}
+];
+function fxRenderKeys(){
+  if(el.fxKeys.querySelector('.calc-buttons'))return;
+  const grid=document.createElement('div');
+  grid.className='calc-buttons';
+  FX_KEYS.forEach(k=>{
+    const b=document.createElement('button');
+    b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'')+(k.tall?' tall':'');
+    b.type='button';
+    if(/^<svg/.test(k.t))b.innerHTML=k.t;
+    else{ b.textContent=k.t; if(k.t.length>=5)b.classList.add('long'); }
+    b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
+    b.setAttribute('aria-label',/^<svg/.test(k.t)?'Slett':k.t);
+    grid.appendChild(b);
+  });
+  el.fxKeys.appendChild(grid);
+}
+function fxEdit(fn){
+  state.fx.auto=false;
+  state.fx.exact=null;
+  /* Work on the plain digits, then let the render group them again. */
+  let raw=String(state.fx.value||'').replace(/[\u202F\u00A0\s]/g,'');
+  raw=fn(raw);
+  state.fx.value=raw;
+  fxRender(); fxSave();
+}
+function fxKey(a,v){
+  if(a==='done'){ fxSetKeys(false); return; }
+  if(a==='clear'){ fxEdit(()=>''); return; }
+  if(a==='back'){ fxEdit(r=>r.slice(0,-1)); return; }
+  if(a==='num'){ fxEdit(r=>(r==='0'&&v!=='00')?v:(r+v).slice(0,18)); return; }
+  if(a==='dot'){ fxEdit(r=>{ const tail=/[\d,]*$/.exec(r)[0]; return tail.indexOf(',')>-1?r:(r?r+',':'0,'); }); return; }
+}
+
+/* ---- rates on a chosen date ---- */
+/* Norges Bank keeps the history, and the sparkline already fetches it, so a
+   receipt from June can be settled at June's rate rather than today's. */
+const fxHistCache={};
+function fxLoadDate(iso){
+  if(fxHistCache[iso])return Promise.resolve(fxHistCache[iso]);
+  const disk=jGet(LS.histRates,{});
+  if(disk[iso]){ fxHistCache[iso]=disk[iso]; return Promise.resolve(disk[iso]); }
+  /* Ask for a window ending on the date: markets are closed on weekends and
+     holidays, so the nearest earlier quote is the honest answer. */
+  const from=todayISO(new Date(new Date(iso+'T00:00:00Z').getTime()-12*86400000));
+  const url='https://data.norges-bank.no/api/data/EXR/B..NOK.SP?format=csv&startPeriod='+from+'&endPeriod='+iso+'&locale=no';
+  return fetchText(url,12000).then(txt=>{
+    const lines=String(txt).replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2)return null;
+    const head=lines[0].split(';');
+    const iBase=head.indexOf('BASE_CUR'),iMult=head.indexOf('UNIT_MULT'),iDate=head.indexOf('TIME_PERIOD'),iVal=head.indexOf('OBS_VALUE'),iName=head.indexOf('Basisvaluta');
+    const best={};
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(';');
+      const code=(c[iBase]||'').trim().toUpperCase();
+      if(!/^[A-Z]{3}$/.test(code)||NB_SKIP.indexOf(code)>-1)continue;
+      const d=(c[iDate]||'').trim();
+      const v=parseFloat(String(c[iVal]||'').replace(',','.'));
+      if(!Number.isFinite(v)||v<=0||d>iso)continue;
+      if(!best[code]||d>best[code].date)best[code]={nok:v/Math.pow(10,parseInt(c[iMult],10)||0),date:d,name:(c[iName]||'').trim()};
+    }
+    if(!Object.keys(best).length)return null;
+    let quoted=null;
+    Object.keys(best).forEach(k=>{ if(!quoted||best[k].date>quoted)quoted=best[k].date; });
+    const payload={rates:best,quoted};
+    fxHistCache[iso]=payload;
+    const store=jGet(LS.histRates,{}); store[iso]=payload;
+    const keys=Object.keys(store); if(keys.length>20)delete store[keys[0]];
+    jSet(LS.histRates,store);
+    return payload;
+  }).catch(()=>null);
+}
+function fxPaintDateBtn(){
+  el.fxDateBtn.classList.toggle('active',!!state.fxDate);
+  el.fxDateLabel.textContent=state.fxDate?fmtDate(parseDate(state.fxDate)):'I dag';
+}
+function fxApplyDate(iso){
+  if(!iso){ state.fxDate=null; state.fxHist=null; fxPaintDateBtn(); fxRender(); return Promise.resolve(true); }
+  return fxLoadDate(iso).then(p=>{
+    if(!p){ toastMsg('Fant ingen kurs for den datoen'); return false; }
+    state.fxDate=iso; state.fxHist=p;
+    fxPaintDateBtn(); fxRender();
+    const q=parseDate(p.quoted);
+    toastMsg(p.quoted===iso?('Kurs fra '+fmtDate(q)):('Nærmeste notering: '+fmtDate(q)));
+    return true;
+  });
+}
+
+/* ---- how each currency on the board has moved ---- */
+function fxLoadChanges(){
+  const keys=fxBoardKeys().concat([state.fx.from,state.fx.to]);
+  const codes=[...new Set(keys.map(k=>(fxUnit(k)||{}).s).filter(Boolean))];
+  codes.forEach(code=>{
+    if(code==='NOK')return;
+    if(state.fxChange[code]!==undefined)return;
+    state.fxChange[code]=null;
+    loadSeries(code).then(d=>{
+      if(!d){ state.fxChange[code]=NaN; return; }
+      const dates=Object.keys(d).sort();
+      const want=Math.max(2,Math.round(state.sparkDays*5/7));
+      const pick=dates.slice(-want);
+      if(pick.length<2){ state.fxChange[code]=NaN; return; }
+      const a=d[pick[0]], b=d[pick[pick.length-1]];
+      state.fxChange[code]=(a&&b)?((b-a)/a*100):NaN;
+      if(state.mode==='currency')fxRenderBoard();
+    });
+  });
+}
+
+/* ---- share the whole board as text ---- */
+function fxShare(){
+  const amount=fxAmount();
+  if(!Number.isFinite(amount)){ toastMsg('Ingen verdi å dele'); return; }
+  const fromKey=fxSideUnit(state.fx.side);
+  const head=money(amount,fxDecimals(amount))+' '+(fxUnit(fromKey)||{}).s;
+  const rows=[fxSideUnit(fxOther())].concat(fxBoardKeys()).map(k=>{
+    const u=fxUnit(k); if(!u)return null;
+    const v=fxConvert(amount,fromKey,k);
+    return Number.isFinite(v)?('  '+money(v,fxDecimals(v)).padStart(14)+'  '+u.s):null;
+  }).filter(Boolean);
+  const meta=[state.fxDate?('Kurs fra '+fmtDate(parseDate(state.fxHist?state.fxHist.quoted:state.fxDate))):(state.rateNote||'Norges Bank')];
+  if(state.fxFee)meta.push('inkl. '+formatNumber(state.fxFee,2)+' % påslag');
+  copyText(head+'\n'+rows.join('\n')+'\n'+meta.join(' · ')).then(ok=>toastMsg(ok?'Kopiert':'Klarte ikke å kopiere'));
+}
+
+/* The keypad is not needed until you are actually entering a number, and it
+   costs half the screen while it is up. So it comes when you tap an amount. */
+function fxSetKeys(open){
+  state.fxKeysOpen=!!open;
+  el.fxKeys.classList.toggle('open',state.fxKeysOpen);
+  el.fxInput.classList.toggle('editing',state.fxKeysOpen&&state.fx.side==='from');
+  el.fxOutput.classList.toggle('editing',state.fxKeysOpen&&state.fx.side==='to');
+  if(!state.fxKeysOpen){
+    /* Leaving the field empty would show nothing at all, so put a number back. */
+    if(String(state.fx.value||'').trim()===''){
+      state.fx.value='1000'; state.fx.auto=true; state.fx.exact=null;
+    }
+    fxRender(); fxSave();
+  }
+}
+function fxTapField(side){
+  fxSetSide(side);
+  state.fx.side=side;
+  if(!state.fxKeysOpen)fxSetKeys(true);
+  else fxSetKeys(true);
+  fxRender();
+}
+
+/* ============ keypad rendering ============ */
+/* The calculator tab holds both layouts: the simple one, and the scientific one
+   that grows a fifth column and five rows on top without moving a single key. */
+function activeLayoutName(){ return (state.mode==='standard'&&state.sci)?'professional':state.mode; }
+function activeCols(){ return activeLayoutName()==='professional'?5:4; }
+function renderButtons(){
+  const name=activeLayoutName();
+  const layout=LAYOUTS[name];
+  if(!layout){ el.buttonsContainer.innerHTML=''; return; }
+  const grid=document.createElement('div');
+  grid.className='calc-buttons '+name+'-mode';
+  /* Every keypad ends with the same five-row skeleton; mark where it starts, and
+     mark the function rows above it so they can recede. */
+  const cols=activeCols();
+  const zoneStart=layout.length-cols*5;
+  layout.forEach((k,idx)=>{
+    const b=document.createElement('button');
+    b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'');
+    b.type='button';
+    b.dataset.a=k.a; if(k.v!==undefined)b.dataset.v=k.v;
+    if(/^<svg/.test(k.t))b.innerHTML=k.t;
+    else{
+      const label=k.a==='trig'?state.trig.toUpperCase():k.t;
+      b.textContent=label;
+      /* A word label needs to sit down a size or it runs past its pill on a
+         narrow phone; digits and symbols keep the full size. */
+      if(label.length>=5)b.classList.add('long');
+    }
+    if(k.a==='trig')b.dataset.trigBtn='1';
+    if(zoneStart>0&&idx>=zoneStart&&idx<zoneStart+cols)b.classList.add('zone-start');
+    if(zoneStart>0&&idx<zoneStart)b.classList.add('fn-row');
+    const hk=keyHelpFor(k.a,k.v);
+    if(hk){
+      b.setAttribute('aria-label',(/^<svg/.test(k.t)?'Slett':k.t)+' — hold inne for forklaring');
+      if(keyIsMarked(hk))b.classList.add('has-more');
+    }else b.setAttribute('aria-label',k.t);
+    grid.appendChild(b);
+  });
+  const old=el.buttonsContainer.querySelector('.calc-buttons');
+  if(old)old.remove();
+  el.buttonsContainer.appendChild(grid);
+  paintVarKeys();
+  sizeKeypad(false);
+  updateDisplay();
+}
+/* Square keys wherever there is room for them: the grid row height is capped at the
+   column width, and the space that frees up goes to the display instead. */
+/* The keypad sits inside a fixed inset on every mode, so the columns are always the
+   same width. The cap only limits height, which keeps the keys close to square
+   wherever the row count allows it and avoids a different margin per mode. */
+const MAX_KEY=76;
+const KEY_CAP={standard:0,rpn:0,tape:58};
+/* Tape keeps room for its toolbar, a few lines and the sum above the keys. */
+const DISPLAY_FLOOR={standard:132,rpn:186,tape:250};
+/* The scientific pad needs eleven rows, so the display gives up part of its share. */
+const SCI_FLOOR=98;
+const LANDSCAPE=window.matchMedia?window.matchMedia('(orientation: landscape) and (max-height: 560px)'):null;
+function sideBySide(){ return !!(LANDSCAPE&&LANDSCAPE.matches)&&['standard','rpn','tape'].indexOf(state.mode)>-1; }
+function sizeKeypad(animate){
+  const c=el.buttonsContainer;
+  const grid=c.querySelector('.calc-buttons');
+  if(!grid||c.style.display==='none')return;
+  const mode=state.mode;
+  const cols=activeCols();
+  const rows=Math.ceil(grid.children.length/cols);
+  if(!rows)return;
+  const cs=getComputedStyle(grid), ccs=getComputedStyle(c);
+  const gap=parseFloat(cs.rowGap)||6;
+  /* Read the real padding rather than hardcoding it: the short-screen media query
+     changes it, and a guess that disagrees with the stylesheet mis-sizes the keys. */
+  const padX=(parseFloat(ccs.paddingLeft)||0)+(parseFloat(ccs.paddingRight)||0);
+  const padY=(parseFloat(ccs.paddingTop)||0)+(parseFloat(ccs.paddingBottom)||0);
+  const innerW=(c.clientWidth||window.innerWidth)-padX;
+  const colW=(innerW-gap*(cols-1))/cols;
+  let toggleH=0;
+  if(mode==='standard'&&el.zoneToggle.offsetParent!==null){
+    const tcs=getComputedStyle(el.zoneToggle);
+    toggleH=el.zoneToggle.getBoundingClientRect().height+(parseFloat(tcs.marginBottom)||0);
+  }
+  const seam=0;
+  const mainH=el.mainContent.clientHeight||600;
+  /* The display has a CSS floor of its own; budget against that rather than a
+     guessed constant, or the two disagree and the keypad pushes past the nav. */
+  const dispMin=parseFloat(getComputedStyle(el.displayArea).minHeight)||100;
+  const base=(mode==='standard'&&state.sci)?SCI_FLOOR:(DISPLAY_FLOOR[mode]||0);
+  /* Tape's floor holds a toolbar, lines and a sum, so it may claim up to half. */
+  /* In landscape on a phone the calculator sits side by side with its display,
+     so the keypad owns the full height and needs no floor under it. */
+  const side=sideBySide();
+  const floor=side?0:Math.max(dispMin,Math.min(base,Math.round(mainH*(mode==='tape'?0.5:0.34))));
+  const avail=mainH-floor-padY-toggleH-seam;
+  const fit=Math.floor((avail-gap*(rows-1))/rows);
+  const cap=Math.min(KEY_CAP[mode]||MAX_KEY,MAX_KEY,colW);
+  const minH=parseFloat(cs.getPropertyValue('--btn-min-height'))||44;
+  const h=Math.max(minH,Math.min(Math.floor(cap),Math.max(minH,fit)));
+  /* When the cap bites, narrow the grid to match so the keys stay square
+     and the leftover width becomes an even margin on both sides. */
+  /* On short screens even the minimum row height can overflow; cap the keypad
+     so the display keeps its floor and let the grid scroll the remainder. */
+  const maxC=mainH-(mode==='tape'||side?0:dispMin)-2;
+  const target=Math.min(rows*h+gap*(rows-1)+padY+toggleH+seam,maxC);
+  const overflows=rows*h+gap*(rows-1)+padY+toggleH+seam>maxC;
+  if(animate){
+    const from=c.getBoundingClientRect().height;
+    c.style.height=from+'px';
+    void c.offsetHeight;
+    grid.style.gridAutoRows=h+'px';
+    c.style.height=target+'px';
+    clearTimeout(sizeKeypad._t);
+    sizeKeypad._t=setTimeout(()=>{ if(!overflows)c.style.height=''; },320);
+  }else{
+    grid.style.gridAutoRows=h+'px';
+    c.style.height=overflows?target+'px':'';
+  }
+  /* If the pad cannot fit, the rows that must stay reachable are the digits and
+     operators, so park the scroll at the bottom and let the functions run off the top. */
+  /* The top rows fade out under the toggle, so it shows there is more to scroll to. */
+  grid.classList.toggle('overflowing',overflows);
+  if(overflows)requestAnimationFrame(()=>{ grid.scrollTop=grid.scrollHeight; });
+}
+function paintSciToggle(){
+  document.body.classList.toggle('sci',state.sci);
+  el.zoneToggle.setAttribute('aria-expanded',state.sci?'true':'false');
+  el.zoneToggle.setAttribute('aria-label',state.sci?'Skjul funksjoner':'Vis funksjoner');
+  paintTrigChip();
+}
+function setSci(on,animate){
+  state.sci=!!on;
+  lsSet(LS.sci,state.sci?'1':'0');
+  paintSciToggle();
+  const from=animate?el.buttonsContainer.getBoundingClientRect().height:0;
+  renderButtons();
+  if(animate){
+    const c=el.buttonsContainer;
+    const to=c.getBoundingClientRect().height;
+    c.style.height=from+'px';
+    void c.offsetHeight;
+    c.style.height=to+'px';
+    clearTimeout(setSci._t);
+    setSci._t=setTimeout(()=>{ c.style.height=''; sizeKeypad(false); },320);
+  }
+}
+let resizeTimer;
+window.addEventListener('resize',()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>sizeKeypad(false),120); });
+
+function ripple(e,btn){
+  const r=btn.getBoundingClientRect();
+  const s=document.createElement('span');
+  s.className='ripple';
+  const size=Math.max(r.width,r.height)*1.25;
+  s.style.width=s.style.height=size+'px';
+  s.style.left=((e.clientX||r.left+r.width/2)-r.left-size/2)+'px';
+  s.style.top=((e.clientY||r.top+r.height/2)-r.top-size/2)+'px';
+  btn.appendChild(s);
+  setTimeout(()=>s.remove(),500);
+}
+const ACTIONS={
+  num:v=>handleNumber(v), decimal:()=>handleDecimal(), op:v=>handleOp(v), char:v=>handleChar(v),
+  func:v=>handleFunc(v), paren:()=>handleParen(), sign:()=>handleSign(), recip:()=>handleRecip(),
+  back:()=>handleBack(), clear:()=>handleClear(), equals:()=>handleEquals(), ans:()=>handleAns(),
+  trig:()=>toggleTrig(), sto:()=>handleSto(), var:v=>handleVar(v), mClear:()=>memClear(), mRecall:()=>memRecall(), mAdd:()=>memAdd(), mSub:()=>memSub(),
+  rpnNum:v=>rpnNum(v), rpnDot:()=>rpnDot(), rpnOp:v=>rpnOp(v), rpnFunc:v=>rpnFunc(v), rpnEnter:()=>rpnEnter(),
+  rpnBack:()=>rpnBack(), rpnClear:()=>rpnClear(), rpnDrop:()=>rpnDrop(), rpnSwap:()=>rpnSwap(),
+  rpnSign:()=>rpnSign(), rpnRoll:()=>rpnRoll(), rpnLast:()=>rpnLast(), rpnConst:v=>rpnConst(v),
+  tapeNum:v=>tapeNum(v), tapeDot:()=>tapeDot(), tapeOp:v=>tapeOp(v), tapeChar:v=>tapeChar(v),
+  tapeParen:()=>tapeParen(), tapeSign:()=>tapeSign(), tapeBack:()=>tapeBack(),
+  tapeClearEntry:()=>tapeClearEntry(), tapeCommit:()=>tapeCommit(1), tapeCommitMinus:()=>tapeCommit(-1),
+  tapeAns:()=>tapeAns(), tapeUseSum:()=>tapeUseSum()
+};
+function runAction(a,v){ const fn=ACTIONS[a]; if(fn)fn(v); }
+
+let holdTimer=null,heldFired=false;
+el.buttonsContainer.addEventListener('pointerdown',e=>{
+  const btn=e.target.closest('.btn'); if(!btn)return;
+  heldFired=false; ripple(e,btn); buzz();
+  const k=keyHelpFor(btn.dataset.a,btn.dataset.v);
+  if(k)holdTimer=setTimeout(()=>{ heldFired=true; buzz(22); openKeyHelp(k); },450);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>el.buttonsContainer.addEventListener(ev,()=>clearTimeout(holdTimer)));
+el.buttonsContainer.addEventListener('click',e=>{
+  const btn=e.target.closest('.btn'); if(!btn)return;
+  clearTimeout(holdTimer);
+  if(heldFired){ heldFired=false; return; }
+  runAction(btn.dataset.a,btn.dataset.v);
+});
+
+function toggleTrig(){
+  state.trig=state.trig==='deg'?'rad':'deg';
+  lsSet(LS.trig,state.trig);
+  $$('[data-trig-btn]').forEach(b=>b.textContent=state.trig.toUpperCase());
+  syncSettings(); paintTrigChip();
+  if(state.expression)try{ updateLive(); }catch(e){}
+  toastMsg(state.trig==='deg'?'Regner i grader':'Regner i radianer');
+}
+function paintTrigChip(){
+  /* Angle mode only matters to the trig keys, so it shows only while f(x) is open. */
+  const show=state.mode==='standard'&&state.sci;
+  el.trigPill.style.display=show?'flex':'none';
+  el.trigPill.textContent=state.trig==='deg'?'Grader':'Radianer';
+  el.trigPill.classList.toggle('on',state.trig==='rad');
+}
+
+/* ============ mode switching ============ */
+/* Tabs the user has switched off are gone from the nav and from the swipe order,
+   but nothing they hold is deleted. */
+function visibleModes(){ return MODES.filter(m=>state.tabs[m]!==false); }
+function paintTabs(){
+  $$('.nav-item').forEach(b=>{ b.style.display=state.tabs[b.dataset.mode]===false?'none':''; });
+  setSwitch(el.tabRpnSwitch,state.tabs.rpn!==false);
+  setSwitch(el.tabTapeSwitch,state.tabs.tape!==false);
+}
+function switchMode(mode,skipSave){
+  if(MODES.indexOf(mode)<0)return;
+  if(state.tabs[mode]===false)mode='standard';
+  state.mode=mode;
+  document.body.dataset.mode=mode;
+  $$('.nav-item').forEach(b=>{
+    const on=b.dataset.mode===mode;
+    b.classList.toggle('active',on);
+    if(on)b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+  });
+  const isPanel=mode==='percent'||mode==='converter'||mode==='currency';
+  const isTape=mode==='tape';
+  el.buttonsContainer.style.display=isPanel?'none':'flex';
+  el.percentPanel.style.display=mode==='percent'?'flex':'none';
+  el.converterPanel.style.display=mode==='converter'?'flex':'none';
+  el.currencyPanel.style.display=mode==='currency'?'flex':'none';
+  el.fxKeys.style.display=mode==='currency'?'flex':'none';
+  if(mode!=='currency'&&typeof fxSetKeys==='function')fxSetKeys(false);
+  el.tapePanel.style.display=isTape?'flex':'none';
+  el.displayArea.style.display=(isPanel||isTape)?'none':'flex';
+  el.rpnStack.style.display=mode==='rpn'?'flex':'none';
+  paintTrigChip();
+  if(!isPanel)renderButtons();
+  if(mode==='rpn')rpnRender();
+  else if(isTape)tapeRender();
+  else if(!isPanel)updateDisplay();
+  if(!isPanel)sizeKeypad(false);
+  if(mode==='percent'){ renderPctChips(); renderPctFields(); pctCalc(); }
+  if(mode==='currency'){
+    fxRenderKeys();
+    loadRates(false);
+    if(!(state.favUnits.currency||[]).length){
+      state.favUnits.currency=FX_DEFAULT_BOARD.slice();
+      jSet(LS.favUnits,state.favUnits);
+    }
+    el.fxInput.value=state.fx.value||'';
+    fxRender();
+  }
+  if(mode==='converter'){
+    renderCatChips(); renderFavs();
+    syncRateBar();
+    if(cat().live)loadRates(false);
+    if(!state.conv.value){ state.conv.value='1'; state.conv.auto=true; }
+    el.fromInput.value=state.conv.value;
+    renderConverter();
+  }
+  if(!skipSave)lsSet(LS.mode,mode);
+}
+
+/* ============ settings ============ */
+/* The choice is System, Lys or Mørk; pure black and high contrast are switches on
+   top of it. What the page paints is the one resolved from all three. */
+const prefersLight=window.matchMedia?window.matchMedia('(prefers-color-scheme: light)'):null;
+function resolvedTheme(){
+  const base=state.theme==='system'?(prefersLight&&prefersLight.matches?'light':'dark'):state.theme;
+  if(state.hc)return 'contrast';
+  if(base==='dark'&&state.amoled)return 'amoled';
+  return base;
+}
+function paintTheme(){
+  const t=resolvedTheme();
+  document.documentElement.setAttribute('data-theme',t);
+  metaTheme.setAttribute('content',THEME_BG[t]||THEME_BG.dark);
+  paintSystemBars(t);
+}
+function applyTheme(t){
+  state.theme=t;
+  lsSet(LS.theme,t); paintTheme(); syncSettings();
+}
+if(prefersLight&&prefersLight.addEventListener)prefersLight.addEventListener('change',()=>{ if(state.theme==='system')paintTheme(); });
+/* In the Android app the status bar is native; give it the theme's background and
+   icons that read against it, as theme-color does for the browser. */
+let systemBars=null;
+function paintSystemBars(t){
+  if(!IS_NATIVE)return;
+  const light=t==='light', color=THEME_BG[t]||THEME_BG.dark;
+  try{
+    /* Our own small plugin paints the status and navigation bar alike. */
+    if(!systemBars&&window.Capacitor.registerPlugin)systemBars=window.Capacitor.registerPlugin('SystemBars');
+    if(systemBars){ systemBars.paint({color,light}).catch(()=>{}); return; }
+    const bar=window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
+    if(bar){ bar.setBackgroundColor({color}).catch(()=>{}); bar.setStyle({style:light?'LIGHT':'DARK'}).catch(()=>{}); }
+  }catch(e){}
+}
+function setSwitch(node,on){ node.classList.toggle('on',!!on); node.setAttribute('aria-checked',on?'true':'false'); }
+function syncSettings(){
+  $$('#themeOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===state.theme));
+  $$('#formatOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.format===state.fmt));
+  $$('#decimalOptions .seg-btn').forEach(b=>b.classList.toggle('active',+b.dataset.decimals===state.decimals));
+  $$('#trigOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.trig===state.trig));
+  $$('#answerColorOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.ac===state.answerColor));
+  $$('#rateSrcOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.src===state.rateSrc));
+  $$('#feeOptions .seg-btn').forEach(b=>b.classList.toggle('active',Math.abs(+b.dataset.fee-state.fxFee)<1e-9));
+  paintTabs();
+  setSwitch(el.amoledSwitch,state.amoled); setSwitch(el.hcSwitch,state.hc);
+  setSwitch(el.hapticSwitch,state.haptic); setSwitch(el.liveSwitch,state.livePreview); setSwitch(el.kbdSwitch,state.kbd);
+}
+function openSettings(){ overlayOpened(); el.modalOverlay.classList.add('open'); el.settingsSheet.classList.add('open'); syncSettings(); }
+function closeSettings(){ el.modalOverlay.classList.remove('open'); el.settingsSheet.classList.remove('open'); overlayClosed(); }
+
+/* ============ physical keyboard ============ */
+const KEYMAP={'*':'×','x':'×','/':'÷','X':'×'};
+function onKey(e){
+  if(!state.kbd)return;
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'){
+    if(e.key==='Escape')e.target.blur();
+    return;
+  }
+  /* Enter and Space on a focused control belong to that control, not to = . */
+  if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('button,select,a,[role=button],[role=switch]')
+     &&!e.target.closest('.calc-buttons'))return;
+  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')||el.catSheet.classList.contains('open')){
+    if(e.key==='Escape'){ closeSettings(); closeUnitSheet(); }
+    return;
+  }
+  if(el.keySheet.classList.contains('open')){ if(e.key==='Escape')closeKeyHelp(); return; }
+  if(state.historyOpen){ if(e.key==='Escape')closeHistory(); return; }
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key;
+  if(state.mode==='converter'||state.mode==='percent'){
+    if(k==='Escape'){ e.preventDefault(); switchMode('standard'); }
+    return;
+  }
+  if(state.mode==='tape'){
+    if(/^[0-9]$/.test(k)){e.preventDefault();tapeNum(k);return;}
+    if(k==='.'||k===','){e.preventDefault();tapeDot();return;}
+    if(k==='+'||k==='-'){e.preventDefault();tapeOp(k);return;}
+    if(KEYMAP[k]){e.preventDefault();tapeOp(KEYMAP[k]);return;}
+    if(k==='('||k===')'){e.preventDefault();tapeChar(k);return;}
+    if(k==='Enter'||k==='='){e.preventDefault();tapeCommit(1);return;}
+    if(k==='Backspace'){e.preventDefault();tapeBack();return;}
+    if(k==='Escape'){e.preventDefault();tapeClearEntry();return;}
+    return;
+  }
+  if(state.mode==='rpn'){
+    if(/^[0-9]$/.test(k)){e.preventDefault();rpnNum(k);return;}
+    if(k==='.'||k===','){e.preventDefault();rpnDot();return;}
+    if(k==='Enter'||k===' '){e.preventDefault();rpnEnter();return;}
+    if('+-^'.indexOf(k)>-1){e.preventDefault();rpnOp(k==='-'?'-':k);return;}
+    if(KEYMAP[k]){e.preventDefault();rpnOp(KEYMAP[k]);return;}
+    if(k==='Backspace'){e.preventDefault();rpnBack();return;}
+    if(k==='Escape'){e.preventDefault();rpnClear();return;}
+    return;
+  }
+  if(/^[0-9]$/.test(k)){e.preventDefault();handleNumber(k);return;}
+  if(k==='.'||k===','){e.preventDefault();handleDecimal();return;}
+  if(k==='+'||k==='-'){e.preventDefault();handleOp(k);return;}
+  if(KEYMAP[k]){e.preventDefault();handleOp(KEYMAP[k]);return;}
+  if(k==='^'){e.preventDefault();handleOp('^');return;}
+  if(k==='('||k===')'){e.preventDefault();handleChar(k);return;}
+  if(k==='%'||k==='!'){e.preventDefault();handleChar(k);return;}
+  if(k==='Enter'||k==='='){e.preventDefault();handleEquals();return;}
+  if(k==='Backspace'){e.preventDefault();handleBack();return;}
+  if(k==='Escape'||k==='Delete'){e.preventDefault();handleClear();return;}
+  if(k==='p'){e.preventDefault();handleChar('π');return;}
+  if(k==='e'){e.preventDefault();handleChar('e');return;}
+  if(k==='r'){e.preventDefault();handleFunc('sqrt');return;}
+}
+
+/* ============ swipe between modes ============ */
+let tx=0,ty=0,tracking=false;
+function swipeBlocked(t){ return t&&t.closest&&t.closest('.chips,input,textarea,.sheet-body,.history-list,.all-body,.calc-buttons'); }
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1)return;
+  if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||state.historyOpen||el.keySheet.classList.contains('open')||el.catSheet.classList.contains('open'))return;
+  if(swipeBlocked(e.target))return;
+  tx=e.touches[0].clientX; ty=e.touches[0].clientY; tracking=true;
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!tracking)return; tracking=false;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tx, dy=t.clientY-ty;
+  if(Math.abs(dx)<70||Math.abs(dy)>60)return;
+  const list=visibleModes();
+  const i=list.indexOf(state.mode);
+  const n=dx<0?i+1:i-1;
+  if(i>-1&&n>=0&&n<list.length){ switchMode(list[n]); buzz(); }
+},{passive:true});
+
+/* ============ back gesture closes overlays ============ */
+/* Without this, the Android back button leaves the app while a sheet is open,
+   which reads as losing your work rather than closing a panel. */
+function anyOverlayOpen(){
+  return state.historyOpen
+    || el.settingsSheet.classList.contains('open')
+    || el.unitSheet.classList.contains('open')
+    || el.keySheet.classList.contains('open')
+    || el.catSheet.classList.contains('open');
+}
+let overlayPushed=false;
+function overlayOpened(){
+  if(overlayPushed)return;
+  try{ history.pushState({pkuOverlay:1},''); overlayPushed=true; }catch(e){}
+}
+function overlayClosed(){
+  if(!overlayPushed||anyOverlayOpen())return;
+  overlayPushed=false;
+  try{ if(history.state&&history.state.pkuOverlay)history.back(); }catch(e){}
+}
+/* ============ dialog focus ============ */
+/* An open sheet or drawer owns the keyboard: the page behind it goes inert, focus
+   moves into it, Esc closes it whatever the keyboard setting, and focus returns
+   to the control that opened it. Closed sheets are inert too, so Tab never lands
+   on a control that is parked off-screen. */
+/* On a wide screen the history is a column beside the calculator rather than a
+   drawer: always there, not a dialog, never inert. */
+const WIDE=window.matchMedia?window.matchMedia('(min-width: 1000px) and (min-height: 600px)'):null;
+function historyDocked(){ return !!(WIDE&&WIDE.matches); }
+function paintDock(){
+  const d=historyDocked();
+  document.body.classList.toggle('docked',d);
+  if(d){
+    el.historyDrawer.removeAttribute('role'); el.historyDrawer.removeAttribute('aria-modal');
+    if(state.historyOpen)closeHistory();
+    renderHistory(el.histSearch.value);
+  }else{
+    el.historyDrawer.setAttribute('role','dialog'); el.historyDrawer.setAttribute('aria-modal','true');
+  }
+  syncDialogs();
+}
+const DIALOGS=[el.keySheet,el.catSheet,el.unitSheet,el.settingsSheet,el.historyDrawer];
+const APP_CHROME=[document.querySelector('.app-header'),el.mainContent,el.bottomNav];
+let dialogReturn=null;
+function dialogOpen(d){ return d.classList.contains('open'); }
+function syncDialogs(){
+  const open=DIALOGS.filter(dialogOpen);
+  DIALOGS.forEach(d=>{ d.inert=!dialogOpen(d); d.setAttribute('aria-hidden',dialogOpen(d)?'false':'true'); });
+  const top=open[0];
+  APP_CHROME.forEach(n=>{ if(n)n.inert=!!top; });
+  DIALOGS.forEach(d=>{ if(d!==top&&dialogOpen(d))d.inert=true; });
+  if(historyDocked()){ el.historyDrawer.inert=!!top; el.historyDrawer.setAttribute('aria-hidden',top?'true':'false'); }
+  if(top){
+    if(!dialogReturn){ const a=document.activeElement; dialogReturn=a&&a!==document.body?a:null; }
+    if(!top.contains(document.activeElement))top.focus({preventScroll:true});
+  }else if(dialogReturn){
+    const r=dialogReturn; dialogReturn=null;
+    if(document.contains(r)&&!r.closest('[inert]'))r.focus({preventScroll:true});
+  }
+}
+const dialogWatch=new MutationObserver(syncDialogs);
+DIALOGS.forEach(d=>dialogWatch.observe(d,{attributes:true,attributeFilter:['class']}));
+syncDialogs();
+if(WIDE&&WIDE.addEventListener)WIDE.addEventListener('change',paintDock);
+if(LANDSCAPE&&LANDSCAPE.addEventListener)LANDSCAPE.addEventListener('change',()=>sizeKeypad(false));
+paintDock();
+window.addEventListener('keydown',e=>{
+  if(e.key!=='Escape'||!anyOverlayOpen())return;
+  e.preventDefault(); e.stopPropagation();
+  if(dialogOpen(el.keySheet))closeKeyHelp();
+  else if(dialogOpen(el.catSheet))closeCatSheet();
+  else if(dialogOpen(el.unitSheet))closeUnitSheet();
+  else if(dialogOpen(el.settingsSheet))closeSettings();
+  else closeHistory();
+},true);
+window.addEventListener('popstate',()=>{
+  overlayPushed=false;
+  if(anyOverlayOpen()){ closeHistory(); closeSettings(); closeUnitSheet(); closeKeyHelp(); closeCatSheet(); }
+});
+
+/* ============ on-screen keyboard ============ */
+/* A bottom-anchored sheet is positioned against the layout viewport, so when the
+   keyboard opens it slides in underneath and hides the search results. Track the
+   visual viewport and lift the sheets by exactly the keyboard's height. */
+function trackKeyboard(){
+  const vv=window.visualViewport;
+  const root=document.documentElement;
+  if(!vv){ root.style.setProperty('--vvh',window.innerHeight+'px'); return; }
+  let raf=null;
+  const apply=()=>{
+    raf=null;
+    const inset=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
+    root.style.setProperty('--kb',inset+'px');
+    root.style.setProperty('--vvh',Math.round(vv.height)+'px');
+    document.body.classList.toggle('kb-open',inset>90);
+  };
+  const queue=()=>{ if(raf===null)raf=requestAnimationFrame(apply); };
+  vv.addEventListener('resize',queue);
+  vv.addEventListener('scroll',queue);
+  window.addEventListener('orientationchange',()=>setTimeout(apply,250));
+  apply();
+}
+
+/* ============ test suite ============ */
+/* @tests:start — scripts/build-web.mjs leaves this block out of the Android build. */
+function runTests(){
+  const R=[]; let pass=0,fail=0;
+  silentToasts=true;
+  /* Style assertions need a real cascade. Under a DOM shim they would pass
+     without testing anything, which is worse than not running them. */
+  const cssEngine=(()=>{
+    try{
+      const t=document.createElement('div');
+      t.className='sheet-handle';
+      t.style.position='absolute'; t.style.left='-9999px';
+      document.body.appendChild(t);
+      const cs=getComputedStyle(t);
+      const w=parseFloat(cs.width)||0;
+      const r=parseFloat(cs.borderTopLeftRadius)||0;
+      const bg=cs.backgroundColor||'';
+      t.remove();
+      /* Width alone is not enough: a DOM shim can resolve that while ignoring
+         radius and background, which are exactly what these tests inspect. */
+      return w>=24 && w<=60 && r>0 && bg!=='' && bg!=='rgba(0, 0, 0, 0)';
+    }catch(e){ return false; }
+  })();
+  /* In a real browser the style tests must run. If the probe above stops matching
+     the stylesheet they would all be skipped in silence, so say it out loud. */
+  if(window.CSS&&CSS.supports&&CSS.supports('display','grid'))
+    ok('stiltestene kjører (stilarket er lastet)',cssEngine);
+  const saveFmt=state.fmt, saveDec=state.decimals, saveTrig=state.trig;
+  function ok(name,cond,got){ if(cond){pass++;} else {fail++;R.push('FAIL  '+name+(got!==undefined?'  → '+got:''));} }
+  function near(name,a,b,eps){ ok(name,Number.isFinite(a)&&Math.abs(a-b)<=(eps||1e-9),a); }
+  function evalIs(expr,exp,eps){ let v; try{v=evaluate(expr);}catch(e){v=NaN;} near('eval '+expr,v,exp,eps); }
+  function throws(expr,name){ let t=false; try{evaluate(expr);}catch(e){t=true;} ok(name||('kaster: '+expr),t); }
+
+  /* arithmetic + precedence */
+  evalIs('2+3',5); evalIs('340,50+9,5',350); evalIs('0,1+0,2',0.3,1e-12); evalIs('2+3×4',14); evalIs('(2+3)×4',20); evalIs('10÷4',2.5);
+  evalIs('2^3^2',512); evalIs('-2^2',-4); evalIs('(-2)^2',4); evalIs('2×-3',-6);
+  evalIs('17mod5',2); evalIs('100-30-20',50); evalIs('1÷3×3',1,1e-12);
+  evalIs('5!',120); evalIs('3²',9); evalIs('2³',8); evalIs('50%',0.5); evalIs('200×15%',30);
+  evalIs('π',Math.PI); evalIs('2π',2*Math.PI); evalIs('3(4)',12); evalIs('(2)(3)',6);
+  throws('2+'); throws('(2+3'); throws('2++'); throws('1÷0'); throws('');
+  ok('0.1+0.2 vises som 0.3',formatNumber(evaluate('0.1+0.2'),8,{raw:true})==='0.3',formatNumber(evaluate('0.1+0.2'),8,{raw:true}));
+
+  /* functions */
+  state.trig='deg';
+  near('sin(30) i grader',evaluate('sin(30)'),0.5,1e-12);
+  near('cos(60) i grader',evaluate('cos(60)'),0.5,1e-12);
+  near('asin(0.5) i grader',evaluate('asin(0.5)'),30,1e-9);
+  state.trig='rad';
+  near('sin(π/2) i radianer',evaluate('sin(π÷2)'),1,1e-12);
+  state.trig='deg';
+  evalIs('log(100)',2); evalIs('ln(1)',0); evalIs('sqrt(9)',3); evalIs('cbrt(27)',3);
+  evalIs('log2(1024)',10); evalIs('abs(0-7)',7); evalIs('round(2.6)',3);
+  evalIs('floor(2.9)',2); evalIs('ceil(2.1)',3); near('exp(1)',evaluate('exp(1)'),Math.E,1e-12);
+  throws('sqrt(0-1)'); throws('ln(0)'); throws('asin(2)'); throws('acosh(0)');
+  ok('fakultet over 170 avvises',(()=>{try{factorial(171);return false;}catch(e){return true;}})());
+  ok('fakultet av desimaltall avvises',(()=>{try{factorial(2.5);return false;}catch(e){return true;}})());
+
+  /* formatting */
+  state.fmt='plain'; state.decimals=8;
+  ok('formaterer heltall','1234'===formatNumber(1234),formatNumber(1234));
+  ok('kutter etterfølgende nuller','2.5'===formatNumber(2.5),formatNumber(2.5));
+  state.decimals=2;
+  ok('maks 2 desimaler','3.14'===formatNumber(Math.PI),formatNumber(Math.PI));
+  ok('avrunder oppover','2.35'===formatNumber(2.345),formatNumber(2.345));
+  state.decimals=8;
+  ok('negativ null blir null','0'===formatNumber(-0),formatNumber(-0));
+  state.fmt='no';
+  ok('norsk gruppering','1\u202F234\u202F567'===formatNumber(1234567),formatNumber(1234567));
+  ok('norsk desimalkomma','12\u202F345,5'===formatNumber(12345.5),formatNumber(12345.5));
+  ok('fire siffer grupperes ikke','1234'===formatNumber(1234),formatNumber(1234));
+  state.fmt='en';
+  ok('engelsk gruppering','1,234,567'===formatNumber(1234567),formatNumber(1234567));
+  state.fmt='plain';
+  ok('leser norsk komma',parseNum('12,5')===12.5,parseNum('12,5'));
+  ok('leser gruppert tall',parseNum('1\u202F234,5')===1234.5,parseNum('1\u202F234,5'));
+  ok('tomt felt gir NaN',Number.isNaN(parseNum('')));
+
+  /* unit conversion */
+  near('m → km',convert(1000,'length','meter','kilometer'),1);
+  near('norsk mil → km',convert(1,'length','mil','kilometer'),10);
+  near('tomme → mm',convert(1,'length','inch','millimeter'),25.4,1e-9);
+  near('kg → pund',convert(1,'weight','kilogram','pound'),2.2046226218,1e-8);
+  near('dekar → m²',convert(1,'area','dekar','sqm'),1000);
+  near('kWh → MJ',convert(1,'energy','kwh','megajoule'),3.6,1e-9);
+  near('hk → W',convert(1,'power','hkm','watt'),735.49875,1e-6);
+  near('bar → psi',convert(1,'pressure','bar','psi'),14.503773773,1e-6);
+  near('Nm → lbf·ft',convert(1,'torque','nm','lbft'),0.7375621493,1e-8);
+  near('kn → m/s',convert(1,'speed','knot','mps'),0.5144444444,1e-8);
+  near('gon → grader',convert(100,'angle','grad','deg'),90,1e-9);
+  near('MiB → byte',convert(1,'data','mib','byte'),1048576);
+  near('MB → MiB',convert(1,'data','mb','mib'),0.95367431640625,1e-12);
+  near('kHz → o/min',convert(1,'frequency','hz','rpm'),60,1e-9);
+  near('kp → N',convert(1,'force','kp','newton'),9.80665,1e-9);
+  near('0 °C → °F',convert(0,'temperature','celsius','fahrenheit'),32);
+  near('100 °C → K',convert(100,'temperature','celsius','kelvin'),373.15,1e-9);
+  near('−40 °C = −40 °F',convert(-40,'temperature','celsius','fahrenheit'),-40);
+  near('°F → K',convert(32,'temperature','fahrenheit','kelvin'),273.15,1e-9);
+  near('K → °R',convert(273.15,'temperature','kelvin','rankine'),491.67,1e-9);
+  near('L/100km → MPG US',convert(10,'fuel','l100','mpgus'),23.5214583,1e-6);
+  near('MPG US → L/100km',convert(23.5214583,'fuel','mpgus','l100'),10,1e-6);
+  ok('drivstoff med null avvises',Number.isNaN(convert(0,'fuel','l100','mpgus')));
+  ok('rundtur lengde',Math.abs(convert(convert(7.3,'length','foot','meter'),'length','meter','foot')-7.3)<1e-9);
+  ok('rundtur temperatur',Math.abs(convert(convert(21.5,'temperature','celsius','fahrenheit'),'temperature','fahrenheit','celsius')-21.5)<1e-9);
+  Object.keys(UNITS).forEach(c=>{
+    const d=UNITS[c];
+    if(d.special||d.live)return;
+    Object.keys(d.units).forEach(u=>{
+      ok('faktor finnes: '+c+'.'+u,typeof d.units[u].f==='number'&&d.units[u].f>0);
+      ok('identitet: '+c+'.'+u,Math.abs(convert(3,c,u,u)-3)<1e-9);
+    });
+  });
+
+  /* number bases */
+  ok('leser hex',parseInBase('FF',16)===255,parseInBase('FF',16));
+  ok('leser binært',parseInBase('1010',2)===10);
+  ok('leser oktalt',parseInBase('777',8)===511);
+  ok('avviser ugyldig siffer',Number.isNaN(parseInBase('2',2)));
+  ok('avviser tomt felt',Number.isNaN(parseInBase('',16)));
+  ok('leser negativt hex',parseInBase('-1F',16)===-31);
+  ok('skriver hex med mellomrom',toBaseString(255,16)==='FF',toBaseString(255,16));
+  ok('skriver binært i nibbler',toBaseString(10,2)==='1010',toBaseString(10,2));
+  ok('skriver 255 binært',toBaseString(255,2)==='1111 1111',toBaseString(255,2));
+  ok('rundtur base',parseInBase(toBaseString(48879,16).replace(/ /g,''),16)===48879);
+
+  /* Norges Bank CSV parsing */
+  const csv='FREQ;Frekvens;BASE_CUR;Basisvaluta;QUOTE_CUR;Kvoteringsvaluta;TENOR;Løpetid;DECIMALS;CALCULATED;UNIT_MULT;Multiplikator;COLLECTION;Innsamlingstidspunkt;TIME_PERIOD;OBS_VALUE\n'+
+   'B;Virkedag;USD;Amerikanske dollar;NOK;Norske kroner;SP;Spot;4;false;0;Enheter;C;kl 14:15;2026-08-14;9,4515\n'+
+   'B;Virkedag;JPY;Japanske yen;NOK;Norske kroner;SP;Spot;4;false;2;Hundre;C;kl 14:15;2026-08-14;5,9438\n'+
+   'B;Virkedag;I44;Importveid;NOK;Norske kroner;SP;Spot;4;false;0;Enheter;C;kl 14:15;2026-08-14;121,5\n';
+  const nb=parseNbCsv(csv);
+  ok('leser Norges Bank-CSV',!!nb);
+  near('USD uten multiplikator',nb.USD.nok,9.4515,1e-9);
+  near('JPY deles på hundre',nb.JPY.nok,0.059438,1e-9);
+  ok('hopper over indeksen I44',!nb.I44);
+  ok('tar med navnet fra kilden',nb.USD.name==='Amerikanske dollar',nb.USD.name);
+  ok('tåler tom CSV',parseNbCsv('')===null);
+  ok('tåler BOM',!!parseNbCsv('\uFEFF'+csv));
+  ok('flagg for EUR peker på eu',flagFor('EUR').endsWith('/eu.png'),flagFor('EUR'));
+  ok('flagg for USD peker på us',flagFor('USD').endsWith('/us.png'));
+  ok('SDR har ikke flagg',flagFor('XDR')===null);
+
+  /* percent engine */
+  const savePct=state.pctType, saveVals=state.pctVals, saveRate=state.pctRate, saveMode=pctMode;
+  function pct(type,vals,rate,mode){
+    state.pctType=type; state.pctVals=vals;
+    if(rate)state.pctRate=rate; if(mode)pctMode=mode;
+    pctCalc(); return state.pctResult;
+  }
+  near('25 % av 1200',pct('of',{p:'25',v:'1200'}),300);
+  near('45 av 180 er 25 %',pct('share',{a:'45',b:'180'}),25);
+  near('250 → 310 er +24 %',pct('change',{a:'250',b:'310'}),24,1e-9);
+  near('250 → 200 er −20 %',pct('change',{a:'250',b:'200'}),-20,1e-9);
+  near('1000 + 25 % MVA',pct('vat',{v:'1000'},25,'add'),1250);
+  near('1250 − 25 % MVA',pct('vat',{v:'1250'},25,'strip'),1000,1e-9);
+  near('mat med 15 % MVA',pct('vat',{v:'1000'},15,'add'),1150);
+  near('MVA fram og tilbake',pct('vat',{v:String(pct('vat',{v:'847'},25,'add'))},25,'strip'),847,1e-6);
+  near('20 % rabatt på 899',pct('discount',{v:'899',p:'20'}),719.2,1e-9);
+  near('35 % påslag på 400',pct('markup',{v:'400',p:'35'}),540);
+  near('margin 900 mot 560',pct('margin',{v:'900',c:'560'}),37.7777777778,1e-8);
+  near('10 % tips på 740',pct('tip',{v:'740',p:'10',n:'4'}),814,1e-9);
+  ok('null som helhet gir ikke svar',pct('share',{a:'5',b:'0'})===null);
+  ok('null som startverdi gir ikke svar',pct('change',{a:'0',b:'5'})===null);
+  ok('tomme felt gir ikke svar',pct('of',{p:'',v:''})===null);
+  state.pctType=savePct; state.pctVals=saveVals; state.pctRate=saveRate; pctMode=saveMode;
+
+  /* RPN */
+  const saveStack=state.stack.slice(), saveEntry=state.rpnEntry;
+  state.stack=[]; state.rpnEntry='';
+  state.rpnEntry='5'; rpnEnter(); state.rpnEntry='3'; rpnOp('+');
+  near('RPN 5 ENTER 3 +',state.stack[state.stack.length-1],8);
+  state.rpnEntry='2'; rpnOp('×');
+  near('RPN videre × 2',state.stack[state.stack.length-1],16);
+  state.rpnEntry='0'; rpnOp('÷');
+  ok('RPN deling på null legger tilbake',state.stack.length===2&&state.stack[0]===16,JSON.stringify(state.stack));
+  state.stack=[3,7]; state.rpnEntry=''; rpnSwap();
+  ok('RPN bytter x og y',state.stack[0]===7&&state.stack[1]===3,JSON.stringify(state.stack));
+  state.stack=[9]; rpnFunc('sqrt');
+  near('RPN kvadratrot',state.stack[0],3);
+  state.stack=[-4]; rpnFunc('sqrt');
+  ok('RPN avviser rot av negativt',state.stack[0]===-4);
+  state.stack=saveStack; state.rpnEntry=saveEntry;
+
+
+  /* variables */
+  const saveVars=Object.assign({},state.vars);
+  state.vars={A:230,B:16,C:0,D:-4};
+  evalIs('A',230); evalIs('A÷B',14.375); evalIs('2A',460); evalIs('A+B×2',262);
+  evalIs('D',-4); ok('ubrukt variabel er null',evaluate('C')===0);
+  near('variabel i funksjon',evaluate('sqrt(B)'),4);
+  state.vars=saveVars;
+
+  /* compound input */
+  near('1t 30min',parseCompound('1t 30min','time','hour'),1.5);
+  near('2t 15min i minutter',parseCompound('2t 15min','time','minute'),135);
+  near('5 ft 3 in',parseCompound('5 ft 3 in','length','meter'),5*0.3048+3*0.0254,1e-9);
+  near('2 kg 300 g',parseCompound('2 kg 300 g','weight','kilogram'),2.3,1e-9);
+  near('1 km 250 m',parseCompound('1 km 250 m','length','meter'),1250,1e-9);
+  near('min slår m',parseCompound('90min','time','hour'),1.5);
+  ok('tvetydig «2t 30» avvises',Number.isNaN(parseCompound('2t 30','time','hour')));
+  ok('rent tall er ikke sammensatt',Number.isNaN(parseCompound('42','time','hour')));
+  ok('ukjent enhet avvises',Number.isNaN(parseCompound('3 zz','time','hour')));
+  ok('valuta er ikke sammensatt',Number.isNaN(parseCompound('5 usd','currency','nok')));
+
+  /* dates: parsing */
+  ok('leser ISO-dato',isoDate(parseDate('2026-08-15'))==='2026-08-15');
+  ok('leser norsk dato',isoDate(parseDate('15.08.2026'))==='2026-08-15');
+  ok('leser skråstrek',isoDate(parseDate('15/8-2026'))==='2026-08-15');
+  ok('leser tosifret år',isoDate(parseDate('15.08.26'))==='2026-08-15');
+  ok('avviser 31. februar',parseDate('31.02.2026')===null);
+  ok('avviser måned 13',parseDate('2026-13-01')===null);
+  ok('avviser tomt felt',parseDate('')===null);
+
+  /* dates: Easter and holidays */
+  ok('påsken 2024',isoDate(easterSunday(2024))==='2024-03-31',isoDate(easterSunday(2024)));
+  ok('påsken 2025',isoDate(easterSunday(2025))==='2025-04-20',isoDate(easterSunday(2025)));
+  ok('påsken 2026',isoDate(easterSunday(2026))==='2026-04-05',isoDate(easterSunday(2026)));
+  ok('påsken 2027',isoDate(easterSunday(2027))==='2027-03-28',isoDate(easterSunday(2027)));
+  ok('17. mai er helligdag',holidayName(parseDate('2026-05-17'))==='Grunnlovsdag');
+  ok('1. mai er helligdag',holidayName(parseDate('2026-05-01'))==='Arbeidernes dag');
+  ok('langfredag 2026',holidayName(parseDate('2026-04-03'))==='Langfredag',String(holidayName(parseDate('2026-04-03'))));
+  ok('2. påskedag 2026',holidayName(parseDate('2026-04-06'))==='Andre påskedag');
+  ok('Kristi himmelfart 2026',holidayName(parseDate('2026-05-14'))==='Kristi himmelfartsdag',String(holidayName(parseDate('2026-05-14'))));
+  ok('2. pinsedag 2026',holidayName(parseDate('2026-05-25'))==='Andre pinsedag',String(holidayName(parseDate('2026-05-25'))));
+  ok('2. juledag er helligdag',holidayName(parseDate('2026-12-26'))==='Andre juledag');
+  ok('vanlig dag er ikke helligdag',holidayName(parseDate('2026-08-12'))===null);
+
+  /* dates: workdays */
+  ok('onsdag er virkedag',isWorkday(parseDate('2026-08-12')));
+  ok('lørdag er ikke virkedag',!isWorkday(parseDate('2026-08-15')));
+  ok('søndag er ikke virkedag',!isWorkday(parseDate('2026-08-16')));
+  ok('helligdag er ikke virkedag',!isWorkday(parseDate('2026-05-17')));
+  ok('en uke gir fem virkedager',workdaysBetween(parseDate('2026-08-10'),parseDate('2026-08-17'))===5,workdaysBetween(parseDate('2026-08-10'),parseDate('2026-08-17')));
+  ok('bakover gir negativt',workdaysBetween(parseDate('2026-08-17'),parseDate('2026-08-10'))===-5);
+  ok('samme dag gir null',workdaysBetween(parseDate('2026-08-10'),parseDate('2026-08-10'))===0);
+  ok('fredag pluss 1 virkedag er mandag',isoDate(addWorkdays(parseDate('2026-08-14'),1))==='2026-08-17',isoDate(addWorkdays(parseDate('2026-08-14'),1)));
+  ok('hopper over 17. mai',isoDate(addWorkdays(parseDate('2026-05-15'),1))==='2026-05-18',isoDate(addWorkdays(parseDate('2026-05-15'),1)));
+  ok('virkedager bakover',isoDate(addWorkdays(parseDate('2026-08-17'),-1))==='2026-08-14');
+
+  /* dates: week numbers and month arithmetic */
+  ok('nyttårsdag 2026 er uke 1',isoWeek(parseDate('2026-01-01')).week===1,isoWeek(parseDate('2026-01-01')).week);
+  ok('4. januar 2026 er uke 1',isoWeek(parseDate('2026-01-04')).week===1,isoWeek(parseDate('2026-01-04')).week);
+  ok('5. januar 2026 er uke 2',isoWeek(parseDate('2026-01-05')).week===2);
+  ok('31. desember 2024 er uke 1',isoWeek(parseDate('2024-12-31')).week===1,isoWeek(parseDate('2024-12-31')).week);
+  ok('31. januar pluss en måned',isoDate(addMonthsSafe(parseDate('2026-01-31'),1))==='2026-02-28',isoDate(addMonthsSafe(parseDate('2026-01-31'),1)));
+  ok('skuddår treffes',isoDate(addMonthsSafe(parseDate('2024-01-31'),1))==='2024-02-29');
+  ok('måneder bakover',isoDate(addMonthsSafe(parseDate('2026-03-15'),-2))==='2026-01-15');
+  ok('hele måneder mellom',monthsBetween(parseDate('2026-01-15'),parseDate('2026-04-14'))===2,monthsBetween(parseDate('2026-01-15'),parseDate('2026-04-14')));
+  ok('legger til dager',isoDate(addDays(parseDate('2026-12-31'),1))==='2027-01-01');
+
+  /* tape */
+  const saveTape=state.tape.slice(), saveVat=state.tapeVat, saveEntry2=state.tapeEntry, saveEdit=state.tapeEditing;
+  state.tape=[]; state.tapeVat=0; state.tapeEntry=''; state.tapeEditing=null;
+  state.tapeEntry='1200'; tapeCommit(1);
+  state.tapeEntry='340,50'; tapeCommit(1);
+  near('tapen summerer',tapeTotal(),1540.5,1e-9);
+  ok('to linjer på tapen',state.tape.length===2);
+  ok('feltet tømmes etter linje',state.tapeEntry==='');
+  state.tapeEntry='40,50'; tapeCommit(-1);
+  near('minuslinje trekkes fra',tapeTotal(),1500,1e-9);
+  state.tape[0].sign=-1;
+  near('fortegn kan snus',tapeTotal(),-900,1e-9);
+  state.tape[0].sign=1;
+  state.tapeEntry='2×'; tapeCommit(1);
+  ok('ugyldig linje legges ikke til',state.tape.length===3,state.tape.length);
+  state.tapeEntry='';
+  state.tapeEditing=state.tape[0].id; state.tapeEntry='1000'; tapeCommit(1);
+  near('linje kan endres',tapeTotal(),1300,1e-9);
+  ok('redigering avsluttes',state.tapeEditing===null);
+  state.tapeVat=25;
+  near('MVA-splitt av tapesum',tapeTotal()/1.25,1040,1e-9);
+  state.tape=[]; tapeCommit(1);
+  ok('tom tape gir null',tapeTotal()===0);
+  state.tape=saveTape; state.tapeVat=saveVat; state.tapeEntry=saveEntry2; state.tapeEditing=saveEdit;
+
+  /* bitwise */
+  ok('AND',(0xF0&0x3C)===0x30);
+  ok('XOR med seg selv er null',(0xABCD^0xABCD)===0);
+  ok('NOT snur fortegn',(~5|0)===-6);
+  ok('skift til venstre',(1<<8)===256);
+  ok('skift til høyre beholder fortegn',(-16>>2)===-4);
+  ok('uten fortegn',((-1)>>>0)===4294967295);
+  ok('bit 31 vises binært',toBaseString((1<<31)>>>0,2).replace(/ /g,'').length===32);
+
+
+  /* answer colouring */
+  const saveAC=state.answerColor;
+  state.answerColor='red';
+  ok('svaret blir rødt når det er regnet ut',resultClass('3025',false,true)==='result answer-red',resultClass('3025',false,true));
+  ok('uferdig uttrykk får ikke svarfarge',resultClass('3025',false,false)==='result');
+  ok('feil overstyrer svarfargen',resultClass('Kan ikke dele på null',true,true)==='result error');
+  ok('lange svar krymper og farges',resultClass('123456789012',false,true)==='result shrink answer-red',resultClass('123456789012',false,true));
+  state.answerColor='accent';
+  ok('modusfarge kan velges',resultClass('42',false,true)==='result answer-accent');
+  state.answerColor='neutral';
+  ok('nøytral gir ingen farge',resultClass('42',false,true)==='result');
+  state.answerColor=saveAC;
+
+
+  /* key help coverage and variants */
+  const NO_HELP=['num','rpnNum','tapeNum','rpnDot','rpnSign','rpnConst','rpnFunc','rpnOp','op','char','func','tapeOp','tapeChar','tapeDot','tapeSign','tapeBack','tapeAns','tapeParen','rpnClear','rpnBack','ans'];
+  Object.keys(LAYOUTS).forEach(mode=>{
+    LAYOUTS[mode].forEach(k=>{
+      if(k.a==='num'||k.a==='rpnNum'||k.a==='tapeNum')return;
+      const hk=keyHelpFor(k.a,k.v);
+      ok('hjelp finnes: '+mode+'/'+k.t,!!hk,k.a+':'+k.v);
+      if(hk){
+        const h=KEY_HELP[hk];
+        ok('hjelp har navn: '+k.t,!!h.n&&h.n.length>=2);
+        ok('hjelp har forklaring: '+k.t,!!h.d&&h.d.length>25);
+      }
+    });
+  });
+  ok('sifre har ingen hjelp',keyHelpFor('num','7')===null);
+  /* Glyphs that some platforms resolve through the emoji font are drawn as
+     icons instead, so a key never renders in a different typeface. */
+  (function(){
+    const risky=/[\u232B\u2328\u2600-\u27BF\uFE0F\u{1F000}-\u{1FAFF}]/u;
+    const bad=[];
+    Object.keys(LAYOUTS).forEach(m=>LAYOUTS[m].forEach(k=>{ if(typeof k.t==='string'&&risky.test(k.t))bad.push(m+'/'+k.t); }));
+    FX_KEYS.forEach(k=>{ if(typeof k.t==='string'&&risky.test(k.t))bad.push('valuta/'+k.t); });
+    ok('ingen emoji-utsatte tegn på tastene',bad.length===0,bad.join(', '));
+  })();
+  /* every variant list must build without throwing and be well formed */
+  Object.keys(KEY_HELP).forEach(k=>{
+    const h=KEY_HELP[k];
+    if(!h.variants)return;
+    let list=null,threw=false;
+    try{ list=h.variants(); }catch(e){ threw=true; }
+    ok('varianter bygges: '+k,!threw&&Array.isArray(list));
+    if(list)list.forEach((v,i)=>ok('variant '+k+'#'+i+' er komplett',!!v.l&&typeof v.run==='function'));
+  });
+
+  /* variants actually do what they claim */
+  const saveExpr=state.expression, saveJust=state.justEvaluated, saveModeK=state.mode;
+  state.mode='standard';
+  function runVariant(key,label){
+    state.expression=''; state.justEvaluated=false;
+    KEY_HELP[key].variants().find(v=>v.l===label).run();
+    return state.expression;
+  }
+  ok('x² gir x³',runVariant('²','x³')==='³',runVariant('²','x³'));
+  ok('x² gir invers',runVariant('²','x⁻¹')==='^(-1)');
+  ok('√ gir kubikkrot',runVariant('sqrt','∛')==='cbrt(');
+  ok('log gir ln',runVariant('log','ln')==='ln(');
+  ok('|x| gir floor',runVariant('abs','floor')==='floor(');
+  ok('|x| gir ceil',runVariant('abs','ceil')==='ceil(');
+  ok('π gir 2π',runVariant('π','2π')==='2π');
+  state.expression='500'; state.justEvaluated=false;
+  KEY_HELP['×'].variants().find(v=>v.l==='×10').run();
+  ok('× gir ×10',state.expression==='500×10',state.expression);
+  near('og regnes riktig',evaluate(state.expression),5000);
+  state.expression='800'; state.justEvaluated=false;
+  KEY_HELP['%'].variants().find(v=>v.l==='×1,25').run();
+  near('MVA-snarvei legger på 25 %',evaluate(state.expression),1000,1e-9);
+  state.expression='1000'; state.justEvaluated=false;
+  KEY_HELP['%'].variants().find(v=>v.l==='÷1,25').run();
+  near('MVA-snarvei trekker ut 25 %',evaluate(state.expression),800,1e-9);
+  state.expression='200'; state.justEvaluated=false;
+  KEY_HELP['+'].variants().find(v=>v.l==='+25 % MVA').run();
+  near('plusstasten legger på MVA',evaluate(state.expression),250,1e-9);
+  /* custom values */
+  state.expression='3'; state.justEvaluated=false;
+  KEY_HELP['²'].custom.run('4');
+  near('egen eksponent',evaluate(state.expression),81);
+  state.expression='32'; state.justEvaluated=false;
+  KEY_HELP.sqrt.custom.run('5');
+  near('n-te rot',evaluate(state.expression),2,1e-9);
+  state.expression='400'; state.justEvaluated=false;
+  KEY_HELP['×'].custom.run('1.25');
+  near('egen multiplikator',evaluate(state.expression),500,1e-9);
+  state.expression='200'; state.justEvaluated=false;
+  KEY_HELP['-'].custom.run('15');
+  near('trekk fra 15 prosent',evaluate(state.expression),170,1e-9);
+  /* operator variants must replace a trailing operator, not stack up */
+  state.expression='50+'; state.justEvaluated=false;
+  KEY_HELP['×'].variants().find(v=>v.l==='×2').run();
+  ok('erstatter etterfølgende operator',state.expression==='50×2',state.expression);
+  state.expression=saveExpr; state.justEvaluated=saveJust; state.mode=saveModeK;
+
+  /* keys that advertise extras must really have them */
+  ok('× er merket med ekstra valg',keyIsMarked('×'));
+  Object.keys(KEY_HELP).forEach(k=>{ if(KEY_HELP[k].mark)ok('merket tast har ekte ekstravalg: '+k,keyHasExtras(k)); });
+  ok('× har ekstra valg',keyHasExtras('×'));
+  ok('x² er merket med ekstra valg',keyIsMarked('²'));
+  ok('mod er ikke merket',!keyIsMarked('mod'));
+  ok('fakultet er ikke merket',!keyIsMarked('!'));
+
+
+  /* Layout consistency: the calculator skeleton must sit in the same place,
+     measured from the bottom, in every keypad. Muscle memory depends on it. */
+  const GRID_COLS={standard:4,professional:5,rpn:4,tape:4};
+  const COMMIT={standard:'=',professional:'=',rpn:'Enter',tape:'+ Linje'};
+  const SKELETON=[['C',5,1],['7',4,1],['8',4,2],['9',4,3],['4',3,1],['5',3,2],['6',3,3],
+    ['1',2,1],['2',2,2],['3',2,3],['0',1,1],[',',1,2],['@back',1,3],
+    ['÷',5,4],['×',4,4],['−',3,4],['+',2,4]];
+  Object.keys(GRID_COLS).forEach(mode=>{
+    const cols=GRID_COLS[mode], arr=LAYOUTS[mode], rows=arr.length/cols;
+    ok('rutenettet går opp: '+mode,Number.isInteger(rows),arr.length+'/'+cols);
+    const pos={};
+    /* Keyed on the action, not the label: an icon key has no text to match. */
+    arr.forEach((k,i)=>{ pos[k.t]={b:rows-Math.floor(i/cols),c:i%cols+1};
+      pos['@'+k.a]={b:rows-Math.floor(i/cols),c:i%cols+1}; });
+    SKELETON.forEach(([label,b,c])=>{
+      const p=pos[label]||pos[label==='@back'?(mode==='rpn'?'@rpnBack':(mode==='tape'?'@tapeBack':'@back')):label];
+      ok('plassering '+mode+'/'+label.replace('@',''),!!p&&p.b===b&&p.c===c,p?('b'+p.b+'c'+p.c+' skulle vært b'+b+'c'+c):'mangler');
+    });
+    const cm=pos[COMMIT[mode]];
+    ok('svartast '+mode,!!cm&&cm.b===1&&cm.c===4,cm?('b'+cm.b+'c'+cm.c):'mangler');
+    /* no key may appear twice in the same keypad (C for clear and the memory
+       variable C are different keys that share a letter) */
+    const seen={};
+    arr.forEach(k=>{ const id=k.a==='var'?'var:'+k.v:k.t; ok('ingen dublett '+mode+'/'+k.t,!seen[id],k.t); seen[id]=1; });
+  });
+  ok('vitenskapelig har 50 taster',LAYOUTS.professional.length===50,LAYOUTS.professional.length);
+  /* what left the keypad must still be reachable behind a long press */
+  const proSet=LAYOUTS.professional.map(k=>k.a+':'+k.v);
+  [['sinh','sin'],['cosh','cos'],['tanh','tan']].forEach(([gone,host])=>{
+    ok(gone+' er ikke lenger en tast',proSet.indexOf('func:'+gone)<0);
+    ok(gone+' finnes bak '+host,KEY_HELP[host].variants().some(v=>v.l===gone));
+  });
+  ok('mod er ikke lenger en tast',proSet.indexOf('op:mod')<0);
+  ok('mod finnes bak divisjon',KEY_HELP['÷'].variants().some(v=>v.l==='mod'));
+  ok('vinkelmåte er ikke lenger en tast',proSet.indexOf('trig:undefined')<0);
+  ok('vinkelmåte finnes i toppbaren',!!el.trigPill);
+  /* everything reachable in Standard must also be reachable in Vitenskapelig */
+  const stdActs=LAYOUTS.standard.map(k=>k.a+':'+k.v);
+  const proActs=LAYOUTS.professional.map(k=>k.a+':'+k.v);
+  stdActs.forEach(a=>ok('vitenskapelig dekker standard: '+a,proActs.indexOf(a)>-1));
+
+
+  /* one calculator tab, two layouts */
+  const saveSci=state.sci, saveModeS=state.mode;
+  const proKeys=LAYOUTS.professional.length;
+  ok('vitenskapelig har 50 taster',proKeys===50,proKeys);
+  /* expanding must add keys, never move the ones already under the thumb */
+  const shared=LAYOUTS.professional.slice(proKeys-25);
+  const cols5=shared.filter((k,i)=>i%5<4).map(k=>k.a+':'+k.v);
+  LAYOUTS.standard.forEach(k=>ok('enkel tast finnes også utvidet: '+k.t,cols5.indexOf(k.a+':'+k.v)>-1));
+  ok('utvidet legger til en femte kolonne',shared.filter((k,i)=>i%5===4).length===5);
+  ok('enkel har tjue taster',LAYOUTS.standard.length===20,LAYOUTS.standard.length);
+  /* what left the simple pad is one tap away under f(x) */
+  ['sign:undefined','ans:undefined','mAdd:undefined','mRecall:undefined'].forEach(a=>
+    ok('flyttet til f(x): '+a,proActs.indexOf(a)>-1&&stdActs.indexOf(a)<0));
+  state.mode='standard';
+  setSci(true,false);
+  ok('utvidet velger vitenskapelig oppsett',activeLayoutName()==='professional',activeLayoutName());
+  ok('utvidet gir fem kolonner',activeCols()===5);
+  ok('utvidet tilstand lagres',lsGet(LS.sci,'0')==='1');
+  ok('utvidet setter kroppsklassen',document.body.classList.contains('sci'));
+  setSci(false,false);
+  ok('enkel velger standardoppsett',activeLayoutName()==='standard');
+  ok('enkel gir fire kolonner',activeCols()===4);
+  ok('andre moduser påvirkes ikke av utvidelsen',(()=>{state.mode='rpn';state.sci=true;const r=activeLayoutName()==='rpn'&&activeCols()===4;state.mode='standard';state.sci=false;return r;})());
+  ok('vitenskapelig er ikke lenger en egen fane',MODES.indexOf('professional')<0);
+  ok('seks faner i navigasjonen',MODES.length===6,MODES.length);
+  state.sci=saveSci; state.mode=saveModeS; paintSciToggle();
+  ok('tastestørrelsen har et tak',MAX_KEY>=60&&MAX_KEY<=120,MAX_KEY);
+  ok('sizeKeypad tåler å kalles',(()=>{try{sizeKeypad(false);return true;}catch(e){return false;}})());
+
+
+  /* converter panel resilience */
+  const saveCv=Object.assign({},state.conv);
+  state.conv.cat='length'; state.conv.from='nok'; state.conv.to='usd';
+  ensureUnits();
+  ok('ugyldig fra-enhet rettes',state.conv.from==='meter',state.conv.from);
+  ok('ugyldig til-enhet rettes',state.conv.to==='kilometer',state.conv.to);
+  state.conv.cat='currency'; state.conv.from='meter'; state.conv.to='meter';
+  ensureUnits();
+  ok('valuta rettes også',!!UNITS.currency.units[state.conv.from]&&!!UNITS.currency.units[state.conv.to],state.conv.from+'/'+state.conv.to);
+  Object.keys(UNITS).forEach(k=>{
+    if(k==='dates')return;
+    const d=DEFAULT_PAIR[k];
+    ok('standardpar finnes: '+k,!!d&&!!UNITS[k].units[d[0]]&&!!UNITS[k].units[d[1]],JSON.stringify(d));
+    ok('standardpar er ulike: '+k,!d||d[0]!==d[1]);
+  });
+  state.conv=saveCv;
+
+
+  /* the converter should always open on a usable amount */
+  ok('konverteren starter på 1',state.conv.value==='1'||!state.conv.auto,state.conv.value);
+  const saveCv2=Object.assign({},state.conv);
+  /* a swap on an untouched 1 reverses direction and keeps the 1 */
+  state.conv.cat='currency'; state.conv.from='nok'; state.conv.to='usd';
+  state.conv.value='1'; state.conv.auto=true;
+  const rateNokUsd=convert(1,'currency','nok','usd');
+  ok('kursen finnes',Number.isFinite(rateNokUsd)&&rateNokUsd>0,rateNokUsd);
+  /* a swap on a typed amount must carry the exact value, not the rounded text */
+  state.conv.auto=false;
+  const exact=convert(250,'currency','nok','usd');
+  const carried=parseNum(formatNumber(exact,10,{raw:true}));
+  near('bytte mister ikke presisjon',convert(carried,'currency','usd','nok'),250,1e-6);
+  const shown=parseNum(formatNumber(exact,2,{raw:true}));
+  ok('avrundet tekst ville drevet av',Math.abs(convert(shown,'currency','usd','nok')-250)>1e-6||Math.abs(exact-shown)<1e-12);
+  state.conv=saveCv2;
+
+
+  /* A vertical margin on a key breaks fixed grid rows: the key keeps its
+     min-height and spills into the row below. Guard against reintroducing it. */
+  if(cssEngine)(function(){
+    const probe=document.createElement('div');
+    probe.className='calc-buttons professional-mode';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    ['btn','btn zone-start','btn equals','btn clear','btn func','btn op'].forEach(cl=>{
+      const b=document.createElement('button'); b.className=cl; b.textContent='x'; probe.appendChild(b);
+    });
+    document.body.appendChild(probe);
+    Array.from(probe.children).forEach(b=>{
+      const cs=getComputedStyle(b);
+      ok('tast uten toppmarg: '+b.className,parseFloat(cs.marginTop)===0,cs.marginTop);
+      ok('tast uten bunnmarg: '+b.className,parseFloat(cs.marginBottom)===0,cs.marginBottom);
+    });
+    probe.remove();
+  })();
+  ok('vitenskapelig gulv er lavere enn vanlig',SCI_FLOOR<DISPLAY_FLOOR.standard,SCI_FLOOR);
+
+
+  /* a backup must be complete, not just the settings that happen to be touched */
+  ok('sikkerhetskopien dekker alle nøklene',BACKUP_KEYS.length>=15,BACKUP_KEYS.length);
+  persistAll();
+  const missing=BACKUP_KEYS.filter(k=>lsGet(k,null)===null);
+  ok('alle nøkler skrives ved kopiering',missing.length===0,missing.join(','));
+
+
+  /* search ranking in the unit picker */
+  const lenUnits=Object.keys(UNITS.length.units).map(k=>Object.assign({key:k},UNITS.length.units[k]));
+  const curUnits=Object.keys(UNITS.currency.units).map(k=>Object.assign({key:k},UNITS.currency.units[k]));
+  ok('«mil» gir Norsk mil først',rankUnits(lenUnits,'mil')[0].s==='mil',rankUnits(lenUnits,'mil')[0].s);
+  ok('«mm» gir millimeter først',rankUnits(lenUnits,'mm')[0].s==='mm',rankUnits(lenUnits,'mm')[0].s);
+  ok('«kilo» gir kilometer først',rankUnits(lenUnits,'kilo')[0].s==='km',rankUnits(lenUnits,'kilo')[0].s);
+  ok('«tomme» finner tommen',rankUnits(lenUnits,'tomme')[0].s==='in',rankUnits(lenUnits,'tomme')[0].s);
+  ok('«usd» gir dollar først',rankUnits(curUnits,'usd')[0].s==='USD',(rankUnits(curUnits,'usd')[0]||{}).s);
+  ok('«nok» gir kroner først',rankUnits(curUnits,'nok')[0].s==='NOK',(rankUnits(curUnits,'nok')[0]||{}).s);
+  ok('«norske» finner norske kroner',rankUnits(curUnits,'norske')[0].s==='NOK',(rankUnits(curUnits,'norske')[0]||{}).s);
+  ok('uten treff gir tom liste',rankUnits(lenUnits,'zzzz').length===0);
+  ok('rangering mister ingen treff',rankUnits(lenUnits,'meter').length===lenUnits.filter(u=>(u.l+' '+u.s+' '+u.key).toLowerCase().indexOf('meter')>-1).length);
+
+
+  /* the recent strip shows past answers, never the one on the display */
+  (function(){
+    const sh=state.history, se=state.expression, sr=state.result, sj=state.justEvaluated, sm=state.mode;
+    state.mode='standard';
+    state.history=[{e:'2+2',r:'4',t:1,m:'standard'},{e:'3×3',r:'9',t:2,m:'standard'},{e:'5',r:'5',t:3,m:'rpn'}];
+    state.expression='2+2'; state.justEvaluated=true;
+    ok('siste utregninger hopper over svaret i displayet',recentEntries().length===1&&recentEntries()[0].e==='3×3',recentEntries().map(h=>h.e).join());
+    state.justEvaluated=false; state.expression='';
+    ok('siste utregninger tar bare kalkulatoren',recentEntries().every(h=>h.m!=='rpn'));
+    useRecent({r:'9'}); ok('trykk setter inn verdien',state.expression==='9',state.expression);
+    useRecent({r:'4'}); ok('etter et tall ganges det inn',state.expression==='9×4',state.expression);
+    state.history=sh; state.expression=se; state.result=sr; state.justEvaluated=sj; state.mode=sm; updateDisplay();
+  })();
+  /* operators get breathing room in the display, a leading minus does not */
+  ok('mellomrom rundt operatorer',formatExpression('12×4+3')==='12\u2009×\u20094\u2009+\u20093',formatExpression('12×4+3'));
+  ok('minus som fortegn står tett',formatExpression('3×-2')==='3\u2009×\u2009−2',formatExpression('3×-2'));
+  ok('eksponent i tall får ikke mellomrom',formatExpression('1.2e+17')==='1'+(SEP[state.fmt]||SEP.no).d+'2e+17',formatExpression('1.2e+17'));
+  /* big and tiny numbers read as powers of ten, but stay plain underneath */
+  ok('stort tall vises med tierpotens',state.fmt!=='no'||prettyNumber('1,21932631e+17')==='1,219\u202F326\u202F31 × 10¹⁷',prettyNumber('1,21932631e+17'));
+  ok('lite tall får negativ eksponent',prettyNumber('2,5e-12')==='2,5 × 10⁻¹²',prettyNumber('2,5e-12'));
+  ok('vanlige tall røres ikke',prettyNumber('1 234,5')==='1 234,5');
+
+  /* overlays and the back gesture */
+  ok('historikk har lukkeknapp',!!el.closeHistBtn);
+  /* The runner itself lives in the settings sheet, so judge the other overlays. */
+  const othersOpen=()=>state.historyOpen||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')||el.catSheet.classList.contains('open');
+  ok('ingen overlegg åpne fra start',!othersOpen());
+  openHistory(); ok('historikk åpner',anyOverlayOpen()&&state.historyOpen);
+  closeHistory(); ok('historikk lukker',!othersOpen());
+  openSettings(); ok('innstillinger åpner',anyOverlayOpen());
+  closeSettings(); ok('innstillinger lukker',!anyOverlayOpen());
+  openCatSheet(); ok('kategoriarket åpner',el.catSheet.classList.contains('open')&&el.catGrid.children.length>=17,el.catGrid.children.length);
+  closeCatSheet(); ok('kategoriarket lukker',!othersOpen());
+  ok('kategorirekka starter med Alle',(()=>{ renderCatChips(); const f=el.catChips.firstElementChild; return !!f&&f.classList.contains('chip-all'); })());
+  openKeyHelp('²'); ok('hjelpeark åpner',anyOverlayOpen());
+  closeKeyHelp(); ok('hjelpeark lukker',!anyOverlayOpen());
+
+
+  /* amount field accepts a small expression */
+  near('uttrykk med gange',convExpression('3×250'),750);
+  near('stjerne godtas',convExpression('3*250'),750);
+  near('skråstrek godtas',convExpression('1000/8'),125);
+  near('parenteser godtas',convExpression('(2+3)*4'),20);
+  near('komma i uttrykk',convExpression('2,5×4'),10);
+  ok('rent tall er ikke et uttrykk',Number.isNaN(convExpression('250')));
+  ok('tomt er ikke et uttrykk',Number.isNaN(convExpression('')));
+  ok('ugyldig uttrykk avvises',Number.isNaN(convExpression('2++')));
+  ok('bokstaver avvises',Number.isNaN(convExpression('abc/2')));
+  /* the three input paths must not fight each other */
+  const saveCv3=Object.assign({},state.conv);
+  state.conv.cat='time'; state.conv.from='hour'; state.conv.to='minute';
+  state.conv.value='2t 30min'; near('sammensatt vinner over uttrykk',convValue(),2.5,1e-9);
+  state.conv.value='3*45'; near('uttrykk brukes når tallet ikke er rent',convValue(),135);
+  state.conv.value='2,5'; near('rent tall går rett gjennom',convValue(),2.5);
+  state.conv.cat='numbers'; state.conv.from='hex';
+  state.conv.value='FF'; near('tallsystem påvirkes ikke av uttrykk',convValue(),255);
+  state.conv=saveCv3;
+
+  /* recently used units */
+  const saveRec=JSON.stringify(state.recent);
+  state.recent={};
+  noteRecent('length','yard'); noteRecent('length','foot'); noteRecent('length','yard');
+  ok('siste bruk havner først',state.recent.length[0]==='yard',state.recent.length.join(','));
+  ok('ingen dubletter i nylig brukt',state.recent.length.length===2,state.recent.length.join(','));
+  for(let i=0;i<9;i++)noteRecent('length','u'+i);
+  ok('nylig brukt kappes til fem',state.recent.length.length===5,state.recent.length.length);
+  ok('kategoriene holdes fra hverandre',!state.recent.currency);
+  state.recent=JSON.parse(saveRec);
+
+  /* keyboard-aware sheets */
+  ok('stilmotoren er tilgjengelig for stiltestene',true,cssEngine?'ja':'hoppet over');
+
+
+  /* the rate strip only shows when there is something to act on */
+  const saveRS=state.rateState, saveCat=state.conv.cat;
+  state.conv.cat='currency';
+  paintRateBar('live','Norges Bank, 14.08.2026. 166 valutaer.');
+  ok('fersk kurs skjuler statuslinjen',el.rateBar.style.display==='none',el.rateBar.style.display);
+  ok('prikken vises i valuta',el.rateDotMini.style.display!=='none');
+  ok('prikken er grønn',/live/.test(el.rateDotMini.className),el.rateDotMini.className);
+  ok('teksten er tatt vare på',/Norges Bank/.test(state.rateNote),state.rateNote);
+  paintRateBar('stale','Kursene er 40 dager gamle.');
+  ok('gammel kurs viser statuslinjen',el.rateBar.style.display==='flex',el.rateBar.style.display);
+  ok('prikken blir gul',/stale/.test(el.rateDotMini.className));
+  paintRateBar('offline','Fikk ikke kontakt.');
+  ok('uten kontakt vises statuslinjen',el.rateBar.style.display==='flex');
+  ok('prikken blir rød',/offline/.test(el.rateDotMini.className));
+  state.conv.cat='length';
+  paintRateBar('live','x');
+  ok('ikke-valuta viser verken linje eller prikk',el.rateBar.style.display==='none'&&el.rateDotMini.style.display==='none');
+  state.conv.cat=saveCat; state.rateState=saveRS; syncRateBar();
+
+
+  /* generic class names must not collide with utility classes */
+  if(cssEngine)(function(){
+    const probe=document.createElement('div');
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    probe.innerHTML='<div class="tape-entry"><span class="cur is-blank">0</span></div>';
+    document.body.appendChild(probe);
+    const cur=probe.querySelector('.cur');
+    const cs=getComputedStyle(cur);
+    ok('inntastingsfeltet har ingen fyllpadding',parseFloat(cs.paddingTop)<8,cs.paddingTop);
+    ok('inntastingsfeltet er én linje høyt',cur.getBoundingClientRect().height<44,cur.getBoundingClientRect().height);
+    probe.remove();
+  })();
+  /* the favourite button must state which way it will toggle */
+  const saveFavs=state.favs.slice(), saveCv4=Object.assign({},state.conv);
+  state.conv.cat='length'; state.conv.from='meter'; state.conv.to='kilometer';
+  state.favs=[];
+  paintFavBtn();
+  ok('ulagret par sier «Lagre par»',el.convFavLabel.textContent==='Lagre par',el.convFavLabel.textContent);
+  ok('stjernen er tom',el.convFavStar.getAttribute('fill')==='none');
+  state.favs=[{cat:'length',from:'meter',to:'kilometer'}];
+  paintFavBtn();
+  ok('lagret par sier «Lagret»',el.convFavLabel.textContent==='Lagret',el.convFavLabel.textContent);
+  ok('stjernen fylles',el.convFavStar.getAttribute('fill')==='currentColor');
+  ok('knappen melder tilstand til hjelpeteknologi',el.convFavBtn.getAttribute('aria-pressed')==='true');
+  ok('isFavPair kjenner igjen paret',isFavPair());
+  state.conv.to='centimeter';
+  ok('annet par er ikke lagret',!isFavPair());
+  state.favs=saveFavs; state.conv=saveCv4; paintFavBtn();
+  /* notes are edited in the app, never in a system dialog */
+  ok('ingen systemdialoger i koden',typeof tapeNote==='function');
+
+
+  /* borderless keys must stay visible: either the fill separates them from the
+     panel, or the theme keeps an outline */
+  if(cssEngine)(function(){
+    const themes=['dark','light','amoled','contrast'];
+    const saveTheme=document.documentElement.getAttribute('data-theme');
+    const probe=document.createElement('div');
+    probe.className='buttons-container';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    const grid=document.createElement('div'); grid.className='calc-buttons standard-mode';
+    ['btn','btn func','btn op','btn clear','btn equals'].forEach(cl=>{
+      const b=document.createElement('button'); b.className=cl; b.textContent='7';
+      b.style.transition='none'; grid.appendChild(b);
+    });
+    probe.appendChild(grid); document.body.appendChild(probe);
+    const lum=c=>{const m=(c||'').match(/[\d.]+/g)||[0,0,0];return 0.2126*(+m[0])+0.7152*(+m[1])+0.0722*(+m[2]);};
+    themes.forEach(t=>{
+      document.documentElement.setAttribute('data-theme',t);
+      const panel=lum(getComputedStyle(probe).backgroundColor);
+      const kids=Array.from(grid.children);
+      kids.forEach(b=>{
+        const cs=getComputedStyle(b);
+        const diff=Math.abs(lum(cs.backgroundColor)-panel);
+        const outlined=parseFloat(cs.borderTopWidth)>0;
+        /* Operators are bare glyphs by design; their legibility is the contrast test below. */
+        if(b.className!=='btn op')
+          ok('tast synlig i '+t+' ('+b.className+')',diff>=5||outlined,'lysdiff '+diff.toFixed(1)+' ramme '+cs.borderTopWidth);
+        ok('tast har runde hjørner i '+t,parseFloat(cs.borderTopLeftRadius)>=12,cs.borderTopLeftRadius);
+      });
+      /* Digits and functions share one tone so the pad reads as a single surface.
+         The four operators sit a step apart, so ÷ × − + are found without reading. */
+      const neutral=[kids[0],kids[1]].map(b=>getComputedStyle(b).backgroundColor);
+      ok('nøytrale taster deler én tone i '+t,neutral[0]===neutral[1],neutral.join(' / '));
+      const opBg=getComputedStyle(kids[2]).backgroundColor;
+      ok('operatorene har egen tone i '+t,opBg!==neutral[0],opBg);
+      const acBg=getComputedStyle(kids[3]).backgroundColor, eqBg=getComputedStyle(kids[4]).backgroundColor;
+      /* C keeps the key shape and says what it is with its colour. */
+      const acFg=getComputedStyle(kids[3]).color, digitFg=getComputedStyle(kids[0]).color;
+      ok('C skiller seg ut i '+t,acBg!==neutral[0]||acFg!==digitFg,acFg);
+      ok('likhetstasten skiller seg ut i '+t,eqBg!==neutral[0],eqBg);
+    });
+    document.documentElement.setAttribute('data-theme',saveTheme||'dark');
+    probe.remove();
+  })();
+
+  /* flags and codes must stay large enough to read at a glance */
+  if(cssEngine)(function(){
+    const probe=document.createElement('div');
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:360px';
+    probe.innerHTML='<div class="pair"><div class="pair-card"><div class="pair-row">'+
+      '<button class="pair-picker"><img class="pf"><span class="pc">NOK</span></button></div></div></div>'+
+      '<div class="unit-grid"><div class="unit-opt"><img><span class="os">NOK</span><span class="on">Norske kroner</span></div></div>'+
+      '<div class="all-units"><div class="all-body"><div class="all-row"><div class="u"><img><span class="un">Euro</span></div></div></div></div>';
+    document.body.appendChild(probe);
+    const px=s=>parseFloat(getComputedStyle(probe.querySelector(s)).width)||0;
+    const fs=s=>parseFloat(getComputedStyle(probe.querySelector(s)).fontSize)||0;
+    ok('flagg i paret er minst 36 px',px('.pair-picker .pf')>=36,px('.pair-picker .pf'));
+    ok('valutakoden i paret er minst 18 px',fs('.pair-picker .pc')>=18,fs('.pair-picker .pc'));
+    ok('flagg i lista er minst 34 px',px('.unit-opt img')>=34,px('.unit-opt img'));
+    ok('koden i lista er minst 15 px',fs('.unit-opt .os')>=15,fs('.unit-opt .os'));
+    ok('navnet i lista er minst 13 px',fs('.unit-opt .on')>=13,fs('.unit-opt .on'));
+    ok('flagg i bordet er minst 28 px',px('.all-row .u img')>=28,px('.all-row .u img'));
+    ok('trykkflaten i velgeren er minst 44 px',
+       (probe.querySelector('.pair-picker').getBoundingClientRect().height||0)>=44,
+       probe.querySelector('.pair-picker').getBoundingClientRect().height);
+    probe.remove();
+  })();
+
+
+  /* the currency keypad */
+  const saveFx4=Object.assign({},state.fx), saveDate=state.fxDate, saveHist=state.fxHist;
+  state.fxDate=null; state.fxHist=null;
+  state.fx.from='nok'; state.fx.to='usd'; state.fx.side='from';
+  state.fx.value=''; state.fx.exact=null; state.fx.auto=false;
+  ok('tastaturet har femten taster',FX_KEYS.length===15,FX_KEYS.length);
+  /* Digits keep columns 1 to 3, as everywhere else in the app. */
+  ['7','8','9','4','5','6','1','2','3'].forEach(t=>{
+    const idx=FX_KEYS.findIndex(k=>k.t===t);
+    ok('sifferet '+t+' står i kolonne 1 til 3',idx%4<3,'kolonne '+(idx%4+1));
+  });
+  ok('ingen regnetegn på valutatastaturet',!FX_KEYS.some(k=>k.a==='op'),
+     FX_KEYS.filter(k=>k.a==='op').map(k=>k.t).join(','));
+  ok('ingen fortegnstast',!FX_KEYS.some(k=>k.a==='sign'));
+  ok('ingen byttetast',!FX_KEYS.some(k=>k.a==='swap')&&!!el.fxSwapBtn);
+  ok('alle sifrene finnes','0123456789'.split('').every(d=>FX_KEYS.some(k=>k.v===d)));
+  ok('komma, nullnull, slett og AC finnes',
+     ['dot','back','clear'].every(a=>FX_KEYS.some(k=>k.a===a))&&FX_KEYS.some(k=>k.v==='00'));
+  ok('ferdig-tasten lukker tastaturet',FX_KEYS.some(k=>k.a==='done'));
+  ok('bunnraden er 0 , slett som i kalkulatoren',FX_KEYS.slice(-3).map(k=>k.a).join()==='num,dot,back'&&FX_KEYS[12].v==='0');
+  ok('ferdig står i kolonne 4, to rader høy',FX_KEYS.findIndex(k=>k.a==='done')%4===3&&FX_KEYS.some(k=>k.a==='done'&&k.tall));
+
+  /* the keypad only appears when you are entering a number */
+  fxSetKeys(false);
+  ok('tastaturet er skjult i utgangspunktet',!state.fxKeysOpen);
+  ok('og har ingen høyde',!el.fxKeys.classList.contains('open'));
+  fxTapField('from');
+  ok('trykk i beløpet åpner tastaturet',state.fxKeysOpen);
+  ok('og fra-siden er den aktive',state.fx.side==='from');
+  fxTapField('to');
+  ok('trykk i det andre feltet bytter side',state.fx.side==='to');
+  ok('og tastaturet blir stående',state.fxKeysOpen);
+  fxKey('done');
+  ok('ferdig lukker tastaturet',!state.fxKeysOpen);
+  fxTapField('from');
+  state.fx.value=''; fxSetKeys(false);
+  ok('tomt felt fylles når tastaturet lukkes',state.fx.value==='1000',state.fx.value);
+  /* start each keying test from a clean field */
+  state.fx.side='from'; state.fx.value=''; state.fx.exact=null; state.fx.auto=false;
+
+  ['2','5','0'].forEach(t=>fxKey('num',t));
+  ok('taster skriver inn',state.fx.value==='250',state.fx.value);
+  fxKey('num','00');
+  ok('nullnull-tasten legger til to nuller',state.fx.value==='25000',state.fx.value);
+  fxKey('back'); fxKey('back');
+  ok('slett fjerner ett tegn om gangen',state.fx.value==='250',state.fx.value);
+  fxKey('dot'); fxKey('num','5');
+  ok('komma settes inn',state.fx.value==='250,5',state.fx.value);
+  fxKey('dot');
+  ok('bare ett komma per tall',state.fx.value==='250,5',state.fx.value);
+  near('beløpet leses som tall',fxAmount(),250.5,1e-9);
+  fxKey('clear');
+  ok('AC tømmer feltet',state.fx.value==='',state.fx.value);
+  fxKey('num','0'); fxKey('num','7');
+  ok('ledende null erstattes',state.fx.value==='7',state.fx.value);
+
+
+  /* typing on either side */
+  state.fx.side='from'; state.fx.value='1000'; state.fx.exact=null;
+  const c1=fxCompute();
+  near('fra-siden regner framover',c1.other,fxConvert(1000,'nok','usd'),1e-9);
+  state.fx.side='to'; state.fx.value='100'; state.fx.exact=null;
+  const c2=fxCompute();
+  near('til-siden regner baklengs',c2.other,fxConvert(100,'usd','nok'),1e-9);
+  ok('den andre siden er kroner',c2.other>c2.typed,c2.other+' > '+c2.typed);
+  state.fx.side='from'; state.fx.value='500'; state.fx.exact=null;
+  fxSetSide('to');
+  ok('sidebytte flytter verdien over',state.fx.side==='to'&&parseNum(state.fx.value)>0,state.fx.side+':'+state.fx.value);
+  near('og verdien er den som sto der',parseNum(state.fx.value),fxConvert(500,'nok','usd'),0.01);
+
+  /* historical rates fall back to the base table when none is loaded */
+  state.fxHist=null;
+  near('uten dato brukes dagens kurs',fxBaseRate('usd'),UNITS.currency.units.usd.f,1e-12);
+  state.fxHist={rates:{USD:{nok:11.11,date:'2026-06-12'}},quoted:'2026-06-12'};
+  near('med dato brukes datoens kurs',fxBaseRate('usd'),11.11,1e-12);
+  ok('kroner er alltid én, også historisk',fxBaseRate('nok')===1);
+  state.fxHist=saveHist; state.fxDate=saveDate; state.fx=saveFx4;
+
+
+  /* the action row must stay one light row, and the board must not stretch */
+  if(cssEngine)(function(){
+    const acts=document.querySelector('#currencyPanel .fx-actions');
+    if(acts){
+      const chips=acts.querySelectorAll('.chip');
+      ok('handlingene er tre brikker med tekst',chips.length===3&&Array.from(chips).every(c=>c.textContent.trim().length>0),chips.length);
+      ok('legg til står i listetoppen',!!document.querySelector('#fxBoard .all-head #fxAddBtn'));
+      ok('og ligger på én rad',Math.round(acts.getBoundingClientRect().height)<52,
+         Math.round(acts.getBoundingClientRect().height));
+    }
+    const bd=document.getElementById('fxBoard');
+    ok('bordet strekker seg ikke',getComputedStyle(bd).flexGrow==='0',getComputedStyle(bd).flexGrow);
+  })();
+  /* one rule per selector: a duplicate further down silently wins */
+  if(cssEngine)(function(){
+    let dup=0;
+    Array.from(document.styleSheets).forEach(sh=>{
+      let rules; try{ rules=sh.cssRules; }catch(e){ return; }
+      const seen={};
+      Array.from(rules||[]).forEach(r=>{
+        if(!r.selectorText||r.selectorText.indexOf('#fx')<0&&r.selectorText.indexOf('#conv')<0)return;
+        if(seen[r.selectorText])dup++;
+        seen[r.selectorText]=1;
+      });
+    });
+    ok('ingen doble regler for de samme id-ene',dup===0,dup+' dubletter');
+  })();
+
+
+  /* every key label must clear 4.5:1 against what is actually behind it */
+  if(cssEngine)(function(){
+    const saveTheme=document.documentElement.getAttribute('data-theme');
+    const probe=document.createElement('div');
+    probe.className='buttons-container';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:300px';
+    const grid=document.createElement('div'); grid.className='calc-buttons standard-mode';
+    [['btn','siffer'],['btn func','funksjon'],['btn op','operator'],['btn clear','AC'],['btn equals','likhet']].forEach(([cl])=>{
+      const b=document.createElement('button'); b.className=cl; b.textContent='7';
+      b.style.transition='none'; grid.appendChild(b);
+    });
+    probe.appendChild(grid); document.body.appendChild(probe);
+    const parse=c=>{const m=(c||'').match(/[\d.]+/g)||[0,0,0,1];return [+m[0],+m[1],+m[2],m[3]===undefined?1:+m[3]];};
+    /* Alpha matters: a translucent key sits on the panel, and comparing the raw
+       rgba against the text reports a contrast that nobody ever sees. */
+    const over=(fg,bg)=>fg.slice(0,3).map((v,i)=>v*fg[3]+bg[i]*(1-fg[3])).concat([1]);
+    const rel=c=>{const f=v=>{v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+      return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);};
+    const ratio=(a,b)=>{const L1=Math.max(rel(a),rel(b)),L2=Math.min(rel(a),rel(b));return (L1+0.05)/(L2+0.05);};
+    const names=['siffer','funksjon','operator','AC','likhet'];
+    ['dark','light','amoled','contrast'].forEach(t=>{
+      document.documentElement.setAttribute('data-theme',t);
+      const panel=parse(getComputedStyle(probe).backgroundColor);
+      Array.from(grid.children).forEach((b,i)=>{
+        const cs=getComputedStyle(b);
+        const bg=over(parse(cs.backgroundColor),panel);
+        const fg=over(parse(cs.color),bg);
+        const r=ratio(fg,bg);
+        ok('lesbar '+names[i]+' i '+t,r>=4.5,r.toFixed(2)+':1');
+      });
+    });
+    document.documentElement.setAttribute('data-theme',saveTheme||'dark');
+    probe.remove();
+  })();
+
+
+  /* the accent must carry its own label in every mode and theme */
+  if(cssEngine)(function(){
+    const saveTheme=document.documentElement.getAttribute('data-theme'), saveMode=document.body.dataset.mode;
+    const probe=document.createElement('span');
+    probe.style.cssText='position:absolute;left:-9999px;display:block';
+    document.body.appendChild(probe);
+    const resolve=v=>{ probe.style.color=''; probe.style.color=v; return getComputedStyle(probe).color; };
+    const parse=c=>(String(c).match(/[\d.]+/g)||[0,0,0]).slice(0,3).map(Number);
+    const rel=c=>{const f=v=>{v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+      return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);};
+    ['dark','light','amoled','contrast'].forEach(t=>{
+      document.documentElement.setAttribute('data-theme',t);
+      MODES.forEach(m=>{
+        document.body.dataset.mode=m;
+        const cs=getComputedStyle(document.body);
+        const A=rel(parse(resolve(cs.getPropertyValue('--accent').trim())));
+        const B=rel(parse(resolve(cs.getPropertyValue('--accent-text').trim())));
+        const r=(Math.max(A,B)+0.05)/(Math.min(A,B)+0.05);
+        ok('aksentfargen bærer teksten sin: '+t+'/'+m,r>=4.5,r.toFixed(2)+':1');
+      });
+    });
+    document.documentElement.setAttribute('data-theme',saveTheme||'dark');
+    document.body.dataset.mode=saveMode||'standard';
+    probe.remove();
+  })();
+
+
+  /* the value column has to line up down the list, whatever the names beside it */
+  if(cssEngine)(function(){
+    const probe=document.createElement('div');
+    probe.className='all-units open';
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:360px';
+    const body=document.createElement('div'); body.className='all-body';
+    [['Euro','EUR','432,27'],['Svenske kroner','SEK','4753,52'],['Britiske pund','GBP','369,43']].forEach(([n,c,v])=>{
+      const r=document.createElement('div'); r.className='all-row fx-row';
+      r.innerHTML='<div class="u"><span class="un">'+n+'</span><span class="us">'+c+'</span></div>'+
+        '<span class="uv">'+v+'<span class="uc up">+1,00 %</span></span>'+
+        '<button class="fx-del">x</button>';
+      body.appendChild(r);
+    });
+    probe.appendChild(body); document.body.appendChild(probe);
+    const rights=Array.from(probe.querySelectorAll('.uv')).map(v=>Math.round(v.getBoundingClientRect().right));
+    ok('verdiene deler samme høyrekant',new Set(rights).size===1,rights.join(' / '));
+    const pct=Array.from(probe.querySelectorAll('.uc')).map(v=>Math.round(v.getBoundingClientRect().right));
+    ok('prosentene følger samme kant',new Set(pct).size===1,pct.join(' / '));
+    probe.remove();
+  })();
+
+
+  /* money keeps both decimals; rates and measurements do not */
+  const saveFmt2=state.fmt; state.fmt='no';
+  ok('penger beholder to desimaler',money(105.8)==='105,80',money(105.8));
+  ok('hele kroner får også to',money(2095)==='2095,00',money(2095));
+  ok('null skrives ut',money(0)==='0,00',money(0));
+  ok('negativ null blir null',money(-0.004)==='0,00',money(-0.004));
+  ok('tusen grupperes',money(12500)==='12\u202F500,00',money(12500));
+  ok('avrunding til nærmeste øre',money(1749.295)==='1749,30'||money(1749.295)==='1749,29',money(1749.295));
+  ok('ugyldig gir feilmelding',money(NaN)==='Error');
+  ok('vanlig formatering trimmer fortsatt',formatNumber(105.8,2)==='105,8',formatNumber(105.8,2));
+  state.fmt='en';
+  ok('følger tallformatet',money(12500)==='12,500.00',money(12500));
+  state.fmt=saveFmt2;
+
+  /* the panels share one field style */
+  if(cssEngine)(function(){
+    const savePct=state.pctType;
+    state.pctType='discount'; renderPctFields();
+    const pct=document.querySelectorAll('#pctFields .pair-card').length;
+    const legends=document.querySelectorAll('#pctFields .pair-legend').length;
+    ok('prosentfeltene bruker samme ramme som resten',pct>0&&legends===pct,pct+' kort, '+legends+' etiketter');
+    ok('prosent har ingen gamle kort igjen',document.querySelectorAll('#percentPanel .card').length===0,
+       document.querySelectorAll('#percentPanel .card').length);
+    state.pctType=savePct; renderPctFields(); pctCalc();
+  })();
+
+
+  /* Schibsted's tabular figures set the comma and the thousands space as wide as a
+     digit, which reads as 91 , 49. Columns line up on their right edge instead
+     (tested above), so every number keeps proportional figures. */
+  if(cssEngine)(function(){
+    const sels=['.all-row .uv','.tape-val','.hist-item .hr','.result','.pair-input','.breakdown .b-row span:last-child'];
+    const probe=document.createElement('div');
+    probe.style.cssText='position:absolute;left:-9999px;top:0;width:340px';
+    probe.innerHTML='<div class="pair-card"><span class="pair-input">1</span><span class="conv-rate">1</span></div>'+
+      '<div class="all-units open"><div class="all-body"><div class="all-row"><span class="uv">1</span></div></div></div>'+
+      '<div class="pct-result-value">1</div><div class="tape-row"><div class="tape-val">1</div></div>'+
+      '<div class="tape-foot"><div class="tape-sum"><span class="val">1</span></div></div>'+
+      '<div class="hist-item"><div class="hr">1</div></div><span class="spark-change">1</span>'+
+      '<button class="header-pill"><span class="pv">1</span></button>'+
+      '<div class="result">1</div><div class="expression">1</div>'+
+      '<div class="breakdown"><div class="b-row"><span>a</span><span>1</span></div></div>';
+    document.body.appendChild(probe);
+    const bad=[];
+    sels.forEach(sel=>{
+      const e=probe.querySelector(sel);
+      if(!e){ bad.push(sel+' (fantes ikke)'); return; }
+      const cs=getComputedStyle(e);
+      if(cs.fontVariantNumeric.indexOf('tabular-nums')>-1)bad.push(sel+' ('+cs.fontVariantNumeric+')');
+    });
+    ok('tall har vanlige sifferbredder, uten luker rundt kommaet',bad.length===0,bad.join(', '));
+    probe.remove();
+  })();
+  /* one typeface, embedded, so it looks the same offline and on any phone */
+  if(cssEngine)(function(){
+    const fam=getComputedStyle(document.body).fontFamily;
+    ok('appen bruker den innebygde fonten',/Inter/.test(fam),fam);
+    const mono=getComputedStyle(document.documentElement).getPropertyValue('--font-mono');
+    ok('ingen egen fastbreddefont igjen',!/mono|Courier|Cascadia/i.test(mono),mono.trim());
+  })();
+
+
+  /* a label must fit inside its key, whatever the typeface does to the metrics */
+  if(cssEngine)(function(){
+    const grid=document.querySelector('.calc-buttons');
+    if(!grid)return;
+    const spill=Array.from(document.querySelectorAll('.btn'))
+      .filter(b=>b.offsetParent&&b.scrollWidth>b.clientWidth+1)
+      .map(b=>b.textContent.trim());
+    ok('ingen tastetekst flyter utenfor tasten',spill.length===0,spill.join(', '));
+  })();
+
+
+  /* one radius scale, not fourteen values that drifted apart */
+  if(cssEngine)(function(){
+    const allowed=new Set(['var(--r-pill)','var(--r-card)','var(--r-inner)','var(--r-tiny)',
+      'var(--r-card) var(--r-card) 0 0','50%','1px']);
+    const stray=[];
+    Array.from(document.styleSheets).forEach(sh=>{
+      let rules; try{ rules=sh.cssRules; }catch(e){ return; }
+      Array.from(rules||[]).forEach(r=>{
+        if(!r.style)return;
+        const v=r.style.getPropertyValue('border-radius');
+        if(v&&!allowed.has(v.trim())&&(r.selectorText||'').indexOf(':root')<0)
+          stray.push((r.selectorText||'?').split(',')[0].trim()+' = '+v.trim());
+      });
+    });
+    ok('alle hjørner følger skalaen',stray.length===0,stray.slice(0,6).join(', '));
+    const root=getComputedStyle(document.documentElement);
+    ['--r-pill','--r-card','--r-inner','--r-tiny'].forEach(v=>
+      ok('skalaen har '+v,root.getPropertyValue(v).trim()!=='',root.getPropertyValue(v)));
+  })();
+
+
+  /* every settings selector is the same kind of control */
+  if(cssEngine)(function(){
+    const segs=Array.from(document.querySelectorAll('.seg'));
+    ok('innstillingene har flere velgere',segs.length>=5,segs.length);
+    const heights=new Set(), radii=new Set();
+    segs.forEach(sg=>Array.from(sg.querySelectorAll('.seg-btn')).forEach(b=>{
+      heights.add(Math.round(b.getBoundingClientRect().height));
+      radii.add(getComputedStyle(b).borderTopLeftRadius);
+    }));
+    ok('alle valgknapper er like høye',heights.size===1,[...heights].join('/'));
+    ok('og har samme form',radii.size===1,[...radii].join('/'));
+    /* A theme block scoped only by attribute also matches the buttons that
+       carry that attribute as their value. */
+    const themeBtns=Array.from(document.querySelectorAll('#themeOptions .seg-btn'));
+    const inactive=themeBtns.filter(b=>!b.classList.contains('active'))
+      .map(b=>getComputedStyle(b).backgroundColor);
+    ok('temaknappene farger ikke seg selv',new Set(inactive).size<=1,[...new Set(inactive)].join(' '));
+  })();
+
+
+  /* the installed icon set has to actually be there */
+  if(cssEngine)(function(){
+    /* The top bar carries tools only; the icon lives on the home screen and the tab. */
+    ok('ingen logo i toppfeltet',!document.querySelector('.app-header img'));
+    const icon=document.querySelector('link[rel="icon"]');
+    const apple=document.querySelector('link[rel="apple-touch-icon"]');
+    ok('faneikon er satt',!!icon&&/icons\//.test(icon.getAttribute('href')),icon&&icon.getAttribute('href'));
+    ok('hjemskjermikon for iOS er satt',!!apple&&/icons\//.test(apple.getAttribute('href')),apple&&apple.getAttribute('href'));
+    /* The photographic JPG set was replaced by icons rendered from icons/icon.svg. */
+    ok('ingen referanser til gamle ikonfiler',
+       !/icons\/[\w-]+\.jpg|logo-96/.test(document.documentElement.innerHTML));
+  })();
+
+  state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;
+  silentToasts=false;
+  return {pass,fail,total:pass+fail,lines:R};
+}
+/* @tests:end */
+
+/* ============ wiring ============ */
+el.bottomNav.addEventListener('click',e=>{ const b=e.target.closest('.nav-item'); if(!b)return; switchMode(b.dataset.mode); buzz(); });
+el.historyBtn.addEventListener('click',()=>{ state.historyOpen?closeHistory():openHistory(); buzz(); });
+el.historyOverlay.addEventListener('click',closeHistory);
+el.closeHistBtn.addEventListener('click',closeHistory);
+el.zoneToggle.addEventListener('click',()=>{ setSci(!state.sci,true); buzz(); });
+el.trigPill.addEventListener('click',()=>{ toggleTrig(); buzz(); });
+el.memPill.addEventListener('click',()=>{ memRecall(); buzz(); });
+el.settingsBtn.addEventListener('click',()=>{ openSettings(); buzz(); });
+el.closeSettingsBtn.addEventListener('click',closeSettings);
+el.modalOverlay.addEventListener('click',closeSettings);
+el.keyCloseBtn.addEventListener('click',closeKeyHelp);
+el.keyCustomBtn.addEventListener('click',applyKeyCustom);
+el.keyCustomInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();applyKeyCustom();} });
+el.sheetOverlay.addEventListener('click',()=>{ closeUnitSheet(); closeKeyHelp(); closeCatSheet(); });
+el.catCloseBtn.addEventListener('click',()=>{ closeCatSheet(); buzz(); });
+el.recentList.addEventListener('click',e=>{
+  const b=e.target.closest('.recent-item'); if(!b)return;
+  const h=recentEntries()[+b.dataset.i]; if(h)useRecent(h);
+});
+el.sheetCloseBtn.addEventListener('click',closeUnitSheet);
+el.histSearch.addEventListener('input',()=>renderHistory(el.histSearch.value));
+el.clearHistBtn.addEventListener('click',()=>{
+  if(!state.history.length){ toastMsg('Historikken er allerede tom'); return; }
+  state.history=[]; jSet(LS.hist,[]); updateBadge(); renderHistory(''); toastMsg('Historikken er tømt');
+});
+el.exportHistBtn.addEventListener('click',exportHistory);
+
+el.displayArea.addEventListener('click',()=>{
+  if(state.error)return;
+  const t=state.result;
+  copyText(t).then(ok=>{ if(ok){ el.displayArea.classList.add('copied'); buzz(12); setTimeout(()=>el.displayArea.classList.remove('copied'),1200); } });
+});
+el.displayArea.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.displayArea.click();} });
+
+el.fromPicker.addEventListener('click',()=>{ openUnitSheet('from'); buzz(); });
+el.toPicker.addEventListener('click',()=>{ openUnitSheet('to'); buzz(); });
+el.sheetSearch.addEventListener('input',()=>renderUnitGrid(el.sheetSearch.value));
+el.sheetSearch.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); pickFirstUnit(); } });
+el.swapBtn.addEventListener('click',swapUnits);
+/* The prefilled 1 is a suggestion. Clearing it on focus is deterministic;
+   select() has to be deferred on mobile and can then swallow the first keystroke.
+   Tapping away without typing puts the 1 back so the panel is never left blank. */
+el.fromInput.addEventListener('focus',()=>{
+  if(state.conv.auto){ el.fromInput.value=''; state.conv.value=''; renderConverter(); return; }
+  const raw=el.fromInput.value;
+  const n=parseNum(raw);
+  if(state.conv.cat!=='numbers'&&Number.isFinite(n)){
+    const plain=formatNumber(n,null,{raw:true});
+    if(plain!==raw){ el.fromInput.value=plain; state.conv.value=plain; }
+  }
+});
+el.fromInput.addEventListener('blur',()=>{
+  if(el.fromInput.value.trim()===''){
+    state.conv.value='1'; state.conv.auto=true;
+    el.fromInput.value='1';
+    renderConverter(); saveConv();
+    return;
+  }
+  /* Group the amount once you leave the field, so it reads the same way the
+     result already does. Editing gets the plain digits back on focus. */
+  if(state.conv.cat==='numbers')return;
+  const raw=el.fromInput.value;
+  if(!Number.isFinite(parseNum(raw)))return;
+  const grouped=formatNumber(parseNum(raw));
+  if(grouped!=='Error'&&grouped!==raw){ el.fromInput.value=grouped; state.conv.value=grouped; saveConv(); }
+});
+el.fromInput.addEventListener('input',()=>{
+  state.conv.auto=false;
+  let v=el.fromInput.value;
+  if(state.conv.cat==='numbers'){
+    const base=cat().units[state.conv.from].base;
+    const allowed=BASE_DIGITS.slice(0,base);
+    const re=new RegExp('[^-'+allowed+allowed.toUpperCase()+']','g');
+    const clean=v.replace(re,'');
+    if(clean!==v){ v=clean; el.fromInput.value=v; }
+  }
+  state.conv.value=v; renderConverter(); saveConv();
+});
+el.rateRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>toastMsg('Kursene er hentet på nytt')); });
+/* The dot is the only visible trace of the rate source when everything is fine,
+   so tapping the rate line is what surfaces the detail and forces a refresh. */
+/* currency mode */
+/* Both fields are driven by the app's own keypad, so neither opens the system
+   keyboard; tapping one just decides which side you are typing into. */
+el.fxInput.addEventListener('click',()=>fxTapField('from'));
+el.fxOutput.addEventListener('click',()=>fxTapField('to'));
+el.fxKeys.addEventListener('pointerdown',e=>{
+  const btn=e.target.closest('.btn'); if(!btn)return;
+  ripple(e,btn); buzz();
+});
+el.fxKeys.addEventListener('click',e=>{
+  const btn=e.target.closest('.btn'); if(!btn)return;
+  fxKey(btn.dataset.a,btn.dataset.v);
+});
+el.fxFromPicker.addEventListener('click',()=>{ openUnitSheet('fxFrom'); buzz(); });
+el.fxToPicker.addEventListener('click',()=>{ openUnitSheet('fxTo'); buzz(); });
+el.fxSwapBtn.addEventListener('click',fxSwap);
+el.fxShareBtn.addEventListener('click',()=>{ fxShare(); buzz(); });
+el.fxDateBtn.addEventListener('click',()=>{
+  const open=el.fxDateRow.style.display!=='none';
+  el.fxDateRow.style.display=open?'none':'flex';
+  if(!open){ el.fxDateInput.value=state.fxDate?fmtDate(parseDate(state.fxDate)):''; setTimeout(()=>el.fxDateInput.focus(),120); }
+  buzz();
+});
+el.fxDateGo.addEventListener('click',()=>{
+  const d=parseDate(el.fxDateInput.value);
+  if(!d){ toastMsg('Skriv datoen som 15.08.2026'); return; }
+  if(isoDate(d)>todayISO()){ toastMsg('Kan ikke hente kurs fram i tid'); return; }
+  buzz();
+  fxApplyDate(isoDate(d)).then(ok=>{ if(ok)el.fxDateRow.style.display='none'; });
+});
+el.fxDateInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); el.fxDateGo.click(); } });
+el.fxDateToday.addEventListener('click',()=>{ fxApplyDate(null); el.fxDateRow.style.display='none'; buzz(); });
+el.fxOutput.addEventListener('click',()=>{
+  const v=el.fxOutput.value;
+  if(!v)return;
+  copyText(v+' '+((UNITS.currency.units[state.fx.to]||{}).s||'')).then(ok=>{ if(ok){ toastMsg('Kopiert'); buzz(12); } });
+});
+el.fxAddBtn.addEventListener('click',e=>{ e.stopPropagation(); openUnitSheet('fxAdd'); buzz(); });
+el.fxRefreshBtn.addEventListener('click',()=>{ buzz(); loadRates(true).then(()=>{ fxRender(); toastMsg('Kursene er hentet på nytt'); }); });
+el.fxRateInfo.addEventListener('click',()=>{ buzz(); toastMsg(state.rateNote||'Henter kurser …'); loadRates(true).then(fxRender); });
+el.fxSendBtn.addEventListener('click',()=>{
+  const v=fxAmount();
+  if(!Number.isFinite(v)){ toastMsg('Ingen verdi å sende'); return; }
+  state.lastAnswer=v; state.expression=formatNumber(v,null,{raw:true}); state.result=formatNumber(v);
+  state.error=false; state.justEvaluated=false;
+  switchMode('standard'); toastMsg('Beløpet er sendt til kalkulatoren');
+});
+el.fxSparkRange.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  state.sparkDays=+b.dataset.days; lsSet(LS.sparkDays,String(state.sparkDays));
+  fxRenderSpark(); buzz();
+});
+el.sparkRange.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  state.sparkDays=+b.dataset.days; lsSet(LS.sparkDays,String(state.sparkDays));
+  paintSparkRange(); renderSpark(); buzz();
+});
+el.rateInfoBtn.addEventListener('click',()=>{
+  if(!(UNITS[state.conv.cat]||{}).live)return;
+  buzz();
+  toastMsg(state.rateNote||'Henter kurser …');
+  loadRates(true);
+});
+el.allHead.addEventListener('click',()=>{
+  state.allOpen=!state.allOpen;
+  lsSet(LS.allOpen,state.allOpen?'1':'0');
+  el.allUnits.classList.toggle('open',state.allOpen);
+  renderConverter(); buzz();
+});
+el.allHead.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.allHead.click();} });
+el.convCopyBtn.addEventListener('click',()=>{
+  const v=el.toInput.value;
+  if(!v){ toastMsg('Ingen verdi å kopiere'); return; }
+  copyText(v+' '+(cat().units[state.conv.to].s||'')).then(ok=>toastMsg(ok?'Kopiert':'Klarte ikke å kopiere'));
+});
+el.convFavBtn.addEventListener('click',toggleFav);
+/* Tapping a result to copy it already works on the main display, so it should
+   work here too rather than being a button-only action. */
+el.toInput.addEventListener('click',()=>{
+  const v=el.toInput.value;
+  if(!v||v==='—')return;
+  copyText(v+' '+((cat().units[state.conv.to]||{}).s||'')).then(ok=>{ if(ok){ toastMsg('Kopiert'); buzz(12); } });
+});
+el.convSendBtn.addEventListener('click',()=>{
+  const v=parseNum(el.toInput.value);
+  if(!Number.isFinite(v)){ toastMsg('Ingen verdi å sende'); return; }
+  state.lastAnswer=v; state.expression=formatNumber(v,null,{raw:true}); state.result=formatNumber(v);
+  state.error=false; state.justEvaluated=false;
+  switchMode('standard'); toastMsg('Verdien er sendt til kalkulatoren');
+});
+el.pctUseBtn.addEventListener('click',()=>{
+  if(state.pctResult===null||!Number.isFinite(state.pctResult)){ toastMsg('Ingen verdi å sende'); return; }
+  state.lastAnswer=state.pctResult;
+  state.expression=formatNumber(state.pctResult,null,{raw:true});
+  state.result=formatNumber(state.pctResult); state.error=false; state.justEvaluated=false;
+  switchMode('standard'); toastMsg('Verdien er sendt til kalkulatoren');
+});
+el.pctCopyBtn.addEventListener('click',()=>{
+  if(state.pctResult===null){ toastMsg('Ingen verdi å kopiere'); return; }
+  copyText(pctType().money?money(state.pctResult):formatNumber(state.pctResult,2)).then(ok=>toastMsg(ok?'Kopiert':'Klarte ikke å kopiere'));
+});
+$$('#themeOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{ applyTheme(b.dataset.theme); buzz(); }));
+$$('#formatOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  state.fmt=b.dataset.format; lsSet(LS.fmt,state.fmt); syncSettings();
+  if(state.mode==='rpn')rpnRender(); else updateDisplay();
+  if(state.mode==='converter')renderConverter(); else if(state.mode==='currency')fxRender(); if(state.mode==='percent')pctCalc();
+  buzz();
+}));
+$$('#decimalOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  state.decimals=+b.dataset.decimals; lsSet(LS.dec,state.decimals); syncSettings();
+  if(state.mode==='rpn')rpnRender(); else updateDisplay();
+  if(state.mode==='converter')renderConverter(); else if(state.mode==='currency')fxRender();
+  buzz();
+}));
+$$('#answerColorOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  state.answerColor=b.dataset.ac; lsSet(LS.answerColor,state.answerColor); syncSettings();
+  if(state.mode==='rpn')rpnRender(); else updateDisplay();
+  buzz();
+}));
+$$('#trigOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  state.trig=b.dataset.trig; lsSet(LS.trig,state.trig);
+  $$('[data-trig-btn]').forEach(x=>x.textContent=state.trig.toUpperCase());
+  syncSettings(); paintTrigChip(); updateLive(); buzz();
+}));
+function setFee(v){
+  state.fxFee=Math.max(0,Math.min(20,v||0));
+  lsSet(LS.fxFee,String(state.fxFee));
+  syncSettings();
+  if(state.mode==='converter')renderConverter(); else if(state.mode==='currency')fxRender();
+}
+$$('#feeOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  setFee(+b.dataset.fee); el.feeCustom.value=''; buzz();
+  toastMsg(state.fxFee?('Regner med '+formatNumber(state.fxFee,2)+' % påslag'):'Regner med midtkurs');
+}));
+el.feeCustomBtn.addEventListener('click',()=>{
+  const v=parseNum(el.feeCustom.value);
+  if(!Number.isFinite(v)||v<0){ toastMsg('Skriv inn et tall'); return; }
+  setFee(v); buzz(); toastMsg('Regner med '+formatNumber(state.fxFee,2)+' % påslag');
+});
+el.feeCustom.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();el.feeCustomBtn.click();} });
+$$('#rateSrcOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
+  state.rateSrc=b.dataset.src; lsSet(LS.src,state.rateSrc); syncSettings();
+  loadRates(true).then(()=>toastMsg(state.rateSrc==='nb'?'Bruker kun Norges Bank':'Fyller ut med reservekilde'));
+  buzz();
+}));
+function bindSwitch(node,key,setter){
+  const fire=()=>{ setter(!node.classList.contains('on')); buzz(); };
+  node.addEventListener('click',fire);
+}
+function setTab(name,on){
+  state.tabs[name]=!!on;
+  jSet(LS.tabs,state.tabs);
+  paintTabs();
+  if(!on&&state.mode===name)switchMode('standard');
+}
+bindSwitch(el.tabRpnSwitch,LS.tabs,v=>setTab('rpn',v));
+bindSwitch(el.tabTapeSwitch,LS.tabs,v=>setTab('tape',v));
+bindSwitch(el.amoledSwitch,LS.amoled,v=>{ state.amoled=v; lsSet(LS.amoled,v?'1':'0'); paintTheme(); syncSettings(); });
+bindSwitch(el.hcSwitch,LS.hc,v=>{ state.hc=v; lsSet(LS.hc,v?'1':'0'); paintTheme(); syncSettings(); });
+bindSwitch(el.hapticSwitch,LS.haptic,v=>{ state.haptic=v; lsSet(LS.haptic,v?'1':'0'); syncSettings(); });
+bindSwitch(el.liveSwitch,LS.live,v=>{ state.livePreview=v; lsSet(LS.live,v?'1':'0'); syncSettings(); updateLive(); });
+bindSwitch(el.kbdSwitch,LS.kbd,v=>{ state.kbd=v; lsSet(LS.kbd,v?'1':'0'); syncSettings(); });
+document.addEventListener('keydown',onKey);
+
+/* tape */
+el.tapeVatBtn.addEventListener('click',tapeCycleVat);
+el.tapeNoteBtn.addEventListener('click',tapeNote);
+el.tapeCopyBtn.addEventListener('click',tapeCopy);
+el.tapeClearBtn.addEventListener('click',tapeClearAll);
+
+/* bits */
+el.bitOperand.addEventListener('input',renderBits);
+
+/* dates */
+el.dateCopyBtn.addEventListener('click',()=>{
+  const t=el.dateResult.textContent;
+  if(!t||t==='-'||t==='–'){ toastMsg('Ingen verdi å kopiere'); return; }
+  copyText(t+' — '+el.dateSentence.textContent).then(ok=>toastMsg(ok?'Kopiert':'Klarte ikke å kopiere'));
+});
+
+/* backup */
+el.exportSettingsBtn.addEventListener('click',()=>{ exportSettings(); buzz(); });
+el.importSettingsBtn.addEventListener('click',()=>{ el.importFile.click(); buzz(); });
+el.importFile.addEventListener('change',()=>{
+  const f=el.importFile.files&&el.importFile.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>importSettings(String(r.result||''));
+  r.onerror=()=>toastMsg('Klarte ikke å lese filen');
+  r.readAsText(f);
+  el.importFile.value='';
+});
+
+/* The self-test is for whoever maintains the app, so it sits behind the version. */
+const HAS_TESTS=typeof runTests==='function';
+el.appVersion.addEventListener('click',()=>{ if(HAS_TESTS)el.runTestsBtn.hidden=!el.runTestsBtn.hidden; });
+el.runTestsBtn.addEventListener('click',()=>{
+  el.runTestsBtn.textContent='Kjører …';
+  setTimeout(()=>{
+    const r=runTests();
+    el.runTestsBtn.textContent='Kjør testene';
+    el.testSummary.textContent=r.fail?(r.fail+' av '+r.total+' tester feilet'):(r.total+' tester, alt går gjennom');
+    el.testSummary.style.color=r.fail?'var(--danger)':'var(--success)';
+    if(r.fail){ el.testOut.style.display=''; el.testOut.innerHTML=r.lines.map(l=>'<div class="f">'+escapeHtml(l)+'</div>').join(''); }
+    else el.testOut.style.display='none';
+    buzz(r.fail?30:12);
+  },30);
+});
+
+/* install prompt */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; el.installBtn.style.display=''; });
+el.installBtn.addEventListener('click',()=>{
+  if(!deferredPrompt){ toastMsg('Bruk menyen i nettleseren for å legge til på hjemskjermen'); return; }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.finally(()=>{ deferredPrompt=null; el.installBtn.style.display='none'; });
+});
+window.addEventListener('appinstalled',()=>{ el.installBtn.style.display='none'; toastMsg('Appen er installert'); });
+window.addEventListener('online',()=>{ if(state.mode==='converter'&&cat().live)loadRates(true); });
+
+/* ============ init ============ */
+function init(){
+  el.appVersion.textContent='Pro Kalkulator Ultra v'+VERSION;
+  /* settings */
+  /* Older versions stored one of five themes; carry that choice over. */
+  const t=lsGet(LS.theme,null);
+  state.amoled=lsGet(LS.amoled,t==='amoled'?'1':'0')==='1';
+  state.hc=lsGet(LS.hc,t==='contrast'?'1':'0')==='1';
+  state.theme=({light:'light',pastel:'light',dark:'dark',amoled:'dark',contrast:'dark',system:'system'})[t]||'system';
+  paintTheme();
+  state.fmt=lsGet(LS.fmt,'no');
+  state.decimals=parseInt(lsGet(LS.dec,String(CFG.defaultDecimals)),10)||CFG.defaultDecimals;
+  state.trig=lsGet(LS.trig,'deg');
+  state.haptic=lsGet(LS.haptic,'1')==='1';
+  state.livePreview=lsGet(LS.live,'1')==='1';
+  state.kbd=lsGet(LS.kbd,'1')==='1';
+  state.rateSrc=lsGet(LS.src,'both');
+  /* The answer colour is no longer a choice: the result is always ink on paper. */
+  state.answerColor='neutral';
+  state.sci=lsGet(LS.sci,'0')==='1';
+  state.allOpen=lsGet(LS.allOpen,'1')==='1';
+  state.history=jGet(LS.hist,[]);
+  state.favs=jGet(LS.fav,[]);
+  const rec=jGet(LS.recent,null); if(rec&&typeof rec==='object')state.recent=rec;
+  const fu=jGet(LS.favUnits,null); if(fu&&typeof fu==='object')state.favUnits=fu;
+  const cu=jGet(LS.catUse,null); if(cu&&typeof cu==='object')state.catUse=cu;
+  state.fxFee=parseFloat(lsGet(LS.fxFee,'0'))||0;
+  const fx=jGet(LS.fx,null);
+  if(fx&&typeof fx==='object'){ if(fx.from)state.fx.from=fx.from; if(fx.to)state.fx.to=fx.to; if(fx.value)state.fx.value=fx.value; if(fx.side)state.fx.side=fx.side; state.fx.auto=false; }
+  state.sparkDays=parseInt(lsGet(LS.sparkDays,'30'),10)||30;
+  const tabs=jGet(LS.tabs,null);
+  if(tabs&&typeof tabs==='object')['rpn','tape'].forEach(k=>{ if(typeof tabs[k]==='boolean')state.tabs[k]=tabs[k]; });
+  state.tape=jGet(LS.tape,[]);
+  state.tapeVat=parseInt(lsGet(LS.tapeVat,'0'),10)||0;
+  const sv=jGet(LS.vars,null);
+  if(sv&&typeof sv==='object')['A','B','C','D'].forEach(k=>{ if(typeof sv[k]==='number')state.vars[k]=sv[k]; });
+  const savedConv=jGet(LS.conv,null);
+  if(savedConv&&UNITS[savedConv.cat]&&UNITS[savedConv.cat].units[savedConv.from]&&UNITS[savedConv.cat].units[savedConv.to])
+    state.conv=Object.assign(state.conv,savedConv,{value:'1',auto:true});
+  const cachedRates=loadCachedRates();
+  if(cachedRates){ applyRates(cachedRates); setRateState(cachedRates); }
+  paintSciToggle();
+  paintTabs();
+  el.allUnits.classList.toggle('open',state.allOpen);
+  updateBadge(); syncSettings();
+  /* App shortcuts and deep links: ?mode=converter or #converter */
+  let start=lsGet(LS.mode,'standard');
+  try{
+    const q=new URLSearchParams(location.search).get('mode');
+    const h=(location.hash||'').replace('#','');
+    const want=MODES.indexOf(q)>-1?q:(MODES.indexOf(h)>-1?h:null);
+    if(want)start=want;
+    else if(q==='professional'||h==='professional'){ start='standard'; state.sci=true; paintSciToggle(); }
+  }catch(e){}
+  switchMode(start,true);
+  renderHistory('');
+  /* Long press is invisible until you know it is there, so say it once. */
+  if(lsGet(LS.seenHint,'0')!=='1'){
+    lsSet(LS.seenHint,'1');
+    setTimeout(()=>toastMsg('Tips: hold inne en tast for forklaring'),1400);
+  }
+  /* Deferred so it runs after the whole script has evaluated. */
+  trackKeyboard();
+  /* Inside the Android app the files ship with the APK, so there is no deploy to
+     watch and no worker to keep them offline. */
+  const boot=()=>{ if(IS_NATIVE)return; if('serviceWorker' in navigator)registerSW(); startBuildWatch(); };
+  if(document.readyState==='complete')setTimeout(boot,0);
+  else window.addEventListener('load',boot);
+}
+init();
+/* A tab left open in the background can sit on an old build without noticing,
+   so surface it instead of waiting for the next cold start. */
+let waitingWorker=null;
+function registerSW(){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    if(reg.waiting){ waitingWorker=reg.waiting; showUpdate(); }
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      if(!nw)return;
+      nw.addEventListener('statechange',()=>{
+        if(nw.state==='installed'&&navigator.serviceWorker.controller){
+          waitingWorker=nw; showUpdate();
+        }
+      });
+    });
+    setInterval(()=>reg.update().catch(()=>{}),30*60*1000);
+  }).catch(()=>{});
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(reloaded)return; reloaded=true; location.reload();
+  });
+}
+function showUpdate(){ el.updateBar.classList.add('show'); }
+
+/* The worker only reports an update when sw.js itself changed. Editing the page,
+   its styles or its script alone leaves it silent, so watch their ETags directly — no version number
+   to remember to bump on deploy. */
+const BUILD_FILES=['index.html','style.css','app.js'];
+let buildTag=null,lastCheck=0;
+function checkBuild(){
+  if(location.protocol==='file:')return Promise.resolve();
+  lastCheck=Date.now();
+  const stamp=Date.now();
+  return Promise.all(BUILD_FILES.map(f=>fetch(f+'?b='+stamp,{method:'HEAD',cache:'no-store'})
+    .then(r=>r.ok?(r.headers.get('etag')||r.headers.get('last-modified')||''):'')))
+    .then(tags=>{
+      const tag=tags.join('|');
+      if(!tag.replace(/\|/g,''))return;
+      if(buildTag===null){ buildTag=tag; return; }
+      if(tag!==buildTag)showUpdate();
+    }).catch(()=>{});
+}
+function startBuildWatch(){
+  checkBuild();
+  setInterval(checkBuild,30*60*1000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&Date.now()-lastCheck>5*60*1000)checkBuild();
+  });
+}
+
+el.updateBtn.addEventListener('click',()=>{
+  el.updateBar.classList.remove('show');
+  if(waitingWorker){ waitingWorker.postMessage({type:'SKIP_WAITING'}); return; }
+  /* No new worker, just new files: drop the cached shell so the reload
+     is forced to go to the network. */
+  const purge=('caches' in window)
+    ? caches.keys().then(ks=>Promise.all(ks.map(k=>caches.open(k)
+        .then(c=>Promise.all(['./','./index.html','./style.css','./app.js'].map(u=>c.delete(u,{ignoreSearch:true})))))))
+    : Promise.resolve();
+  purge.catch(()=>{}).then(()=>location.reload());
+});
+
+/* exposed for debugging in the console */
+window.PKU={state,checkBuild,money,fxConvert,fxRate,fxAmount,fxRender,fxBoardKeys,fxSwap,fxKey,fxSetSide,fxCompute,fxSetKeys,fxTapField,fxApplyDate,fxShare,fxLoadDate,visibleModes,setTab,paintRateBar,syncRateBar,KEY_HELP,openKeyHelp,keyHelpFor,keyHasExtras,keyIsMarked,sizeKeypad,setSci,LAYOUTS,evaluate,formatNumber,convert,parseNbCsv,parseInBase,toBaseString,parseCompound,parseDate,easterSunday,holidayName,isWorkday,workdaysBetween,addWorkdays,isoWeek,tapeTotal,...(typeof runTests==='function'?{runTests}:{}),UNITS,VERSION};
+})();

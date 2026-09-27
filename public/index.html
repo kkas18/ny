@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta id="metaTheme" name="theme-color" content="#11151c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kalkulator">
+<meta name="description" content="Profesjonell norsk kalkulator med vitenskapelig modus, RPN, prosent og MVA, og enhetskonvertering med offisielle kurser fra Norges Bank.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Pro Kalkulator Ultra</title>
+<link rel="preload" href="fonts/schibsted-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-mode="standard">
+<header class="app-header">
+  <button class="header-btn" id="historyBtn" aria-label="Åpne historikk"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><polyline points="3.5 4 3.5 8.5 8 8.5"/><polyline points="12 7.5 12 12 15 13.8"/></svg><span class="badge" id="historyBadge" style="display:none">0</span></button>
+  <div class="header-actions">
+    <button class="header-pill" id="memPill" style="display:none" aria-label="Hent fra minnet">M<span class="pv" id="memValue"></span></button>
+    <button class="header-pill" id="trigPill" style="display:none" aria-label="Bytt mellom grader og radianer">Grader</button>
+    <button class="header-btn" id="settingsBtn" aria-label="Åpne innstillinger"><svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7"/><circle cx="9" cy="7" r="2.5"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="15" cy="12" r="2.5"/><line x1="5" y1="17" x2="19" y2="17"/><circle cx="7" cy="17" r="2.5"/></svg></button>
+  </div>
+</header>
+
+<main class="main-content" id="mainContent">
+  <ol class="recent" id="recentList" aria-label="Siste utregninger"></ol>
+  <div class="display-area" id="displayArea" role="button" tabindex="0" aria-label="Trykk for å kopiere resultatet">
+    <div class="display-chips">
+      <span class="spacer"></span>
+      <span class="live-result" id="liveResult"></span>
+    </div>
+    <div class="rpn-stack" id="rpnStack" style="display:none"></div>
+    <div class="expression" id="expressionDisplay"><span></span></div>
+    <div class="result" id="resultDisplay" aria-live="polite"><span>0</span></div>
+  </div>
+
+  <div class="buttons-container" id="buttonsContainer">
+    <button class="zone-toggle" id="zoneToggle" aria-expanded="false" aria-label="Vis funksjoner">
+      <span id="zoneToggleLabel">f(x)</span>
+    </button>
+  </div>
+
+
+  <!-- TAPE -->
+  <div class="tape-panel" id="tapePanel" style="display:none">
+    <div class="tape-toolbar">
+      <button class="pill-btn" id="tapeVatBtn"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span id="tapeVatLabel">MVA av</span></button>
+      <button class="pill-btn" id="tapeNoteBtn"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M6 16l10-10 3 3-10 10H6z"/></svg>Merk linje</button>
+      <button class="pill-btn" id="tapeCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier</button>
+      <button class="pill-btn" id="tapeClearBtn"><svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>Tøm</button>
+    </div>
+    <div class="tape-list" id="tapeList"></div>
+    <div class="tape-foot">
+      <div class="tape-sum"><span class="lbl" id="tapeSumLabel">Sum</span><span class="val" id="tapeSum">0</span></div>
+      <div class="tape-split" id="tapeSplit" style="display:none"></div>
+    </div>
+    <div class="tape-entry">
+      <span class="cur is-blank" id="tapeCur">0</span>
+      <span class="prev" id="tapePrev"></span>
+    </div>
+  </div>
+
+  <!-- PROSENT -->
+  <div class="panel" id="percentPanel" style="display:none">
+    <div class="chips" id="pctChips"></div>
+    <div class="field-grid" id="pctFields"></div>
+    <div class="pair-card to">
+      <span class="pair-legend">Resultat</span>
+      <div class="pct-result-value" id="pctResult">–</div>
+      <div class="pct-sentence" id="pctSentence">Fyll inn feltene over.</div>
+      <div class="breakdown" id="pctBreakdown" style="display:none"></div>
+    </div>
+    <div class="chips fx-actions">
+      <button class="chip" id="pctCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Kopier</span></button>
+      <button class="chip" id="pctUseBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg><span>Til kalkulator</span></button>
+    </div>
+  </div>
+
+  <!-- VALUTA -->
+  <div class="panel" id="currencyPanel" style="display:none">
+    <div class="rate-bar" id="fxRateBar" style="display:none">
+      <span class="rate-dot" id="fxRateDot"></span>
+      <span id="fxRateText">Henter kurser …</span>
+      <button class="rate-refresh" id="fxRefreshBtn" aria-label="Hent kurser på nytt"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+    </div>
+    <div class="pair">
+      <div class="pair-card">
+        <span class="pair-legend">Fra</span>
+        <div class="pair-row">
+          <span class="pair-amount"><span class="pair-affix" id="fxFromAffix"></span><input type="text" class="pair-input" id="fxInput" placeholder="0" readonly inputmode="none" autocomplete="off" aria-label="Beløp"></span>
+          <button class="pair-picker" id="fxFromPicker" aria-label="Velg valuta du regner fra">
+            <img class="pf" id="fxFromFlag" alt="">
+            <span class="pc" id="fxFromSymbol">NOK</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="pair-swap" id="fxSwapBtn" aria-label="Bytt om valutaene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
+      <div class="pair-card to">
+        <span class="pair-legend">Til</span>
+        <div class="pair-row">
+          <span class="pair-amount"><span class="pair-affix" id="fxToAffix"></span><input type="text" class="pair-input readonly" id="fxOutput" placeholder="0" readonly inputmode="none" aria-label="Beløp i valutaen du regner til"></span>
+          <button class="pair-picker" id="fxToPicker" aria-label="Velg valuta du regner til">
+            <img class="pf" id="fxToFlag" alt="">
+            <span class="pc" id="fxToSymbol">USD</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button class="pair-rate" id="fxRateInfo" aria-label="Om kursen">
+      <span class="rate-dot mini" id="fxDotMini"></span>
+      <span class="conv-rate" id="fxRate"></span>
+    </button>
+    <div class="conv-notes"><span id="fxNote"></span></div>
+    <span id="fxFromName" hidden></span><span id="fxToName" hidden></span>
+    <div class="chips fx-actions">
+      <button class="chip" id="fxDateBtn"><svg viewBox="0 0 24 24"><rect x="3.4" y="5" width="17.2" height="16" rx="2"/><line x1="3.4" y1="10" x2="20.6" y2="10"/><line x1="8.2" y1="2.8" x2="8.2" y2="7"/><line x1="15.8" y1="2.8" x2="15.8" y2="7"/></svg><span id="fxDateLabel">I dag</span></button>
+      <button class="chip" id="fxShareBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Kopier</span></button>
+      <button class="chip" id="fxSendBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg><span>Til kalkulator</span></button>
+    </div>
+    <div class="date-row" id="fxDateRow" style="display:none">
+      <input type="text" class="date-input" id="fxDateInput" placeholder="15.08.2026" autocomplete="off" aria-label="Kursdato">
+      <button class="pill-btn" id="fxDateGo">Hent</button>
+      <button class="pill-btn" id="fxDateToday">I dag</button>
+    </div>
+    <div class="all-units open" id="fxBoard">
+      <div class="all-head"><span class="card-label">Mine valutaer</span><span class="fx-hint" id="fxBoardHint" hidden></span><button class="text-btn" id="fxAddBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Legg til</button></div>
+      <div class="all-body" id="fxBoardBody"></div>
+    </div>
+    <div class="spark-card" id="fxSparkCard" style="display:none">
+      <div class="spark-head"><span class="spark-title" id="fxSparkTitle"></span><span class="spark-change" id="fxSparkChange"></span></div>
+      <div class="mini-seg" id="fxSparkRange"><button data-days="7">7 d</button><button data-days="30">30 d</button><button data-days="90">90 d</button></div>
+      <svg class="spark-svg" id="fxSparkSvg" viewBox="0 0 300 52" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="spark-foot"><span id="fxSparkFrom"></span><span id="fxSparkTo"></span></div>
+      <div class="spark-foot"><span id="fxSparkLow"></span><span id="fxSparkHigh"></span></div>
+    </div>
+  </div>
+
+  <div class="buttons-container fx-keys" id="fxKeys" style="display:none"></div>
+
+  <!-- KONVERTER -->
+  <div class="panel" id="converterPanel" style="display:none">
+    <div class="chips" id="catChips"></div>
+    <div id="convStandard">
+    <div class="rate-bar" id="rateBar" style="display:none">
+      <span class="rate-dot" id="rateDot"></span>
+      <span id="rateText">Henter kurser …</span>
+      <button class="rate-refresh" id="rateRefreshBtn" aria-label="Hent kurser på nytt"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+    </div>
+    <div class="pair">
+      <div class="pair-card">
+        <span class="pair-legend">Fra</span>
+        <div class="pair-row">
+          <span class="pair-amount"><input type="text" class="pair-input" id="fromInput" placeholder="0" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Verdi å konvertere"></span>
+          <button class="pair-picker" id="fromPicker" aria-label="Velg fra-enhet">
+            <img class="pf" id="fromFlag" alt="" style="display:none">
+            <span class="pc" id="fromSymbol">m</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div class="pair-sub" id="fromName">Meter</div>
+      </div>
+      <button class="pair-swap" id="swapBtn" aria-label="Bytt om enhetene"><svg viewBox="0 0 24 24"><line x1="8" y1="20" x2="8" y2="5"/><polyline points="4.5 8.5 8 5 11.5 8.5"/><line x1="16" y1="4" x2="16" y2="19"/><polyline points="12.5 15.5 16 19 19.5 15.5"/></svg></button>
+      <div class="pair-card to">
+        <span class="pair-legend">Til</span>
+        <div class="pair-row">
+          <span class="pair-amount"><input type="text" class="pair-input readonly" id="toInput" placeholder="—" readonly aria-label="Resultat"></span>
+          <button class="pair-picker" id="toPicker" aria-label="Velg til-enhet">
+            <img class="pf" id="toFlag" alt="" style="display:none">
+            <span class="pc" id="toSymbol">km</span>
+            <svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <div class="pair-sub" id="toName">Kilometer</div>
+      </div>
+    </div>
+    <button class="pair-rate" id="rateInfoBtn" aria-label="Om kursen">
+      <span class="rate-dot mini" id="rateDotMini" style="display:none"></span>
+      <span class="conv-rate" id="convRate"></span>
+    </button>
+    <div class="conv-notes"><span id="fromHint"></span><span id="toHint"></span></div>
+    <div class="row">
+      <button class="pill-btn" id="convCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier</button>
+      <button class="pill-btn" id="convFavBtn" aria-pressed="false"><svg viewBox="0 0 24 24"><polygon id="convFavStar" fill="none" points="12 3 15 9.5 22 10.3 17 15 18.3 22 12 18.7 5.7 22 7 15 2 10.3 9 9.5"/></svg><span id="convFavLabel">Lagre par</span></button>
+      <button class="pill-btn" id="convSendBtn"><svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>Til kalkulator</button>
+    </div>
+    <div class="chips" id="favChips" style="display:none"></div>
+    <div class="spark-card" id="sparkCard" style="display:none">
+      <div class="spark-head"><span class="spark-title" id="sparkTitle">Siste noteringer</span><span class="spark-change" id="sparkChange"></span></div>
+      <div class="mini-seg" id="sparkRange">
+        <button data-days="7">7 d</button><button data-days="30">30 d</button><button data-days="90">90 d</button>
+      </div>
+      <svg class="spark-svg" id="sparkSvg" viewBox="0 0 300 52" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="spark-foot"><span id="sparkFrom"></span><span id="sparkTo"></span></div>
+      <div class="spark-foot"><span id="sparkLow"></span><span id="sparkHigh"></span></div>
+    </div>
+    <div class="all-units" id="allUnits">
+      <div class="all-head" id="allHead" role="button" tabindex="0"><span class="card-label">Alle enheter</span><svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="all-body" id="allBody"></div>
+    </div>
+    <div class="bit-card" id="bitCard" style="display:none">
+      <div class="card-header"><span class="card-label">Bitvis</span><span class="hint" id="bitWidthHint" style="margin:0">32 bit</span></div>
+      <div class="bit-grid" id="bitGrid"></div>
+      <div class="bit-ops" id="bitOps"></div>
+      <div class="bit-operand" id="bitOperandRow">
+        <input type="text" id="bitOperand" placeholder="Andre verdi" autocomplete="off" aria-label="Andre verdi">
+      </div>
+      <div class="bit-result" id="bitResult"></div>
+    </div>
+    </div>
+
+    <div id="convDates" style="display:none">
+      <div class="chips" id="dateChips"></div>
+      <div class="field-grid" id="dateFields"></div>
+      <div class="card">
+        <div class="card-header"><span class="card-label">Resultat</span>
+          <button class="pill-btn" id="dateCopyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier</button>
+        </div>
+        <div class="pct-result-value" id="dateResult">-</div>
+        <div class="pct-sentence" id="dateSentence">Fyll inn feltene over.</div>
+        <div class="breakdown" id="dateBreakdown" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-item active" data-mode="standard" aria-current="page"><span class="nav-label">Regn</span></button>
+  <button class="nav-item" data-mode="rpn"><span class="nav-label">RPN</span></button>
+  <button class="nav-item" data-mode="tape"><span class="nav-label">Tape</span></button>
+  <button class="nav-item" data-mode="percent"><span class="nav-label">Prosent</span></button>
+  <button class="nav-item" data-mode="currency"><span class="nav-label">Valuta</span></button>
+  <button class="nav-item" data-mode="converter"><span class="nav-label">Enheter</span></button>
+</nav>
+
+<div class="overlay" id="historyOverlay"></div>
+<aside class="history-drawer" id="historyDrawer" role="dialog" aria-modal="true" aria-label="Historikk" tabindex="-1">
+  <div class="drawer-head"><span class="title">Historikk</span>
+    <button class="text-btn" id="closeHistBtn">Lukk</button>
+  </div>
+  <div class="search-wrap"><input type="search" id="histSearch" placeholder="Søk i historikken" autocomplete="off" aria-label="Søk i historikken"></div>
+  <div class="drawer-tools">
+    <button class="pill-btn" id="exportHistBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier alle</button>
+    <button class="pill-btn danger" id="clearHistBtn"><svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>Tøm</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</aside>
+
+<div class="overlay" id="sheetOverlay"></div>
+<div class="sheet" id="unitSheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Velg enhet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span id="sheetTitle">Velg enhet</span><button class="text-btn" id="sheetCloseBtn">Lukk</button></div>
+  <div class="search-wrap" id="sheetSearchWrap" style="display:none"><input type="search" id="sheetSearch" placeholder="Søk etter enhet eller valuta" autocomplete="off" aria-label="Søk etter enhet eller valuta"></div>
+  <div class="sheet-body"><div class="unit-grid" id="unitGrid"></div></div>
+</div>
+
+<div class="sheet" id="settingsSheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Innstillinger">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span>Innstillinger</span><button class="text-btn" id="closeSettingsBtn">Lukk</button></div>
+  <div class="sheet-body">
+    <h3 class="settings-group">Utseende</h3>
+    <section class="settings-section">
+      <div class="settings-label">Tema</div>
+      <div class="seg" id="themeOptions">
+        <button class="seg-btn" data-theme="system">System</button><button class="seg-btn" data-theme="light">Lys</button><button class="seg-btn" data-theme="dark">Mørk</button>
+      </div>
+      <div class="toggle-row"><div><div class="tl" id="swamoledSwitch">Helt svart</div><div class="td">Ren svart bakgrunn i mørkt tema. Sparer strøm på OLED-skjermer.</div></div><button type="button" class="switch" id="amoledSwitch" role="switch" aria-checked="false" aria-labelledby="swamoledSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swhcSwitch">Høy kontrast</div><div class="td">Hvit tekst på svart med tydelige kanter på tastene.</div></div><button type="button" class="switch" id="hcSwitch" role="switch" aria-checked="false" aria-labelledby="swhcSwitch"></button></div>
+    </section>
+    <h3 class="settings-group">Tall</h3>
+    <section class="settings-section">
+      <div class="settings-label">Tallformat</div>
+      <div class="seg seg-3" id="formatOptions">
+        <button class="seg-btn" data-format="no">1 234,56</button><button class="seg-btn" data-format="en">1,234.56</button><button class="seg-btn" data-format="plain">1234.56</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <div class="settings-label">Maks desimaler</div>
+      <div class="seg seg-5" id="decimalOptions">
+        <button class="seg-btn" data-decimals="2">2</button><button class="seg-btn" data-decimals="4">4</button>
+        <button class="seg-btn" data-decimals="6">6</button><button class="seg-btn" data-decimals="8">8</button>
+        <button class="seg-btn" data-decimals="10">10</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <div class="settings-label">Vinkelmåte</div>
+      <div class="seg seg-2" id="trigOptions"><button class="seg-btn" data-trig="deg">Grader</button><button class="seg-btn" data-trig="rad">Radianer</button></div>
+    </section>
+    <h3 class="settings-group">Bruk</h3>
+    <section class="settings-section">
+      <div class="settings-label">Faner</div>
+      <p class="settings-note">RPN og Tape kan skjules fra fanelinjen. Innholdet blir liggende.</p>
+      <div class="toggle-row"><div><div class="tl" id="swtabRpnSwitch">RPN</div><div class="td">Omvendt polsk notasjon: du taster tallene først og operatoren til slutt, uten parenteser.</div></div><button type="button" class="switch" id="tabRpnSwitch" role="switch" aria-checked="false" aria-labelledby="swtabRpnSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swtabTapeSwitch">Tape</div><div class="td">En kvitteringsstrimmel der hver linje står igjen og summeres, med MVA-splitt.</div></div><button type="button" class="switch" id="tabTapeSwitch" role="switch" aria-checked="false" aria-labelledby="swtabTapeSwitch"></button></div>
+    </section>
+    <section class="settings-section">
+      <div class="settings-label">Tastatur og svar</div>
+      <div class="toggle-row"><div><div class="tl" id="swhapticSwitch">Vibrasjon</div><div class="td">Kort haptisk puls når du trykker på en tast.</div></div><button type="button" class="switch" id="hapticSwitch" role="switch" aria-checked="false" aria-labelledby="swhapticSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swliveSwitch">Forhåndsvis svaret</div><div class="td">Viser resultatet mens du skriver uttrykket.</div></div><button type="button" class="switch" id="liveSwitch" role="switch" aria-checked="false" aria-labelledby="swliveSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swkbdSwitch">Tastaturstøtte</div><div class="td">Regn med fysisk tastatur. Esc tømmer, Enter regner ut.</div></div><button type="button" class="switch" id="kbdSwitch" role="switch" aria-checked="false" aria-labelledby="swkbdSwitch"></button></div>
+    </section>
+    <h3 class="settings-group">Valuta</h3>
+    <section class="settings-section">
+      <div class="settings-label">Kilde for kurser</div>
+      <p class="settings-note">Norges Bank noterer midtkurs hver virkedag kl. 14.15. Utfylling henter valutaer de ikke noterer.</p>
+      <div class="seg seg-2" id="rateSrcOptions"><button class="seg-btn" data-src="nb">Norges Bank</button><button class="seg-btn" data-src="both">NB + utfylling</button></div>
+    </section>
+    <section class="settings-section">
+      <div class="settings-label">Vekslingsgebyr</div>
+      <p class="settings-note">Kort og vekslingskontor legger vanligvis 1,5–2 % på midtkursen. Påslaget vises i kurssetningen.</p>
+      <div class="seg seg-4" id="feeOptions">
+        <button class="seg-btn" data-fee="0">Av</button><button class="seg-btn" data-fee="1.5">1,5 %</button>
+        <button class="seg-btn" data-fee="1.75">1,75 %</button><button class="seg-btn" data-fee="2">2 %</button>
+      </div>
+      <div class="custom-row" style="margin-top:7px">
+        <input type="text" id="feeCustom" inputmode="decimal" autocomplete="off" placeholder="Eget påslag i prosent" aria-label="Eget påslag i prosent">
+        <button id="feeCustomBtn">Bruk</button>
+      </div>
+    </section>
+    <h3 class="settings-group">Om appen</h3>
+    <section class="settings-section">
+      <button class="action-btn" id="installBtn" style="display:none;margin-top:0">Installer på hjemskjermen</button>
+      <div class="io-row">
+        <button class="action-btn" id="exportSettingsBtn">Lagre sikkerhetskopi</button>
+        <button class="action-btn" id="importSettingsBtn">Hent inn kopi</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      <button class="action-btn quiet" id="runTestsBtn" hidden>Kjør testene</button>
+      <button type="button" class="version-btn" id="appVersion" aria-label="Versjon. Trykk for å vise testene"></button>
+      <div class="hint" id="testSummary" style="text-align:center"></div>
+      <div class="test-out" id="testOut" style="display:none"></div>
+    </section>
+  </div>
+</div>
+
+<div class="sheet" id="catSheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Alle kategorier">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span>Kategorier</span><button class="text-btn" id="catCloseBtn">Lukk</button></div>
+  <div class="sheet-body"><div class="cat-grid" id="catGrid"></div></div>
+</div>
+
+<div class="overlay" id="modalOverlay"></div>
+<div class="sheet" id="keySheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Om tasten">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span>Om tasten</span><button class="text-btn" id="keyCloseBtn">Lukk</button></div>
+  <div class="sheet-body">
+    <div class="key-hero">
+      <span class="key-glyph" id="keyGlyph"></span>
+      <div><div class="key-name" id="keyName"></div><div class="key-desc" id="keyDesc"></div></div>
+    </div>
+    <div class="ex" id="keyExample" style="display:none"></div>
+    <div id="keyVarWrap" style="display:none">
+      <div class="settings-label" style="margin-top:16px" id="keyVarLabel">Flere valg</div>
+      <div class="var-grid" id="keyVariants"></div>
+    </div>
+    <div id="keyCustomWrap" style="display:none">
+      <div class="settings-label" style="margin-top:16px" id="keyCustomLabel"></div>
+      <div class="custom-row">
+        <input type="text" id="keyCustomInput" inputmode="decimal" autocomplete="off">
+        <button id="keyCustomBtn">Sett inn</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="update-bar" id="updateBar" role="status"><span>Ny versjon er klar</span><button id="updateBtn">Last inn</button></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "appId": "no.kalkulator.pro",
+  "appName": "Kalkulator",
+  "webDir": "www",
+  "backgroundColor": "#11151c",
+  "zoomEnabled": true,
+  "android": {
+    "adjustMarginsForEdgeToEdge": "force",
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 300,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 200,
+      "backgroundColor": "#1b2230",
+      "showSpinner": false,
+      "androidScaleType": "CENTER"
+    }
+  }
+}
