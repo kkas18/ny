@@ -3088,6 +3088,9 @@ function onKey(e){
     if(e.key==='Escape')e.target.blur();
     return;
   }
+  /* Enter and Space on a focused control belong to that control, not to = . */
+  if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('button,select,a,[role=button],[role=switch]')
+     &&!e.target.closest('.calc-buttons'))return;
   if(el.settingsSheet.classList.contains('open')||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open')){
     if(e.key==='Escape'){ closeSettings(); closeUnitSheet(); }
     return;
@@ -3175,6 +3178,40 @@ function overlayClosed(){
   overlayPushed=false;
   try{ if(history.state&&history.state.pkuOverlay)history.back(); }catch(e){}
 }
+/* ============ dialog focus ============ */
+/* An open sheet or drawer owns the keyboard: the page behind it goes inert, focus
+   moves into it, Esc closes it whatever the keyboard setting, and focus returns
+   to the control that opened it. Closed sheets are inert too, so Tab never lands
+   on a control that is parked off-screen. */
+const DIALOGS=[el.keySheet,el.unitSheet,el.settingsSheet,el.historyDrawer];
+const APP_CHROME=[document.querySelector('.app-header'),el.mainContent,el.bottomNav];
+let dialogReturn=null;
+function dialogOpen(d){ return d.classList.contains('open'); }
+function syncDialogs(){
+  const open=DIALOGS.filter(dialogOpen);
+  DIALOGS.forEach(d=>{ d.inert=!dialogOpen(d); d.setAttribute('aria-hidden',dialogOpen(d)?'false':'true'); });
+  const top=open[0];
+  APP_CHROME.forEach(n=>{ if(n)n.inert=!!top; });
+  DIALOGS.forEach(d=>{ if(d!==top&&dialogOpen(d))d.inert=true; });
+  if(top){
+    if(!dialogReturn){ const a=document.activeElement; dialogReturn=a&&a!==document.body?a:null; }
+    if(!top.contains(document.activeElement))top.focus({preventScroll:true});
+  }else if(dialogReturn){
+    const r=dialogReturn; dialogReturn=null;
+    if(document.contains(r)&&!r.closest('[inert]'))r.focus({preventScroll:true});
+  }
+}
+const dialogWatch=new MutationObserver(syncDialogs);
+DIALOGS.forEach(d=>dialogWatch.observe(d,{attributes:true,attributeFilter:['class']}));
+syncDialogs();
+window.addEventListener('keydown',e=>{
+  if(e.key!=='Escape'||!anyOverlayOpen())return;
+  e.preventDefault(); e.stopPropagation();
+  if(dialogOpen(el.keySheet))closeKeyHelp();
+  else if(dialogOpen(el.unitSheet))closeUnitSheet();
+  else if(dialogOpen(el.settingsSheet))closeSettings();
+  else closeHistory();
+},true);
 window.addEventListener('popstate',()=>{
   overlayPushed=false;
   if(anyOverlayOpen()){ closeHistory(); closeSettings(); closeUnitSheet(); closeKeyHelp(); }
@@ -3732,9 +3769,11 @@ function runTests(){
 
   /* overlays and the back gesture */
   ok('historikk har lukkeknapp',!!el.closeHistBtn);
-  ok('ingen overlegg åpne fra start',!anyOverlayOpen());
+  /* The runner itself lives in the settings sheet, so judge the other overlays. */
+  const othersOpen=()=>state.historyOpen||el.unitSheet.classList.contains('open')||el.keySheet.classList.contains('open');
+  ok('ingen overlegg åpne fra start',!othersOpen());
   openHistory(); ok('historikk åpner',anyOverlayOpen()&&state.historyOpen);
-  closeHistory(); ok('historikk lukker',!anyOverlayOpen());
+  closeHistory(); ok('historikk lukker',!othersOpen());
   openSettings(); ok('innstillinger åpner',anyOverlayOpen());
   closeSettings(); ok('innstillinger lukker',!anyOverlayOpen());
   openKeyHelp('²'); ok('hjelpeark åpner',anyOverlayOpen());
@@ -4440,7 +4479,6 @@ $$('#rateSrcOptions .seg-btn').forEach(b=>b.addEventListener('click',()=>{
 function bindSwitch(node,key,setter){
   const fire=()=>{ setter(!node.classList.contains('on')); buzz(); };
   node.addEventListener('click',fire);
-  node.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fire();} });
 }
 function setTab(name,on){
   state.tabs[name]=!!on;

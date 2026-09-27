@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta id="metaTheme" name="theme-color" content="#0a0c0b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -244,11 +244,11 @@
 </nav>
 
 <div class="overlay" id="historyOverlay"></div>
-<aside class="history-drawer" id="historyDrawer" aria-label="Historikk">
+<aside class="history-drawer" id="historyDrawer" role="dialog" aria-modal="true" aria-label="Historikk" tabindex="-1">
   <div class="drawer-head"><span class="title">Historikk</span>
     <button class="text-btn" id="closeHistBtn">Lukk</button>
   </div>
-  <div class="search-wrap"><input type="text" id="histSearch" placeholder="Søk i historikken" autocomplete="off"></div>
+  <div class="search-wrap"><input type="search" id="histSearch" placeholder="Søk i historikken" autocomplete="off" aria-label="Søk i historikken"></div>
   <div class="drawer-tools">
     <button class="pill-btn" id="exportHistBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Kopier alle</button>
     <button class="pill-btn danger" id="clearHistBtn"><svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>Tøm</button>
@@ -257,14 +257,14 @@
 </aside>
 
 <div class="overlay" id="sheetOverlay"></div>
-<div class="sheet" id="unitSheet" role="dialog" aria-modal="true" aria-label="Velg enhet">
+<div class="sheet" id="unitSheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Velg enhet">
   <div class="sheet-handle"></div>
   <div class="sheet-title"><span id="sheetTitle">Velg enhet</span><button class="text-btn" id="sheetCloseBtn">Lukk</button></div>
-  <div class="search-wrap" id="sheetSearchWrap" style="display:none"><input type="text" id="sheetSearch" placeholder="Søk etter enhet eller valuta" autocomplete="off"></div>
+  <div class="search-wrap" id="sheetSearchWrap" style="display:none"><input type="search" id="sheetSearch" placeholder="Søk etter enhet eller valuta" autocomplete="off" aria-label="Søk etter enhet eller valuta"></div>
   <div class="sheet-body"><div class="unit-grid" id="unitGrid"></div></div>
 </div>
 
-<div class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-label="Innstillinger">
+<div class="sheet" id="settingsSheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Innstillinger">
   <div class="sheet-handle"></div>
   <div class="sheet-title"><span>Innstillinger</span><button class="text-btn" id="closeSettingsBtn">Lukk</button></div>
   <div class="sheet-body">
@@ -303,14 +303,14 @@
     <section class="settings-section">
       <div class="settings-label">Faner</div>
       <p class="settings-note">RPN og Tape er spesialverktøy. Bruker du dem ikke, kan du slå dem av her — innholdet forsvinner ikke, fanen blir bare borte fra menyen.</p>
-      <div class="toggle-row"><div><div class="tl">RPN</div><div class="td">Omvendt polsk notasjon: du taster tallene først og operatoren til slutt, uten parenteser.</div></div><div class="switch" id="tabRpnSwitch" role="switch" tabindex="0"></div></div>
-      <div class="toggle-row"><div><div class="tl">Tape</div><div class="td">En kvitteringsstrimmel der hver linje står igjen og summeres, med MVA-splitt.</div></div><div class="switch" id="tabTapeSwitch" role="switch" tabindex="0"></div></div>
+      <div class="toggle-row"><div><div class="tl" id="swtabRpnSwitch">RPN</div><div class="td">Omvendt polsk notasjon: du taster tallene først og operatoren til slutt, uten parenteser.</div></div><button type="button" class="switch" id="tabRpnSwitch" role="switch" aria-checked="false" aria-labelledby="swtabRpnSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swtabTapeSwitch">Tape</div><div class="td">En kvitteringsstrimmel der hver linje står igjen og summeres, med MVA-splitt.</div></div><button type="button" class="switch" id="tabTapeSwitch" role="switch" aria-checked="false" aria-labelledby="swtabTapeSwitch"></button></div>
     </section>
     <section class="settings-section">
       <div class="settings-label">Oppførsel</div>
-      <div class="toggle-row"><div><div class="tl">Vibrasjon</div><div class="td">Kort haptisk puls når du trykker på en tast.</div></div><div class="switch" id="hapticSwitch" role="switch" tabindex="0"></div></div>
-      <div class="toggle-row"><div><div class="tl">Forhåndsvis svaret</div><div class="td">Viser resultatet mens du skriver uttrykket.</div></div><div class="switch" id="liveSwitch" role="switch" tabindex="0"></div></div>
-      <div class="toggle-row"><div><div class="tl">Tastaturstøtte</div><div class="td">Regn med fysisk tastatur. Esc tømmer, Enter regner ut.</div></div><div class="switch" id="kbdSwitch" role="switch" tabindex="0"></div></div>
+      <div class="toggle-row"><div><div class="tl" id="swhapticSwitch">Vibrasjon</div><div class="td">Kort haptisk puls når du trykker på en tast.</div></div><button type="button" class="switch" id="hapticSwitch" role="switch" aria-checked="false" aria-labelledby="swhapticSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swliveSwitch">Forhåndsvis svaret</div><div class="td">Viser resultatet mens du skriver uttrykket.</div></div><button type="button" class="switch" id="liveSwitch" role="switch" aria-checked="false" aria-labelledby="swliveSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swkbdSwitch">Tastaturstøtte</div><div class="td">Regn med fysisk tastatur. Esc tømmer, Enter regner ut.</div></div><button type="button" class="switch" id="kbdSwitch" role="switch" aria-checked="false" aria-labelledby="swkbdSwitch"></button></div>
     </section>
     <section class="settings-section">
       <div class="settings-label">Kilde for valutakurser</div>
@@ -346,7 +346,7 @@
 </div>
 
 <div class="overlay" id="modalOverlay"></div>
-<div class="sheet" id="keySheet" role="dialog" aria-modal="true" aria-label="Om tasten">
+<div class="sheet" id="keySheet" tabindex="-1" role="dialog" aria-modal="true" aria-label="Om tasten">
   <div class="sheet-handle"></div>
   <div class="sheet-title"><span>Om tasten</span><button class="text-btn" id="keyCloseBtn">Lukk</button></div>
   <div class="sheet-body">

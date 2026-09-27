@@ -12,7 +12,7 @@
 :root{
   --acc-standard:#ff9f0a; --acc-professional:#5aa9ff; --acc-rpn:#b18cff; --acc-tape:#f4739b; --acc-percent:#3ddc97; --acc-currency:#efb034; --acc-converter:#2ed3e8;
   --bg:#0a0c0b; --surface:#0e100f; --surface-light:#141715; --surface-lighter:#1c201e;
-  --border:#242a27; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#5f6b66;
+  --border:#242a27; --text:#e9edeb; --text-secondary:#9aa6a1; --text-dim:#808c87;
   --danger:#e74c5e; --success:#2ecc71; --warning:#f39c12;
   --keypad-bg:#0a0c0b;
   --key-number-bg:#171b19; --key-number-text:#f2f6f4;
@@ -37,7 +37,7 @@
 html[data-theme="light"]{
   --acc-standard:#9a5a06; --acc-professional:#1560c0; --acc-rpn:#6f3fd0; --acc-tape:#b32456; --acc-percent:#0a7d55; --acc-currency:#7d5806; --acc-converter:#0a7185;
   --bg:#f4f5f4; --surface:#fff; --surface-light:#f2f4f3; --surface-lighter:#e8eae9;
-  --border:#d9dddb; --text:#1c201e; --text-secondary:#5c6663; --text-dim:#8a938f;
+  --border:#d9dddb; --text:#1c201e; --text-secondary:#4d5754; --text-dim:#5f6865;
   --danger:#d63040; --success:#00a865; --warning:#e8890c;
   --keypad-bg:#e6eae8;
   --key-number-bg:#fff; --key-number-text:#1b211f;
@@ -50,7 +50,7 @@ html[data-theme="light"]{
 }
 html[data-theme="amoled"]{
   --bg:#000; --surface:#0a0a0a; --surface-light:#101010; --surface-lighter:#181818;
-  --border:#242424; --text:#fff; --text-secondary:#a8a8a8; --text-dim:#6b6b6b;
+  --border:#242424; --text:#fff; --text-secondary:#a8a8a8; --text-dim:#838383;
   --danger:#ff4444; --success:#00cc66; --warning:#fa0;
   --keypad-bg:#000;
   --key-number-bg:#131313; --key-number-text:#fff;
@@ -78,7 +78,7 @@ html[data-theme="contrast"]{
 html[data-theme="pastel"]{
   --acc-standard:#96530f; --acc-professional:#325d89; --acc-rpn:#655795; --acc-tape:#8e4364; --acc-percent:#2f6d51; --acc-currency:#6f5518; --acc-converter:#256571;
   --bg:#f5f4f1; --surface:#fdfdfc; --surface-light:#f3f2ee; --surface-lighter:#eae8e3;
-  --border:#dedbd4; --text:#2c2a26; --text-secondary:#6d6961; --text-dim:#9b968c;
+  --border:#dedbd4; --text:#2c2a26; --text-secondary:#57534c; --text-dim:#656158;
   --danger:#b55454; --success:#5da583; --warning:#c98f4a;
   --keypad-bg:#e8e5de;
   --key-number-bg:#fff; --key-number-text:#2c2a26;
@@ -99,6 +99,9 @@ body[data-mode="converter"]{--accent:var(--acc-converter)}
 body{--accent-soft:color-mix(in srgb,var(--accent) 14%,transparent);--accent-line:color-mix(in srgb,var(--accent) 38%,transparent)}
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* Pinch zoom stays available; this only drops the double-tap zoom that would
+   otherwise swallow two quick presses on the same key. */
+html{touch-action:manipulation}
 html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);transition:background var(--transition),color var(--transition)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-tiny)}
@@ -174,7 +177,7 @@ html[data-theme="contrast"] .result.answer-red{color:#ff6b6b}
 .bottom-nav{display:flex;height:var(--nav-height);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;padding:5px 3px 3px;gap:1px}
 .nav-item{flex:1;border:none;background:transparent;color:var(--text-dim);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border-radius:var(--r-pill);transition:color var(--transition-fast),background var(--transition-fast);position:relative;padding:3px 1px}
 .nav-item svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.nav-label{font-size:9.5px;font-weight:600;letter-spacing:0;white-space:nowrap}
+.nav-label{font-size:11px;font-weight:600;letter-spacing:0;white-space:nowrap}
 .nav-item.active{color:var(--accent);background:var(--accent-soft)}
 .nav-item:active{transform:scale(.94)}
 
@@ -413,7 +416,7 @@ body.kb-open .sheet-body{padding-bottom:14px}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;background:var(--surface-light);border:1px solid var(--border);border-radius:var(--r-inner);margin-bottom:6px}
 .toggle-row .tl{font-size:13px;font-weight:600;color:var(--text)}
 .toggle-row .td{font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.4}
-.switch{width:46px;height:27px;border-radius:var(--r-inner);background:var(--surface-lighter);border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;transition:background var(--transition)}
+.switch{appearance:none;padding:0;font:inherit;width:46px;height:27px;border-radius:var(--r-inner);background:var(--surface-lighter);border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;transition:background var(--transition)}
 .switch::after{content:'';position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:var(--text-dim);transition:transform var(--transition),background var(--transition)}
 .switch.on{background:var(--accent);border-color:transparent}
 .switch.on::after{transform:translateX(19px);background:var(--accent-text)}
