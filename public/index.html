@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta id="metaTheme" name="theme-color" content="#0a0c0b">
+<meta id="metaTheme" name="theme-color" content="#11151c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,19 +14,15 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Pro Kalkulator Ultra</title>
-<link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/schibsted-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body data-mode="standard">
 <header class="app-header">
-  <div class="brand">
-    <img class="logo-icon" src="icons/icon.svg" alt="" width="29" height="29">
-    <div class="app-name">Kalkulator</div>
-  </div>
+  <button class="header-btn" id="historyBtn" aria-label="Åpne historikk"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><polyline points="3.5 4 3.5 8.5 8 8.5"/><polyline points="12 7.5 12 12 15 13.8"/></svg><span class="badge" id="historyBadge" style="display:none">0</span></button>
   <div class="header-actions">
     <button class="header-pill" id="memPill" style="display:none" aria-label="Hent fra minnet">M<span class="pv" id="memValue"></span></button>
-    <button class="header-pill" id="trigPill" style="display:none" aria-label="Bytt mellom grader og radianer">GRADER</button>
-    <button class="header-btn" id="historyBtn" aria-label="Åpne historikk"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg><span class="badge" id="historyBadge" style="display:none">0</span></button>
+    <button class="header-pill" id="trigPill" style="display:none" aria-label="Bytt mellom grader og radianer">Grader</button>
     <button class="header-btn" id="settingsBtn" aria-label="Åpne innstillinger"><svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7"/><circle cx="9" cy="7" r="2.5"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="15" cy="12" r="2.5"/><line x1="5" y1="17" x2="19" y2="17"/><circle cx="7" cy="17" r="2.5"/></svg></button>
   </div>
 </header>
@@ -43,8 +39,8 @@
   </div>
 
   <div class="buttons-container" id="buttonsContainer">
-    <button class="zone-toggle" id="zoneToggle" aria-expanded="true">
-      <svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg><span id="zoneToggleLabel">Vitenskapelig</span>
+    <button class="zone-toggle" id="zoneToggle" aria-expanded="false" aria-label="Vis funksjoner">
+      <span id="zoneToggleLabel">f(x)</span>
     </button>
   </div>
 
@@ -236,12 +232,12 @@
 </main>
 
 <nav class="bottom-nav" id="bottomNav">
-  <button class="nav-item active" data-mode="standard" aria-current="page" aria-label="Kalkulator"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7.5" x2="16" y2="7.5"/><line x1="8" y1="12" x2="12" y2="12"/><line x1="8" y1="16.5" x2="16" y2="16.5"/></svg><span class="nav-label">Kalkulator</span></button>
-  <button class="nav-item" data-mode="rpn" aria-label="RPN"><svg viewBox="0 0 24 24"><rect x="3" y="14" width="18" height="6" rx="1.6"/><rect x="6" y="8" width="12" height="4" rx="1.4"/><rect x="9" y="3" width="6" height="3" rx="1.2"/></svg><span class="nav-label">RPN</span></button>
-  <button class="nav-item" data-mode="tape" aria-label="Tape"><svg viewBox="0 0 24 24"><path d="M6 3h12v16l-2.5-1.6L13 19l-2.5-1.6L8 19l-2-1.3z"/><line x1="9" y1="7.5" x2="15" y2="7.5"/><line x1="9" y1="11.5" x2="15" y2="11.5"/></svg><span class="nav-label">Tape</span></button>
-  <button class="nav-item" data-mode="percent" aria-label="Prosent og MVA"><svg viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.8" cy="6.8" r="2.6"/><circle cx="17.2" cy="17.2" r="2.6"/></svg><span class="nav-label">Prosent</span></button>
-  <button class="nav-item" data-mode="currency" aria-label="Valuta"><svg viewBox="0 0 24 24"><rect x="2.4" y="5.6" width="19.2" height="12.8" rx="2"/><circle cx="12" cy="12" r="2.9"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/></svg><span class="nav-label">Valuta</span></button>
-  <button class="nav-item" data-mode="converter" aria-label="Konverter"><svg viewBox="0 0 24 24"><polyline points="17 3 21 7 17 11"/><line x1="21" y1="7" x2="9" y2="7"/><polyline points="7 13 3 17 7 21"/><line x1="3" y1="17" x2="15" y2="17"/></svg><span class="nav-label">Konverter</span></button>
+  <button class="nav-item active" data-mode="standard" aria-current="page"><span class="nav-label">Regn</span></button>
+  <button class="nav-item" data-mode="rpn"><span class="nav-label">RPN</span></button>
+  <button class="nav-item" data-mode="tape"><span class="nav-label">Tape</span></button>
+  <button class="nav-item" data-mode="percent"><span class="nav-label">Prosent</span></button>
+  <button class="nav-item" data-mode="currency"><span class="nav-label">Valuta</span></button>
+  <button class="nav-item" data-mode="converter"><span class="nav-label">Enheter</span></button>
 </nav>
 
 <div class="overlay" id="historyOverlay"></div>
@@ -271,11 +267,11 @@
   <div class="sheet-body">
     <section class="settings-section">
       <div class="settings-label">Tema</div>
-      <div class="seg seg-5" id="themeOptions">
-        <button class="seg-btn" data-theme="dark">Mørk</button><button class="seg-btn" data-theme="light">Lys</button>
-        <button class="seg-btn" data-theme="amoled">AMOLED</button><button class="seg-btn" data-theme="contrast">Kontrast</button>
-        <button class="seg-btn" data-theme="pastel">Pastell</button>
+      <div class="seg" id="themeOptions">
+        <button class="seg-btn" data-theme="system">System</button><button class="seg-btn" data-theme="light">Lys</button><button class="seg-btn" data-theme="dark">Mørk</button>
       </div>
+      <div class="toggle-row"><div><div class="tl" id="swamoledSwitch">Helt svart</div><div class="td">Ren svart bakgrunn i mørkt tema. Sparer strøm på OLED-skjermer.</div></div><button type="button" class="switch" id="amoledSwitch" role="switch" aria-checked="false" aria-labelledby="swamoledSwitch"></button></div>
+      <div class="toggle-row"><div><div class="tl" id="swhcSwitch">Høy kontrast</div><div class="td">Hvit tekst på svart med tydelige kanter på tastene.</div></div><button type="button" class="switch" id="hcSwitch" role="switch" aria-checked="false" aria-labelledby="swhcSwitch"></button></div>
     </section>
     <section class="settings-section">
       <div class="settings-label">Tallformat</div>

@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const VERSION='7.2.0';
+const VERSION='8.0.0';
 const IS_NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const CFG={
   maxExpr:520, maxHistory:250, defaultDecimals:8,
@@ -10,13 +10,13 @@ const CFG={
   flagBase:'https://flagcdn.com/w40/',
   rateMaxAgeDays:5, ratesTtlMs:6*3600*1000
 };
-const LS={theme:'pku_theme',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
+const LS={theme:'pku_theme',amoled:'pku_amoled',hc:'pku_hc',dec:'pku_dec',trig:'pku_trig',fmt:'pku_fmt',hist:'pku_hist',
   haptic:'pku_haptic',live:'pku_live',kbd:'pku_kbd',rates:'pku_rates',src:'pku_src',
   fav:'pku_fav',conv:'pku_conv',mode:'pku_mode',series:'pku_series',answerColor:'pku_anscolor',seenHint:'pku_seenhint',sci:'pku_sci',recent:'pku_recent',favUnits:'pku_favunits',fxFee:'pku_fxfee',catUse:'pku_catuse',sparkDays:'pku_sparkdays',fx:'pku_fx',histRates:'pku_histrates',tabs:'pku_tabs',allOpen:'pku_allopen',
   tape:'pku_tape',tapeVat:'pku_tapevat',vars:'pku_vars'};
 const MODES=['standard','rpn','tape','percent','currency','converter'];
 const MODE_LABEL={standard:'Kalkulator',professional:'Vitenskapelig',rpn:'RPN',tape:'Tape',percent:'Prosent',currency:'Valuta',converter:'Konverter'};
-const THEME_BG={dark:'#0a0c0b',light:'#f4f5f4',amoled:'#000000',contrast:'#000000',pastel:'#f5f4f1'};
+const THEME_BG={dark:'#11151c',light:'#f2f3f5',amoled:'#000000',contrast:'#000000'};
 
 /* ============ storage helpers ============ */
 function lsGet(k,d){ try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;} }
@@ -25,8 +25,8 @@ function jGet(k,d){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d
 function jSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
 
 const state={
-  mode:'standard', theme:'dark', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
-  haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'neutral', sci:false,
+  mode:'standard', theme:'system', fmt:'no', decimals:CFG.defaultDecimals, trig:'deg',
+  amoled:false, hc:false, haptic:true, livePreview:true, kbd:true, rateSrc:'both', answerColor:'neutral', sci:false,
   expression:'', result:'0', error:null, justEvaluated:false, lastAnswer:0, memory:0,
   history:[], historyOpen:false, stack:[], rpnEntry:'',
   conv:{cat:'length',from:'meter',to:'kilometer',value:'1',auto:true},
@@ -56,7 +56,7 @@ const el={};
  'sheetSearchWrap','sheetSearch','unitGrid','settingsSheet','closeSettingsBtn','installBtn','runTestsBtn',
  'testSummary','testOut','modalOverlay','feeCustom','feeCustomBtn','keySheet','keyGlyph','keyName','keyDesc','keyExample',
  'keyVarWrap','keyVarLabel','keyVariants','keyCustomWrap','keyCustomLabel','keyCustomInput','keyCustomBtn','keyCloseBtn',
- 'toast','appVersion','hapticSwitch','liveSwitch','kbdSwitch','tabRpnSwitch','tabTapeSwitch',
+ 'toast','appVersion','amoledSwitch','hcSwitch','hapticSwitch','liveSwitch','kbdSwitch','tabRpnSwitch','tabTapeSwitch',
  'tapePanel','tapeList','tapeSum','tapeSumLabel','tapeSplit','tapeCur','tapePrev','tapeVatBtn','tapeVatLabel',
  'tapeNoteBtn','tapeCopyBtn','tapeClearBtn','convStandard','convDates','dateChips','dateFields','dateResult',
  'dateSentence','dateBreakdown','dateCopyBtn','bitCard','bitGrid','bitOps','bitOperand','bitOperandRow','bitResult',
@@ -645,7 +645,7 @@ function setRateState(p){
   const dateNo=p.date?p.date.split('-').reverse().join('.'):'ukjent dato';
   if(age<=CFG.rateMaxAgeDays){
     state.rateState='live';
-    paintRateBar('live',src+' · '+dateNo+' · '+total+' valutaer');
+    paintRateBar('live',src+', '+dateNo+'. '+total+' valutaer.');
   }else{
     state.rateState='stale';
     paintRateBar('stale','Kursene er '+age+' dager gamle ('+dateNo+'). Trykk oppdater.');
@@ -715,37 +715,38 @@ function buildSeries(fromCode,toCode){
 /* ============ keypad layouts ============ */
 const BACK_ICON='<svg class="key-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11a1.6 1.6 0 0 1 1.6 1.6v10.8A1.6 1.6 0 0 1 20 19H9l-6.4-7z"/><line x1="12.5" y1="9.6" x2="17.5" y2="14.4"/><line x1="17.5" y1="9.6" x2="12.5" y2="14.4"/></svg>';
 const LAYOUTS={
+ /* Twenty keys. Everything else (±, Ans, memory, the functions) sits one tap away
+    under f(x), so the pad you use most is only digits, operators and =. */
  standard:[
-  {t:'AC',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},
+  {t:'C',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},
   {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},
   {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},
   {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},
-  {t:'±',a:'sign',c:'func'},{t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:'=',a:'equals',c:'equals'},
-  {t:BACK_ICON,a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'}
+  {t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:BACK_ICON,a:'back',c:'func'},{t:'=',a:'equals',c:'equals'}
  ],
  professional:[
-  /* Ten rows, not eleven. The hyperbolics live behind a long press on sin/cos/tan,
-     mod behind ÷, and the angle mode already has a pill in the header — so none of
-     them need to spend a row here. */
+  /* Five rows of functions above the same pad, which gains a fifth column. The
+     hyperbolics live behind a long press on sin/cos/tan, mod behind ÷, and the
+     angle mode has its own switch in the top bar. */
   {t:'sin',a:'func',v:'sin',c:'func'},{t:'cos',a:'func',v:'cos',c:'func'},{t:'tan',a:'func',v:'tan',c:'func'},{t:'x²',a:'char',v:'²',c:'func'},{t:'√',a:'func',v:'sqrt',c:'func'},
   {t:'sin⁻¹',a:'func',v:'asin',c:'func'},{t:'cos⁻¹',a:'func',v:'acos',c:'func'},{t:'tan⁻¹',a:'func',v:'atan',c:'func'},{t:'xʸ',a:'op',v:'^',c:'func'},{t:'∛',a:'func',v:'cbrt',c:'func'},
   {t:'ln',a:'func',v:'ln',c:'func'},{t:'log',a:'func',v:'log',c:'func'},{t:'log₂',a:'func',v:'log2',c:'func'},{t:'eˣ',a:'func',v:'exp',c:'func'},{t:'e',a:'char',v:'e',c:'func'},
-  {t:'STO',a:'sto',c:'func accentish'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'},
-  {t:'AC',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'π',a:'char',v:'π',c:'func'},
+  {t:'STO',a:'sto',c:'func'},{t:'A',a:'var',v:'A',c:'func'},{t:'B',a:'var',v:'B',c:'func'},{t:'C',a:'var',v:'C',c:'func'},{t:'D',a:'var',v:'D',c:'func'},
+  {t:'Ans',a:'ans',c:'func'},{t:'MC',a:'mClear',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'M−',a:'mSub',c:'func'},
+  {t:'C',a:'clear',c:'clear'},{t:'( )',a:'paren',c:'func'},{t:'%',a:'char',v:'%',c:'func'},{t:'÷',a:'op',v:'÷',c:'op'},{t:'π',a:'char',v:'π',c:'func'},
   {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:'×',a:'op',v:'×',c:'op'},{t:'|x|',a:'func',v:'abs',c:'func'},
   {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'−',a:'op',v:'-',c:'op'},{t:'1/x',a:'recip',c:'func'},
-  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},{t:'MC',a:'mClear',c:'func'},
-  {t:'±',a:'sign',c:'func'},{t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:'=',a:'equals',c:'equals'},{t:'M−',a:'mSub',c:'func'},
-  {t:BACK_ICON,a:'back',c:'func'},{t:'ANS',a:'ans',c:'func'},{t:'M+',a:'mAdd',c:'func'},{t:'MR',a:'mRecall',c:'func'},{t:'x!',a:'char',v:'!',c:'func'}
+  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'+',a:'op',v:'+',c:'op'},{t:'±',a:'sign',c:'func'},
+  {t:'0',a:'num',v:'0'},{t:',',a:'decimal'},{t:BACK_ICON,a:'back',c:'func'},{t:'=',a:'equals',c:'equals'},{t:'x!',a:'char',v:'!',c:'func'}
  ],
  rpn:[
-  {t:'x↔y',a:'rpnSwap',c:'func'},{t:'DROP',a:'rpnDrop',c:'func'},{t:'ROLL',a:'rpnRoll',c:'func'},{t:'LAST x',a:'rpnLast',c:'func'},
-  {t:'AC',a:'rpnClear',c:'clear'},{t:'x²',a:'rpnFunc',v:'sq',c:'func'},{t:'√',a:'rpnFunc',v:'sqrt',c:'func'},{t:'÷',a:'rpnOp',v:'÷',c:'op'},
+  {t:'x↔y',a:'rpnSwap',c:'func'},{t:'Drop',a:'rpnDrop',c:'func'},{t:'Roll',a:'rpnRoll',c:'func'},{t:'Last x',a:'rpnLast',c:'func'},
+  {t:'±',a:'rpnSign',c:'func'},{t:'1/x',a:'rpnFunc',v:'inv',c:'func'},{t:'π',a:'rpnConst',v:'pi',c:'func'},{t:'xʸ',a:'rpnOp',v:'^',c:'func'},
+  {t:'C',a:'rpnClear',c:'clear'},{t:'x²',a:'rpnFunc',v:'sq',c:'func'},{t:'√',a:'rpnFunc',v:'sqrt',c:'func'},{t:'÷',a:'rpnOp',v:'÷',c:'op'},
   {t:'7',a:'rpnNum',v:'7'},{t:'8',a:'rpnNum',v:'8'},{t:'9',a:'rpnNum',v:'9'},{t:'×',a:'rpnOp',v:'×',c:'op'},
   {t:'4',a:'rpnNum',v:'4'},{t:'5',a:'rpnNum',v:'5'},{t:'6',a:'rpnNum',v:'6'},{t:'−',a:'rpnOp',v:'-',c:'op'},
   {t:'1',a:'rpnNum',v:'1'},{t:'2',a:'rpnNum',v:'2'},{t:'3',a:'rpnNum',v:'3'},{t:'+',a:'rpnOp',v:'+',c:'op'},
-  {t:'±',a:'rpnSign',c:'func'},{t:'0',a:'rpnNum',v:'0'},{t:',',a:'rpnDot'},{t:'ENTER',a:'rpnEnter',c:'equals'},
-  {t:BACK_ICON,a:'rpnBack',c:'func'},{t:'1/x',a:'rpnFunc',v:'inv',c:'func'},{t:'π',a:'rpnConst',v:'pi',c:'func'},{t:'xʸ',a:'rpnOp',v:'^',c:'func'}
+  {t:'0',a:'rpnNum',v:'0'},{t:',',a:'rpnDot'},{t:BACK_ICON,a:'rpnBack',c:'func'},{t:'Enter',a:'rpnEnter',c:'equals'}
  ]
 };
 /* ============ haptics + toast ============ */
@@ -1298,7 +1299,7 @@ function paintRate(){
   const a=useFwd?uf:ut, bU=useFwd?ut:uf, v=useFwd?fwd:back;
   const dec=convDecimals(c.cat,v)===2?4:6;
   el.convRate.textContent='1 '+a.s+' = '+formatNumber(v,dec)+' '+bU.s
-    +(feeActive()?'  ·  inkl. '+formatNumber(state.fxFee,2)+' %':'');
+    +(feeActive()?', med '+formatNumber(state.fxFee,2)+' % påslag':'');
 }
 function renderAllUnits(raw){
   const c=state.conv,d=cat();
@@ -1663,12 +1664,12 @@ function exportHistory(){
 
 /* ============ tape ============ */
 const TAPE_LAYOUT=[
- {t:'AC',a:'tapeClearEntry',c:'clear'},{t:'( )',a:'tapeParen',c:'func'},{t:'%',a:'tapeChar',v:'%',c:'func'},{t:'÷',a:'tapeOp',v:'÷',c:'op'},
+ {t:'±',a:'tapeSign',c:'func'},{t:'Ans',a:'tapeAns',c:'func'},{t:'Sum',a:'tapeUseSum',c:'func'},{t:'− Linje',a:'tapeCommitMinus',c:'func'},
+ {t:'C',a:'tapeClearEntry',c:'clear'},{t:'( )',a:'tapeParen',c:'func'},{t:'%',a:'tapeChar',v:'%',c:'func'},{t:'÷',a:'tapeOp',v:'÷',c:'op'},
  {t:'7',a:'tapeNum',v:'7'},{t:'8',a:'tapeNum',v:'8'},{t:'9',a:'tapeNum',v:'9'},{t:'×',a:'tapeOp',v:'×',c:'op'},
  {t:'4',a:'tapeNum',v:'4'},{t:'5',a:'tapeNum',v:'5'},{t:'6',a:'tapeNum',v:'6'},{t:'−',a:'tapeOp',v:'-',c:'op'},
  {t:'1',a:'tapeNum',v:'1'},{t:'2',a:'tapeNum',v:'2'},{t:'3',a:'tapeNum',v:'3'},{t:'+',a:'tapeOp',v:'+',c:'op'},
- {t:'±',a:'tapeSign',c:'func'},{t:'0',a:'tapeNum',v:'0'},{t:',',a:'tapeDot'},{t:'+ LINJE',a:'tapeCommit',c:'equals'},
- {t:BACK_ICON,a:'tapeBack',c:'func'},{t:'ANS',a:'tapeAns',c:'func'},{t:'SUM',a:'tapeUseSum',c:'func'},{t:'−LINJE',a:'tapeCommitMinus',c:'func'}
+ {t:'0',a:'tapeNum',v:'0'},{t:',',a:'tapeDot'},{t:BACK_ICON,a:'tapeBack',c:'func'},{t:'+ Linje',a:'tapeCommit',c:'equals'}
 ];
 LAYOUTS.tape=TAPE_LAYOUT;
 
@@ -1677,7 +1678,7 @@ function tapeTotal(){ return state.tape.reduce((n,l)=>n+(l.sign<0?-l.v:l.v),0); 
 function tapeRender(){
   const list=state.tape;
   if(!list.length){
-    el.tapeList.innerHTML='<div class="empty">Ingen linjer ennå.<br>Skriv et beløp og trykk «+ LINJE».</div>';
+    el.tapeList.innerHTML='<div class="empty">Ingen linjer ennå.<br>Skriv et beløp og trykk + Linje.</div>';
   }else{
     el.tapeList.innerHTML='';
     const frag=document.createDocumentFragment();
@@ -2028,12 +2029,14 @@ function dateCalc(){
 }
 
 /* ============ backup ============ */
-const BACKUP_KEYS=[LS.theme,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays,LS.fx,LS.tabs];
+const BACKUP_KEYS=[LS.theme,LS.amoled,LS.hc,LS.dec,LS.trig,LS.fmt,LS.hist,LS.haptic,LS.live,LS.kbd,LS.src,LS.fav,LS.conv,LS.mode,LS.tape,LS.tapeVat,LS.vars,LS.answerColor,LS.sci,LS.allOpen,LS.recent,LS.favUnits,LS.fxFee,LS.catUse,LS.sparkDays,LS.fx,LS.tabs];
 /* Settings are only written when changed, so an untouched preference would be
    missing from a backup and a restore would leave the old value in place.
    Flush the live state first so the copy is complete rather than partial. */
 function persistAll(){
   lsSet(LS.theme,state.theme);
+  lsSet(LS.amoled,state.amoled?'1':'0');
+  lsSet(LS.hc,state.hc?'1':'0');
   lsSet(LS.dec,String(state.decimals));
   lsSet(LS.trig,state.trig);
   lsSet(LS.fmt,state.fmt);
@@ -2278,7 +2281,7 @@ const KEY_HELP={
    ex:'5! = 1×2×3×4×5 = 120'},
 
  /* --- entry and editing --- */
- clear:{g:'AC',mark:1,n:'Nullstill',
+ clear:{g:'C',mark:1,n:'Nullstill',
    d:'Tømmer uttrykket og resultatet. Historikken, minnet og variablene står igjen.',
    vl:'Tøm mer',
    variants:()=>[
@@ -2298,7 +2301,7 @@ const KEY_HELP={
    variants:()=>[V('Kopier svaret','Legger det på utklippstavlen',()=>{ if(!state.error)copyText(state.result).then(o=>toastMsg(o?'Kopiert':'Klarte ikke å kopiere')); })]},
 
  /* --- memory and variables --- */
- ans:{g:'ANS',mark:1,n:'Forrige svar',
+ ans:{g:'Ans',mark:1,n:'Forrige svar',
    d:'Setter inn resultatet fra forrige utregning, så du kan regne videre på det.',
    ex:'Etter 2+3 = 5 gir ANS deg 5',
    vl:'Hent et tidligere svar',
@@ -2328,24 +2331,24 @@ const KEY_HELP={
      .concat([V('Nullstill alle','Setter A til D til null',()=>{ state.vars={A:0,B:0,C:0,D:0}; jSet(LS.vars,state.vars); paintVarKeys(); toastMsg('Variablene er tømt'); })])},
 
  /* --- RPN --- */
- rpnEnter:{g:'ENTER',n:'Dytt på stakken',
+ rpnEnter:{g:'Enter',n:'Dytt på stakken',
    d:'Legger tallet du har skrevet øverst på stakken. I RPN skriver du tallene først og operatoren til slutt, så du slipper parenteser.',
-   ex:'5 ENTER 3 + gir 8\n(2+3)×4 blir: 2 ENTER 3 + 4 ×'},
- rpnSwap:{g:'x↔y',n:'Bytt x og y',d:'Bytter om de to øverste tallene. Nyttig når du har lagt dem inn i feil rekkefølge før en minus eller deling.',ex:'3 ENTER 7 x↔y − gir 4'},
- rpnDrop:{g:'DROP',n:'Fjern øverste',d:'Kaster det øverste tallet på stakken. Har du et halvskrevet tall, tømmes det i stedet.'},
- rpnRoll:{g:'ROLL',n:'Rull stakken',d:'Flytter det øverste tallet nederst, så du kommer til de andre verdiene.'},
- rpnLast:{g:'LAST x',n:'Forrige verdi',d:'Henter tilbake tallet den forrige operasjonen brukte opp. Redder deg når du tastet feil operator.',ex:'Etter 8 3 ÷ gir LAST x deg 3 tilbake'},
+   ex:'5 Enter 3 + gir 8\n(2+3)×4 blir: 2 Enter 3 + 4 ×'},
+ rpnSwap:{g:'x↔y',n:'Bytt x og y',d:'Bytter om de to øverste tallene. Nyttig når du har lagt dem inn i feil rekkefølge før en minus eller deling.',ex:'3 Enter 7 x↔y − gir 4'},
+ rpnDrop:{g:'Drop',n:'Fjern øverste',d:'Kaster det øverste tallet på stakken. Har du et halvskrevet tall, tømmes det i stedet.'},
+ rpnRoll:{g:'Roll',n:'Rull stakken',d:'Flytter det øverste tallet nederst, så du kommer til de andre verdiene.'},
+ rpnLast:{g:'Last x',n:'Forrige verdi',d:'Henter tilbake tallet den forrige operasjonen brukte opp. Redder deg når du tastet feil operator.',ex:'Etter 8 3 ÷ gir Last x deg 3 tilbake'},
 
  /* --- tape --- */
- tapeCommit:{g:'+ LINJE',mark:1,n:'Legg til linje',
+ tapeCommit:{g:'+ Linje',mark:1,n:'Legg til linje',
    d:'Regner ut det du har skrevet og legger det som en ny linje på strimmelen. Trykk på en linje for å endre den.',
-   ex:'Skriv 1200 og trykk + LINJE',
-   variants:()=>[V('− LINJE','Legg til som fradrag',()=>tapeCommit(-1))]},
- tapeCommitMinus:{g:'−LINJE',n:'Legg til som fradrag',d:'Samme som + LINJE, men beløpet trekkes fra summen. Du kan snu fortegnet etterpå med knappen til venstre på linjen.'},
- tapeUseSum:{g:'SUM',n:'Bruk summen',d:'Setter summen av strimmelen inn i feltet, så du kan regne videre på den.',ex:'SUM ×0,25 gir en fjerdedel av totalen'},
- tapeClearEntry:{g:'AC',n:'Nullstill',d:'Tømmer feltet du skriver i. Er feltet allerede tomt, tømmes hele strimmelen.'},
- rpnClear:{g:'AC',mark:1,n:'Tøm stakken',d:'Kaster alle tallene på stakken og det du holder på å skrive. Historikken står igjen.',
-   variants:()=>[V('DROP','Fjern bare det øverste',()=>rpnDrop())]},
+   ex:'Skriv 1200 og trykk + Linje',
+   variants:()=>[V('− Linje','Legg til som fradrag',()=>tapeCommit(-1))]},
+ tapeCommitMinus:{g:'− Linje',n:'Legg til som fradrag',d:'Samme som + Linje, men beløpet trekkes fra summen. Du kan snu fortegnet etterpå med knappen til venstre på linjen.'},
+ tapeUseSum:{g:'Sum',n:'Bruk summen',d:'Setter summen av strimmelen inn i feltet, så du kan regne videre på den.',ex:'Sum ×0,25 gir en fjerdedel av totalen'},
+ tapeClearEntry:{g:'C',n:'Nullstill',d:'Tømmer feltet du skriver i. Er feltet allerede tomt, tømmes hele strimmelen.'},
+ rpnClear:{g:'C',mark:1,n:'Tøm stakken',d:'Kaster alle tallene på stakken og det du holder på å skrive. Historikken står igjen.',
+   variants:()=>[V('Drop','Fjern bare det øverste',()=>rpnDrop())]},
  '(':{g:'(',n:'Venstre parentes',d:'Åpner en parentes. Alt som står inni regnes ut før resten.',ex:'(2+3)×4 = 20'},
  ')':{g:')',n:'Høyre parentes',d:'Lukker en parentes. Glemmer du den, lukkes den for deg når du regner ut.',ex:'sin(45) trenger begge'},
  'π_rpn':{g:'π',n:'Pi',d:'Dytter pi, ca. 3,14159, opp på stakken.',
@@ -2530,9 +2533,10 @@ function fxPaintRate(){
   const a=useFwd?ub:uo, b=useFwd?uo:ub, v=useFwd?fwd:back;
   if(!Number.isFinite(v)){ el.fxRate.textContent=''; return; }
   const inv=useFwd?back:fwd;
+  /* One rate, read the way it is quoted. The inverse is the same fact again. */
+  void inv;
   el.fxRate.textContent='1 '+a.s+' = '+formatNumber(v,fxDecimals(v)===2?4:6)+' '+b.s
-    +(Number.isFinite(inv)?'   ·   1 '+b.s+' = '+formatNumber(inv,6)+' '+a.s:'')
-    +(state.fxFee?'   ·   inkl. '+formatNumber(state.fxFee,2)+' %':'');
+    +(state.fxFee?', med '+formatNumber(state.fxFee,2)+' % påslag':'');
 }
 function fxPaintFeeBtn(){
   el.fxFeeBtn.classList.toggle('active',state.fxFee>0);
@@ -2680,7 +2684,7 @@ const FX_KEYS=[
  /* Tall og ingenting annet. Regnestykker hører hjemme i kalkulatorfanen, som er
     ett trykk unna og gjør det bedre. */
  {t:'7',a:'num',v:'7'},{t:'8',a:'num',v:'8'},{t:'9',a:'num',v:'9'},{t:BACK_ICON,a:'back',c:'func'},
- {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'AC',a:'clear',c:'clear'},
+ {t:'4',a:'num',v:'4'},{t:'5',a:'num',v:'5'},{t:'6',a:'num',v:'6'},{t:'C',a:'clear',c:'clear'},
  {t:'1',a:'num',v:'1'},{t:'2',a:'num',v:'2'},{t:'3',a:'num',v:'3'},{t:'00',a:'num',v:'00',c:'func'},
  {t:'0',a:'num',v:'0',w:1},{t:',',a:'dot'},{t:'Ferdig',a:'done',c:'equals'}
 ];
@@ -2842,9 +2846,10 @@ function renderButtons(){
   if(!layout){ el.buttonsContainer.innerHTML=''; return; }
   const grid=document.createElement('div');
   grid.className='calc-buttons '+name+'-mode';
-  /* Every keypad ends with the same six-row skeleton; mark where it starts. */
+  /* Every keypad ends with the same five-row skeleton; mark where it starts, and
+     mark the function rows above it so they can recede. */
   const cols=activeCols();
-  const zoneStart=layout.length-cols*6;
+  const zoneStart=layout.length-cols*5;
   layout.forEach((k,idx)=>{
     const b=document.createElement('button');
     b.className='btn'+(k.c?' '+k.c:'')+(k.w?' wide':'');
@@ -2860,6 +2865,7 @@ function renderButtons(){
     }
     if(k.a==='trig')b.dataset.trigBtn='1';
     if(zoneStart>0&&idx>=zoneStart&&idx<zoneStart+cols)b.classList.add('zone-start');
+    if(zoneStart>0&&idx<zoneStart)b.classList.add('fn-row');
     const hk=keyHelpFor(k.a,k.v);
     if(hk){
       b.setAttribute('aria-label',(/^<svg/.test(k.t)?'Slett':k.t)+' — hold inne for forklaring');
@@ -2879,9 +2885,10 @@ function renderButtons(){
 /* The keypad sits inside a fixed inset on every mode, so the columns are always the
    same width. The cap only limits height, which keeps the keys close to square
    wherever the row count allows it and avoids a different margin per mode. */
-const MAX_KEY=88;
+const MAX_KEY=76;
 const KEY_CAP={standard:0,rpn:0,tape:58};
-const DISPLAY_FLOOR={standard:132,rpn:186,tape:0};
+/* Tape keeps room for its toolbar, a few lines and the sum above the keys. */
+const DISPLAY_FLOOR={standard:132,rpn:186,tape:250};
 /* The scientific pad needs eleven rows, so the display gives up part of its share. */
 const SCI_FLOOR=98;
 function sizeKeypad(animate){
@@ -2911,7 +2918,8 @@ function sizeKeypad(animate){
      guessed constant, or the two disagree and the keypad pushes past the nav. */
   const dispMin=parseFloat(getComputedStyle(el.displayArea).minHeight)||100;
   const base=(mode==='standard'&&state.sci)?SCI_FLOOR:(DISPLAY_FLOOR[mode]||0);
-  const floor=Math.max(dispMin,Math.min(base,Math.round(mainH*0.34)));
+  /* Tape's floor holds a toolbar, lines and a sum, so it may claim up to half. */
+  const floor=Math.max(dispMin,Math.min(base,Math.round(mainH*(mode==='tape'?0.5:0.34))));
   const avail=mainH-floor-padY-toggleH-seam;
   const fit=Math.floor((avail-gap*(rows-1))/rows);
   const cap=Math.min(KEY_CAP[mode]||MAX_KEY,MAX_KEY,colW);
@@ -2945,7 +2953,8 @@ function sizeKeypad(animate){
 function paintSciToggle(){
   document.body.classList.toggle('sci',state.sci);
   el.zoneToggle.setAttribute('aria-expanded',state.sci?'true':'false');
-  el.zoneToggleLabel.textContent=state.sci?'Enkel':'Vitenskapelig';
+  el.zoneToggle.setAttribute('aria-label',state.sci?'Skjul funksjoner':'Vis funksjoner');
+  paintTrigChip();
 }
 function setSci(on,animate){
   state.sci=!!on;
@@ -3016,9 +3025,10 @@ function toggleTrig(){
   toastMsg(state.trig==='deg'?'Regner i grader':'Regner i radianer');
 }
 function paintTrigChip(){
-  const show=state.mode==='standard';
+  /* Angle mode only matters to the trig keys, so it shows only while f(x) is open. */
+  const show=state.mode==='standard'&&state.sci;
   el.trigPill.style.display=show?'flex':'none';
-  el.trigPill.textContent=state.trig==='deg'?'GRADER':'RADIANER';
+  el.trigPill.textContent=state.trig==='deg'?'Grader':'Radianer';
   el.trigPill.classList.toggle('on',state.trig==='rad');
 }
 
@@ -3081,21 +3091,34 @@ function switchMode(mode,skipSave){
 }
 
 /* ============ settings ============ */
+/* The choice is System, Lys or Mørk; pure black and high contrast are switches on
+   top of it. What the page paints is the one resolved from all three. */
+const prefersLight=window.matchMedia?window.matchMedia('(prefers-color-scheme: light)'):null;
+function resolvedTheme(){
+  const base=state.theme==='system'?(prefersLight&&prefersLight.matches?'light':'dark'):state.theme;
+  if(state.hc)return 'contrast';
+  if(base==='dark'&&state.amoled)return 'amoled';
+  return base;
+}
+function paintTheme(){
+  const t=resolvedTheme();
+  document.documentElement.setAttribute('data-theme',t);
+  metaTheme.setAttribute('content',THEME_BG[t]||THEME_BG.dark);
+  paintSystemBars(t);
+}
 function applyTheme(t){
   state.theme=t;
-  document.documentElement.setAttribute('data-theme',t);
-  metaTheme.setAttribute('content',THEME_BG[t]||'#0a0c0b');
-  paintSystemBars(t);
-  lsSet(LS.theme,t); syncSettings();
+  lsSet(LS.theme,t); paintTheme(); syncSettings();
 }
+if(prefersLight&&prefersLight.addEventListener)prefersLight.addEventListener('change',()=>{ if(state.theme==='system')paintTheme(); });
 /* In the Android app the status bar is native; give it the theme's background and
    icons that read against it, as theme-color does for the browser. */
 function paintSystemBars(t){
   const bar=IS_NATIVE&&window.Capacitor.Plugins&&window.Capacitor.Plugins.StatusBar;
   if(!bar)return;
-  const light=t==='light'||t==='pastel';
+  const light=t==='light';
   try{
-    bar.setBackgroundColor({color:THEME_BG[t]||'#0a0c0b'}).catch(()=>{});
+    bar.setBackgroundColor({color:THEME_BG[t]||THEME_BG.dark}).catch(()=>{});
     bar.setStyle({style:light?'LIGHT':'DARK'}).catch(()=>{});
   }catch(e){}
 }
@@ -3109,6 +3132,7 @@ function syncSettings(){
   $$('#rateSrcOptions .seg-btn').forEach(b=>b.classList.toggle('active',b.dataset.src===state.rateSrc));
   $$('#feeOptions .seg-btn').forEach(b=>b.classList.toggle('active',Math.abs(+b.dataset.fee-state.fxFee)<1e-9));
   paintTabs();
+  setSwitch(el.amoledSwitch,state.amoled); setSwitch(el.hcSwitch,state.hc);
   setSwitch(el.hapticSwitch,state.haptic); setSwitch(el.liveSwitch,state.livePreview); setSwitch(el.kbdSwitch,state.kbd);
 }
 function openSettings(){ overlayOpened(); el.modalOverlay.classList.add('open'); el.settingsSheet.classList.add('open'); syncSettings(); }
@@ -3294,9 +3318,13 @@ function runTests(){
       t.remove();
       /* Width alone is not enough: a DOM shim can resolve that while ignoring
          radius and background, which are exactly what these tests inspect. */
-      return Math.abs(w-38)<2 && r>0 && bg!=='' && bg!=='rgba(0, 0, 0, 0)';
+      return w>=24 && w<=60 && r>0 && bg!=='' && bg!=='rgba(0, 0, 0, 0)';
     }catch(e){ return false; }
   })();
+  /* In a real browser the style tests must run. If the probe above stops matching
+     the stylesheet they would all be skipped in silence, so say it out loud. */
+  if(window.CSS&&CSS.supports&&CSS.supports('display','grid'))
+    ok('stiltestene kjører (stilarket er lastet)',cssEngine);
   const saveFmt=state.fmt, saveDec=state.decimals, saveTrig=state.trig;
   function ok(name,cond,got){ if(cond){pass++;} else {fail++;R.push('FAIL  '+name+(got!==undefined?'  → '+got:''));} }
   function near(name,a,b,eps){ ok(name,Number.isFinite(a)&&Math.abs(a-b)<=(eps||1e-9),a); }
@@ -3661,10 +3689,10 @@ function runTests(){
   /* Layout consistency: the calculator skeleton must sit in the same place,
      measured from the bottom, in every keypad. Muscle memory depends on it. */
   const GRID_COLS={standard:4,professional:5,rpn:4,tape:4};
-  const COMMIT={standard:'=',professional:'=',rpn:'ENTER',tape:'+ LINJE'};
-  const SKELETON=[['AC',6,1],['7',5,1],['8',5,2],['9',5,3],['4',4,1],['5',4,2],['6',4,3],
-    ['1',3,1],['2',3,2],['3',3,3],['±',2,1],['0',2,2],[',',2,3],['@back',1,1],
-    ['÷',6,4],['×',5,4],['−',4,4],['+',3,4]];
+  const COMMIT={standard:'=',professional:'=',rpn:'Enter',tape:'+ Linje'};
+  const SKELETON=[['C',5,1],['7',4,1],['8',4,2],['9',4,3],['4',3,1],['5',3,2],['6',3,3],
+    ['1',2,1],['2',2,2],['3',2,3],['0',1,1],[',',1,2],['@back',1,3],
+    ['÷',5,4],['×',4,4],['−',3,4],['+',2,4]];
   Object.keys(GRID_COLS).forEach(mode=>{
     const cols=GRID_COLS[mode], arr=LAYOUTS[mode], rows=arr.length/cols;
     ok('rutenettet går opp: '+mode,Number.isInteger(rows),arr.length+'/'+cols);
@@ -3677,10 +3705,11 @@ function runTests(){
       ok('plassering '+mode+'/'+label.replace('@',''),!!p&&p.b===b&&p.c===c,p?('b'+p.b+'c'+p.c+' skulle vært b'+b+'c'+c):'mangler');
     });
     const cm=pos[COMMIT[mode]];
-    ok('svartast '+mode,!!cm&&cm.b===2&&cm.c===4,cm?('b'+cm.b+'c'+cm.c):'mangler');
-    /* no key may appear twice in the same keypad */
+    ok('svartast '+mode,!!cm&&cm.b===1&&cm.c===4,cm?('b'+cm.b+'c'+cm.c):'mangler');
+    /* no key may appear twice in the same keypad (C for clear and the memory
+       variable C are different keys that share a letter) */
     const seen={};
-    arr.forEach(k=>{ ok('ingen dublett '+mode+'/'+k.t,!seen[k.t],k.t); seen[k.t]=1; });
+    arr.forEach(k=>{ const id=k.a==='var'?'var:'+k.v:k.t; ok('ingen dublett '+mode+'/'+k.t,!seen[id],k.t); seen[id]=1; });
   });
   ok('vitenskapelig har 50 taster',LAYOUTS.professional.length===50,LAYOUTS.professional.length);
   /* what left the keypad must still be reachable behind a long press */
@@ -3704,10 +3733,14 @@ function runTests(){
   const proKeys=LAYOUTS.professional.length;
   ok('vitenskapelig har 50 taster',proKeys===50,proKeys);
   /* expanding must add keys, never move the ones already under the thumb */
-  const shared=LAYOUTS.professional.slice(proKeys-30);
+  const shared=LAYOUTS.professional.slice(proKeys-25);
   const cols5=shared.filter((k,i)=>i%5<4).map(k=>k.a+':'+k.v);
   LAYOUTS.standard.forEach(k=>ok('enkel tast finnes også utvidet: '+k.t,cols5.indexOf(k.a+':'+k.v)>-1));
-  ok('utvidet legger til en femte kolonne',shared.filter((k,i)=>i%5===4).length===6);
+  ok('utvidet legger til en femte kolonne',shared.filter((k,i)=>i%5===4).length===5);
+  ok('enkel har tjue taster',LAYOUTS.standard.length===20,LAYOUTS.standard.length);
+  /* what left the simple pad is one tap away under f(x) */
+  ['sign:undefined','ans:undefined','mAdd:undefined','mRecall:undefined'].forEach(a=>
+    ok('flyttet til f(x): '+a,proActs.indexOf(a)>-1&&stdActs.indexOf(a)<0));
   state.mode='standard';
   setSci(true,false);
   ok('utvidet velger vitenskapelig oppsett',activeLayoutName()==='professional',activeLayoutName());
@@ -3853,7 +3886,7 @@ function runTests(){
   /* the rate strip only shows when there is something to act on */
   const saveRS=state.rateState, saveCat=state.conv.cat;
   state.conv.cat='currency';
-  paintRateBar('live','Norges Bank · 14.08.2026 · 166 valutaer');
+  paintRateBar('live','Norges Bank, 14.08.2026. 166 valutaer.');
   ok('fersk kurs skjuler statuslinjen',el.rateBar.style.display==='none',el.rateBar.style.display);
   ok('prikken vises i valuta',el.rateDotMini.style.display!=='none');
   ok('prikken er grønn',/live/.test(el.rateDotMini.className),el.rateDotMini.className);
@@ -3905,7 +3938,7 @@ function runTests(){
   /* borderless keys must stay visible: either the fill separates them from the
      panel, or the theme keeps an outline */
   if(cssEngine)(function(){
-    const themes=['dark','light','amoled','contrast','pastel'];
+    const themes=['dark','light','amoled','contrast'];
     const saveTheme=document.documentElement.getAttribute('data-theme');
     const probe=document.createElement('div');
     probe.className='buttons-container';
@@ -3925,8 +3958,10 @@ function runTests(){
         const cs=getComputedStyle(b);
         const diff=Math.abs(lum(cs.backgroundColor)-panel);
         const outlined=parseFloat(cs.borderTopWidth)>0;
-        ok('tast synlig i '+t+' ('+b.className+')',diff>=5||outlined,'lysdiff '+diff.toFixed(1)+' ramme '+cs.borderTopWidth);
-        ok('tast er pilleformet i '+t,parseFloat(cs.borderTopLeftRadius)>=20,cs.borderTopLeftRadius);
+        /* Operators are bare glyphs by design; their legibility is the contrast test below. */
+        if(b.className!=='btn op')
+          ok('tast synlig i '+t+' ('+b.className+')',diff>=5||outlined,'lysdiff '+diff.toFixed(1)+' ramme '+cs.borderTopWidth);
+        ok('tast har runde hjørner i '+t,parseFloat(cs.borderTopLeftRadius)>=12,cs.borderTopLeftRadius);
       });
       /* Digits and functions share one tone so the pad reads as a single surface.
          The four operators sit a step apart, so ÷ × − + are found without reading. */
@@ -3935,7 +3970,9 @@ function runTests(){
       const opBg=getComputedStyle(kids[2]).backgroundColor;
       ok('operatorene har egen tone i '+t,opBg!==neutral[0],opBg);
       const acBg=getComputedStyle(kids[3]).backgroundColor, eqBg=getComputedStyle(kids[4]).backgroundColor;
-      ok('AC skiller seg ut i '+t,acBg!==neutral[0],acBg);
+      /* C keeps the key shape and says what it is with its colour. */
+      const acFg=getComputedStyle(kids[3]).color, digitFg=getComputedStyle(kids[0]).color;
+      ok('C skiller seg ut i '+t,acBg!==neutral[0]||acFg!==digitFg,acFg);
       ok('likhetstasten skiller seg ut i '+t,eqBg!==neutral[0],eqBg);
     });
     document.documentElement.setAttribute('data-theme',saveTheme||'dark');
@@ -4091,7 +4128,7 @@ function runTests(){
       return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);};
     const ratio=(a,b)=>{const L1=Math.max(rel(a),rel(b)),L2=Math.min(rel(a),rel(b));return (L1+0.05)/(L2+0.05);};
     const names=['siffer','funksjon','operator','AC','likhet'];
-    ['dark','light','amoled','contrast','pastel'].forEach(t=>{
+    ['dark','light','amoled','contrast'].forEach(t=>{
       document.documentElement.setAttribute('data-theme',t);
       const panel=parse(getComputedStyle(probe).backgroundColor);
       Array.from(grid.children).forEach((b,i)=>{
@@ -4117,7 +4154,7 @@ function runTests(){
     const parse=c=>(String(c).match(/[\d.]+/g)||[0,0,0]).slice(0,3).map(Number);
     const rel=c=>{const f=v=>{v=v/255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
       return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]);};
-    ['dark','light','amoled','contrast','pastel'].forEach(t=>{
+    ['dark','light','amoled','contrast'].forEach(t=>{
       document.documentElement.setAttribute('data-theme',t);
       MODES.forEach(m=>{
         document.body.dataset.mode=m;
@@ -4185,10 +4222,11 @@ function runTests(){
   })();
 
 
-  /* With the monospace face gone, tabular figures are what hold columns still. */
+  /* Tabular figures hold columns still: lists, the tape and history. A single big
+     number (the display, an amount) keeps proportional figures, because Schibsted
+     sets the comma and the thousands space on the same wide pitch as a digit. */
   if(cssEngine)(function(){
-    const sels=['.pair-input','.conv-rate','.all-row .uv','.pct-result-value','.tape-val',
-      '.tape-sum .val','.hist-item .hr','.spark-change','.header-pill .pv','.result','.expression'];
+    const sels=['.all-row .uv','.tape-val','.hist-item .hr'];
     const probe=document.createElement('div');
     probe.style.cssText='position:absolute;left:-9999px;top:0;width:340px';
     probe.innerHTML='<div class="pair-card"><span class="pair-input">1</span><span class="conv-rate">1</span></div>'+
@@ -4272,11 +4310,8 @@ function runTests(){
 
   /* the installed icon set has to actually be there */
   if(cssEngine)(function(){
-    const logo=document.querySelector('.logo-icon');
-    ok('logoen er et bilde',logo&&logo.tagName==='IMG',logo&&logo.tagName);
-    ok('logoen er lastet',!logo||(logo.complete&&logo.naturalWidth>0),logo&&logo.naturalWidth);
-    ok('logoen er kvadratisk',!logo||logo.naturalWidth===logo.naturalHeight,
-       logo&&(logo.naturalWidth+'x'+logo.naturalHeight));
+    /* The top bar carries tools only; the icon lives on the home screen and the tab. */
+    ok('ingen logo i toppfeltet',!document.querySelector('.app-header img'));
     const icon=document.querySelector('link[rel="icon"]');
     const apple=document.querySelector('link[rel="apple-touch-icon"]');
     ok('faneikon er satt',!!icon&&/icons\//.test(icon.getAttribute('href')),icon&&icon.getAttribute('href'));
@@ -4526,6 +4561,8 @@ function setTab(name,on){
 }
 bindSwitch(el.tabRpnSwitch,LS.tabs,v=>setTab('rpn',v));
 bindSwitch(el.tabTapeSwitch,LS.tabs,v=>setTab('tape',v));
+bindSwitch(el.amoledSwitch,LS.amoled,v=>{ state.amoled=v; lsSet(LS.amoled,v?'1':'0'); paintTheme(); syncSettings(); });
+bindSwitch(el.hcSwitch,LS.hc,v=>{ state.hc=v; lsSet(LS.hc,v?'1':'0'); paintTheme(); syncSettings(); });
 bindSwitch(el.hapticSwitch,LS.haptic,v=>{ state.haptic=v; lsSet(LS.haptic,v?'1':'0'); syncSettings(); });
 bindSwitch(el.liveSwitch,LS.live,v=>{ state.livePreview=v; lsSet(LS.live,v?'1':'0'); syncSettings(); updateLive(); });
 bindSwitch(el.kbdSwitch,LS.kbd,v=>{ state.kbd=v; lsSet(LS.kbd,v?'1':'0'); syncSettings(); });
@@ -4588,11 +4625,12 @@ window.addEventListener('online',()=>{ if(state.mode==='converter'&&cat().live)l
 function init(){
   el.appVersion.textContent='Pro Kalkulator Ultra v'+VERSION;
   /* settings */
+  /* Older versions stored one of five themes; carry that choice over. */
   const t=lsGet(LS.theme,null);
-  state.theme=t||((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');
-  document.documentElement.setAttribute('data-theme',state.theme);
-  metaTheme.setAttribute('content',THEME_BG[state.theme]||'#0a0c0b');
-  paintSystemBars(state.theme);
+  state.amoled=lsGet(LS.amoled,t==='amoled'?'1':'0')==='1';
+  state.hc=lsGet(LS.hc,t==='contrast'?'1':'0')==='1';
+  state.theme=({light:'light',pastel:'light',dark:'dark',amoled:'dark',contrast:'dark',system:'system'})[t]||'system';
+  paintTheme();
   state.fmt=lsGet(LS.fmt,'no');
   state.decimals=parseInt(lsGet(LS.dec,String(CFG.defaultDecimals)),10)||CFG.defaultDecimals;
   state.trig=lsGet(LS.trig,'deg');

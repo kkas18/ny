@@ -1,7 +1,7 @@
 /* Pro Kalkulator Ultra – service worker */
-const CORE='pku-core-v73';
-const RUNTIME='pku-runtime-v73';
-const CORE_ASSETS=['./','./index.html','./style.css','./app.js','./fonts/inter.woff2','./manifest.webmanifest','./icons/icon.svg','./icons/favicon-32.png','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-192.png','./icons/icon-maskable-512.png','./icons/icon-monochrome-512.png','./icons/apple-touch-icon.png'];
+const CORE='pku-core-v80';
+const RUNTIME='pku-runtime-v80';
+const CORE_ASSETS=['./','./index.html','./style.css','./app.js','./fonts/schibsted-grotesk.woff2','./fonts/inter.woff2','./manifest.webmanifest','./icons/icon.svg','./icons/favicon-32.png','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-192.png','./icons/icon-maskable-512.png','./icons/icon-monochrome-512.png','./icons/apple-touch-icon.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CORE)

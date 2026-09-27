@@ -2,7 +2,7 @@
   "appId": "no.kalkulator.pro",
   "appName": "Kalkulator",
   "webDir": "public",
-  "backgroundColor": "#0a0c0b",
+  "backgroundColor": "#11151c",
   "zoomEnabled": true,
   "android": {
     "adjustMarginsForEdgeToEdge": "force",

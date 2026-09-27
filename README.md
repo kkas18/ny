@@ -13,6 +13,9 @@ scripts/icons.mjs  lager alle PNG-ikoner fra SVG-kildene
 android/           Capacitor-prosjektet for Android
 ```
 
+Skriften er Schibsted Grotesk (SIL OFL 1.1, lisens i `public/fonts/`), med Inter
+som reserve for matematiske tegn som √ og π. Begge ligger i appen og virker uten nett.
+
 Ikonene tegnes bare i SVG (`public/icons/*.svg` og `resources/*.svg`).
 `npm run icons` lager favicon, PWA-ikoner (any, maskable, monochrome),
 iOS-ikon, og adaptive Android-ikoner med monokromt lag og splash.
