@@ -3,3 +3,4 @@ node_modules/
 *.aab
 *.jks
 keystore.properties
+signering/
