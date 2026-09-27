@@ -112,7 +112,7 @@ body{display:flex;flex-direction:column;padding:var(--safe-top) var(--safe-right
 /* A hairline in the mode colour, so the header carries the identity the old chip did. */
 .app-header::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 22%,transparent) 62%,transparent);transition:background var(--transition)}
 .brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
-.logo-icon{width:29px;height:29px;border-radius:var(--r-inner);object-fit:cover;flex-shrink:0;background:#1e1e1d;box-shadow:0 0 0 1px rgba(128,128,128,.22)}
+.logo-icon{width:29px;height:29px;flex-shrink:0;display:block}
 .app-name{font-size:14.5px;font-weight:700;letter-spacing:-.3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .header-pill{border:1px solid var(--border);background:var(--surface-light);color:var(--text-secondary);border-radius:var(--r-pill);height:28px;padding:0 10px;font-size:10.5px;font-weight:800;letter-spacing:.7px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:all var(--transition-fast);font-family:var(--font-sans)}
@@ -297,7 +297,7 @@ html[data-theme="contrast"] .result.answer-red{color:#ff6b6b}
 .rate-dot.live{background:var(--success);box-shadow:0 0 0 3px color-mix(in srgb,var(--success) 22%,transparent)}
 .rate-dot.stale{background:var(--warning);box-shadow:0 0 0 3px color-mix(in srgb,var(--warning) 22%,transparent)}
 .rate-dot.offline{background:var(--danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 22%,transparent)}
-#rateText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35}
+#rateText,#fxRateText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35}
 .rate-refresh{width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 .rate-refresh svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .rate-refresh.spinning svg{animation:spin 1s linear infinite}
@@ -539,6 +539,12 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
 .io-row{display:flex;gap:7px;margin-top:8px}
 .io-row .action-btn{margin-top:0}
 
+/* A keypad taller than the screen scrolls; the fade says so. */
+.calc-buttons.overflowing{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22px);mask-image:linear-gradient(to bottom,transparent 0,#000 22px);padding-top:8px}
+@media (max-height:700px){
+  body.sci .display-area{min-height:84px;padding-top:14px}
+  body.sci .calc-buttons.professional-mode{gap:5px}
+}
 @media (max-height:780px){
   :root{--result-font-size:37px;--btn-min-height:40px;--nav-height:58px}
   .display-area{min-height:104px;padding-top:22px}
@@ -558,6 +564,16 @@ body[data-mode="tape"] .buttons-container{order:2;flex:0 0 auto;border-top:1px s
   .calc-buttons{width:min(100%,520px);margin-inline:auto}
   .tape-list,.tape-foot,.tape-entry,.tape-toolbar{padding-left:max(10px,calc((100% - 520px)/2));padding-right:max(10px,calc((100% - 520px)/2))}
   .display-area{padding-left:max(16px,calc((100% - 520px)/2));padding-right:max(16px,calc((100% - 520px)/2))}
+}
+/* ---------- wide screens ---------- */
+/* On a desktop the app keeps its phone proportions: one centred column with the
+   keypad, display and tabs lined up, instead of a tab bar stretched across the
+   whole monitor under a 520 px keypad. */
+@media (min-width:760px){
+  html{background:var(--surface-lighter)}
+  body{max-width:560px;margin:0 auto;box-shadow:0 0 0 1px var(--border),var(--shadow)}
+  .sheet{max-width:560px;margin:0 auto}
+  .toast,.update-bar{max-width:520px;margin-inline:auto}
 }
 /* ---------- figures ---------- */
 /* Inter replaced the monospace face, so tabular numerals are what now keep

@@ -2932,6 +2932,8 @@ function sizeKeypad(animate){
   }
   /* If the pad cannot fit, the rows that must stay reachable are the digits and
      operators, so park the scroll at the bottom and let the functions run off the top. */
+  /* The top rows fade out under the toggle, so it shows there is more to scroll to. */
+  grid.classList.toggle('overflowing',overflows);
   if(overflows)requestAnimationFrame(()=>{ grid.scrollTop=grid.scrollHeight; });
 }
 function paintSciToggle(){
@@ -4261,8 +4263,9 @@ function runTests(){
     const apple=document.querySelector('link[rel="apple-touch-icon"]');
     ok('faneikon er satt',!!icon&&/icons\//.test(icon.getAttribute('href')),icon&&icon.getAttribute('href'));
     ok('hjemskjermikon for iOS er satt',!!apple&&/icons\//.test(apple.getAttribute('href')),apple&&apple.getAttribute('href'));
+    /* The photographic JPG set was replaced by icons rendered from icons/icon.svg. */
     ok('ingen referanser til gamle ikonfiler',
-       !/icons\/icon\.svg|icon-192\.png|icon-512\.png/.test(document.documentElement.innerHTML));
+       !/icons\/[\w-]+\.jpg|logo-96/.test(document.documentElement.innerHTML));
   })();
 
   state.fmt=saveFmt; state.decimals=saveDec; state.trig=saveTrig;

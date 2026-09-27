@@ -1,0 +1,13 @@
+{
+  "name": "pro-kalkulator-ultra",
+  "version": "7.2.0",
+  "private": true,
+  "description": "Norsk kalkulator med vitenskapelig modus, RPN, tape, prosent og MVA, valuta og enhetskonvertering.",
+  "scripts": {
+    "serve": "python3 -m http.server 8080 --directory public",
+    "icons": "node scripts/icons.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
+}
